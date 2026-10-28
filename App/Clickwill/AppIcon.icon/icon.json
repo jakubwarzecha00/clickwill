@@ -1,0 +1,50 @@
+{
+  "fill": {
+    "automatic-gradient": "srgb:0.16471,0.16471,0.17255,1.00000"
+  },
+  "groups": [
+    {
+      "layers": [
+        {
+          "glass": true,
+          "hidden": false,
+          "image-name": "dot.svg",
+          "name": "dot",
+          "position": {
+            "scale": 1,
+            "translation-in-points": [
+              0,
+              0
+            ]
+          }
+        },
+        {
+          "glass": true,
+          "hidden": false,
+          "image-name": "letter-c.svg",
+          "name": "letter-c",
+          "position": {
+            "scale": 1,
+            "translation-in-points": [
+              0,
+              0
+            ]
+          }
+        }
+      ],
+      "shadow": {
+        "kind": "neutral",
+        "opacity": 0.5
+      },
+      "translucency": {
+        "enabled": true,
+        "value": 0.5
+      }
+    }
+  ],
+  "supported-platforms": {
+    "squares": [
+      "macOS"
+    ]
+  }
+}

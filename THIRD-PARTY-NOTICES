@@ -1,0 +1,58 @@
+THIRD-PARTY NOTICES
+
+This product contains no code from Apple Inc. iPod, iPod classic, iTunes, Apple
+Music, Mac and macOS are trademarks of Apple Inc. This product is not
+supported, written or published by Apple.
+
+The structure of the iPod library database (iTunesDB) and the hash58 integrity
+checksum were documented by the open-source community. This product contains an
+independent Swift implementation. The checksum implementation
+(Sources/ITDBKit/Signing/) was written from the algorithm description in libgpod,
+whose notice is reproduced below as its license requires.
+
+----------------------------------------------------------------------
+libgpod - src/itdb_hash58.c
+https://github.com/gtkpod/libgpod
+----------------------------------------------------------------------
+
+  Copyright (C) 2007 Christophe Fergeau <teuf@gnome.org>
+
+  The code in this file is heavily based on the proof-of-concept code
+  written by wtbw
+
+ Redistribution and use in source and binary forms, with or without
+ modification, are permitted provided that the following conditions are met:
+
+   1. Redistributions of source code must retain the above copyright
+ notice, this list of conditions and the following disclaimer.
+   2. Redistributions in binary form must reproduce the above copyright
+ notice, this list of conditions and the following disclaimer in the
+ documentation and/or other materials provided with the distribution.
+   3. The name of the author may not be used to endorse or promote
+ products derived from this software without specific prior written
+ permission.
+
+ THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+ IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+ OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
+ INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
+ OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
+ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
+ OF SUCH DAMAGE.
+
+  iTunes and iPod are trademarks of Apple
+
+  This product is not supported/written/published by Apple!
+
+----------------------------------------------------------------------
+Other references (consulted, not copied)
+----------------------------------------------------------------------
+
+mono/ipod-sharp, src/Hash58.cs (LGPL-2.0) - used only to cross-check that the
+lookup tables match the libgpod ones. No code from ipod-sharp is included.
+
+iPodLinux wiki, "ITunesDB" - format documentation.

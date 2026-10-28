@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>CFBundleDisplayName</key>
+	<string>Clickwill</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>Clickwill</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(MARKETING_VERSION)</string>
+	<key>CFBundleVersion</key>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>ClickwillReleaseStage</key>
+	<string>alpha</string>
+	<key>ClickwillSiteURL</key>
+	<string>$(CLICKWILL_SITE_URL)</string>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.music</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>14.0</string>
+	<key>NSHumanReadableCopyright</key>
+	<string>Copyright © 2026 Jakub Warzecha. Licensed under the GNU GPL, version 3.</string>
+	<key>SUEnableAutomaticChecks</key>
+	<true/>
+	<key>SUEnableSystemProfiling</key>
+	<false/>
+	<key>SUFeedURL</key>
+	<string>$(CLICKWILL_SITE_URL)/updates/$(CLICKWILL_UPDATE_CHANNEL).xml</string>
+	<key>SUPublicEDKey</key>
+	<string>$(CLICKWILL_SPARKLE_PUBLIC_KEY)</string>
+	<key>SUScheduledCheckInterval</key>
+	<integer>86400</integer>
+	<key>SUVerifyUpdateBeforeExtraction</key>
+	<true/>
+</dict>
+</plist>
