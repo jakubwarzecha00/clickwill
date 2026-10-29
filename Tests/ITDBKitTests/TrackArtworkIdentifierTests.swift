@@ -101,4 +101,14 @@ struct TrackArtworkIdentifierTests {
         #expect(added.artworkIdentifier == 0, "this is a pointer to another album's artwork")
         #expect(added.artworkPresence == 2, "no image, although the template had 1")
     }
+
+    @Test("an album with two different pictures gets no pointer - no guessing")
+    func differentPicturesGiveNoPointer() throws {
+        let library = try library()
+        let bends = library.tracks.filter { $0.album == "The Bends" }
+        let artwork = try ArtworkDBParser.parse(ArtworkCoverageTests.artworkDB(
+            owner: bends[0].persistentID, declared: 1, extra: (owner: bends[1].persistentID, declared: 1)))
+
+        #expect(artwork.imageIdentifiersByAlbum(in: library)["The Bends"] == nil)
+    }
 }

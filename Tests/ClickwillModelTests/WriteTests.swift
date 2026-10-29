@@ -434,6 +434,95 @@ struct WriteTests {
         #expect(try rig.backups.list(deviceGUID: Self.guid).count == 2, "a backup before the artwork and before the database")
     }
 
+    /// A device that finds artwork by the track: the firmware family of the nano 2G,
+    /// on the fake's signed database (no firmware GUID, so no identity conflict).
+    static func findingArtworkByTrack(_ device: IPodDevice) throws -> IPodDevice {
+        var nano = device
+        nano.firmwareDescription = try DeviceDescription.parse(xml: Data("""
+            <?xml version="1.0" encoding="UTF-8"?>
+            <plist version="1.0"><dict><key>FamilyID</key><integer>9</integer></dict></plist>
+            """.utf8))
+        return nano
+    }
+
+    /// Writes the library unchanged on `device` - the repairs run as on every write.
+    static func writeUnchanged(_ rig: Rig, on device: IPodDevice) async throws -> WriteTransaction.Result {
+        let database = try Data(contentsOf: rig.paths.iTunesDB)
+        var transaction = WriteTransaction(library: try ITunesDBParser.parse(database), changes: ChangeSet(), device: device,
+                                           capabilities: IPodCapabilities.resolve(format: device.format, model: device.model),
+                                           environment: rig.environment, note: "test")
+        transaction.expectedSourceDigest = IPodDevice.digest(of: database)
+        return try await transaction.run()
+    }
+
+    @Test("an iPod that finds artwork by the track: every song of the album gets its own image record on any write")
+    func coverPerTrackOnNano() async throws {
+        let rig = try await Self.rig(Fixture(cover: true)); defer { rig.cleanUp() }
+        let device = try Self.findingArtworkByTrack(try #require(rig.model.device))
+        #expect(device.supportsWriting && device.findsArtworkByTrack)
+        let aftermath = try rig.onDisk().tracks.filter { $0.album == "Aftermath" }
+        let image = try #require(try rig.artworkOnDisk().images.first)
+        #expect(aftermath.count > 1, "the fixture album must have more songs than the one owner")
+
+        let result = try await Self.writeUnchanged(rig, on: device)
+
+        let images = try rig.artworkOnDisk().images
+        #expect(Set(images.map(\.trackPersistentID)) == Set(aftermath.map(\.persistentID)))
+        #expect(images.allSatisfy { $0.variants.map(\.byteOffset) == image.variants.map(\.byteOffset) }, "the same slices")
+        #expect(result.outcome.repairs.trackImages == ["Aftermath": aftermath.count - 1])
+        #expect(result.outcome.repairs.problems.isEmpty)
+        #expect(try rig.backups.list(deviceGUID: Self.guid).contains { $0.reason == .beforeArtworkRepair },
+                "a backup before ArtworkDB changes")
+
+        let again = try await Self.writeUnchanged(rig, on: device)
+        #expect(again.outcome.repairs.trackImages.isEmpty, "the second write has nothing to add")
+        #expect(try rig.artworkOnDisk().images.count == images.count)
+    }
+
+    /// The nano 2G shows a track's artwork only through `mhit` 0x160. The step that gives
+    /// every song its own record runs before the pointer repair, so the pointer repair
+    /// must accept an album whose records are all the same picture.
+    @Test("an album's first artwork on an iPod that finds artwork by the track: every song points to an image")
+    func firstCoverOnNanoIsPointedTo() async throws {
+        let rig = try await Self.rig(Fixture(cover: true)); defer { rig.cleanUp() }
+        let device = try Self.findingArtworkByTrack(try #require(rig.model.device))
+        let database = try Data(contentsOf: rig.paths.iTunesDB)
+        let library = try ITunesDBParser.parse(database)
+        let bends = library.tracks.filter { $0.album == "The Bends" }
+        #expect(bends.count > 1, "the fixture album must have more songs than the one owner")
+        var changes = ChangeSet()
+        changes.queueFirstCover(try Self.image(red: 0, green: 0, blue: 1), sourceByteCount: 7000, owner: bends[0],
+                                tracks: bends, album: "The Bends", for: AlbumID(albumOf: bends))
+        var transaction = WriteTransaction(library: library, changes: changes, device: device,
+                                           capabilities: IPodCapabilities.resolve(format: device.format, model: device.model),
+                                           environment: rig.environment, note: "test")
+        transaction.expectedSourceDigest = IPodDevice.digest(of: database)
+
+        let result = try await transaction.run()
+
+        #expect(result.outcome.coversWritten == 1)
+        let images = try rig.artworkOnDisk().images
+        let written = try rig.onDisk().tracks.filter { $0.album == "The Bends" }
+        #expect(Set(images.map(\.trackPersistentID)).isSuperset(of: written.map(\.persistentID)),
+                "every song of the album has its own image record")
+        let identifiers = Set(images.map(\.id))
+        #expect(written.allSatisfy { identifiers.contains($0.artworkIdentifier) },
+                "every song points (0x160) to an existing image record")
+        #expect(Set(written.map(\.artworkIdentifier)).count == 1, "all songs point to the same picture")
+    }
+
+    @Test("the iPod classic keeps one image record per album")
+    func coverPerAlbumOnClassic() async throws {
+        let rig = try await Self.rig(Fixture(cover: true)); defer { rig.cleanUp() }
+        let device = try #require(rig.model.device)
+        #expect(!device.findsArtworkByTrack)
+
+        let result = try await Self.writeUnchanged(rig, on: device)
+
+        #expect(result.outcome.repairs.trackImages.isEmpty)
+        #expect(try rig.artworkOnDisk().images.count == 1)
+    }
+
     @Test("an artwork replacement: the same slices, new pixels, no new image")
     func coverReplaced() async throws {
         let rig = try await Self.rig(Fixture(cover: true)); defer { rig.cleanUp() }

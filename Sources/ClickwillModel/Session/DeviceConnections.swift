@@ -27,7 +27,7 @@ public final class DeviceConnections {
         /// mounting, an empty disk with an iPod_Control folder) is skipped.
         public static let system = Discovery(
             mountPoints: { IPodVolume.mounted().map(\.mountPoint) },
-            devices: { IPodVolume.mounted().compactMap { try? IPodDevice.open($0, scope: LibrarySource.writeScope) } })
+            devices: { IPodVolume.mounted().compactMap { try? IPodDevice.open($0) } })
     }
 
     /// The last loaded iPod (`IPodDevice.identity`).

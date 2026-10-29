@@ -322,7 +322,7 @@ struct ContentView: View {
                            busy: true)
         case .empty:
             EmptyStateView(text: "No iPod Connected",
-                           detail: "Connect an iPod classic to this Mac. Clickwill finds it on its own.")
+                           detail: "Connect an iPod classic or iPod nano to this Mac. Clickwill finds it on its own.")
         case .failed(let failure):
             EmptyStateView(text: "Clickwill Couldn't Read This iPod's Library", detail: ErrorPresenter.message(for: failure))
         case .loaded:

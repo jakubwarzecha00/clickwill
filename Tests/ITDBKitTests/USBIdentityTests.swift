@@ -50,23 +50,19 @@ struct USBIdentityTests {
         #expect(conflicted.readOnlyReason?.description.contains("nano (5th generation)") == true)
     }
 
-    @Test("the test release writes only on the Classic: USB decides, without a model source a refusal")
-    func testVersionScopeIsClassicOnly() throws {
-        let root = FileManager.default.temporaryDirectory.appendingPathComponent("scope-\(UUID().uuidString)")
+    @Test("every format confirmed on hardware is writable: the Classic and a nano 3G by USB, and without USB the database decides")
+    func confirmedFormatsAreWritable() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("formats-\(UUID().uuidString)")
         let format = DatabaseFormat(headerLength: 244, version: 117, databaseID: 1, signing: .hash58)
         let guid = FireWireGUID.Resolved(hex: "000A27001234ABCD", bytes: try Hash58.fireWireID(fromHex: "000A27001234ABCD"), source: .ioRegistry)
-        func device(_ usb: USBIdentity?, scope: IPodDevice.WriteScope = .iPodClassic) -> IPodDevice {
+        func device(_ usb: USBIdentity?) -> IPodDevice {
             IPodDevice(volume: IPodVolume(paths: IPodPaths(mountPoint: root), name: "iPod", totalCapacity: 1, availableCapacity: 1, isReadOnly: false),
                        fireWireID: guid, format: format,
-                       model: IPodModel(modelNumber: nil, name: "iPod nano (3rd generation)", source: .usb), usb: usb,
-                       scope: scope)
+                       model: IPodModel(modelNumber: nil, name: "iPod nano (3rd generation)", source: .usb), usb: usb)
         }
         #expect(device(USBIdentity(productID: 0x1261)).supportsWriting)
-        let nano = device(USBIdentity(productID: 0x1262))
-        #expect(!nano.supportsWriting)
-        #expect(nano.readOnlyReason == .outsideWriteScope(model: "iPod nano (3rd generation)"))
-        #expect(!device(nil).supportsWriting, "without a model source we do not know it is a Classic")
-        #expect(device(USBIdentity(productID: 0x1262), scope: .confirmedFormats).supportsWriting, "ipodctl without narrowing")
+        #expect(device(USBIdentity(productID: 0x1262)).supportsWriting, "nano 3G: the same hash58 signature as the Classic")
+        #expect(device(nil).supportsWriting, "without a second source the database decides")
     }
 
     @Test("the model from USB when SysInfo is silent - as on a Classic with an empty SysInfo")

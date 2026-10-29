@@ -18,8 +18,6 @@ enum AboutFacts {
     static var stage: String? {
         (Bundle.main.object(forInfoDictionaryKey: "ClickwillReleaseStage") as? String).flatMap { $0.isEmpty ? nil : $0 }
     }
-    /// The alpha is given away for free - without a purchase there is no "amount you paid".
-    static var isFree: Bool { stage == "alpha" }
     /// "this alpha", "this beta" or "this version" - for sentences in the interface.
     static var thisVersion: String { "this \(stage ?? "version")" }
     static var shortVersion: String {

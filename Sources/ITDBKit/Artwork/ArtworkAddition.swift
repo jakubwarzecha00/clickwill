@@ -15,9 +15,10 @@ public enum ArtworkAddition {
     /// device anyway; only the encoding is unconfirmed. The nano 2G firmware
     /// describes 1027 (100x100) and 1031 (42x42) as L565 (VPD readout).
     /// 1027 showed up correctly on the nano's Now Playing screen (photo of the
-    /// screen); we do not know yet where the nano shows 1031, so it stays off
-    /// the list.
-    public static let confirmedFormats: Set<UInt32> = [1027, 1055, 1060, 1061]
+    /// screen). 1031 was written in the same file: the nano read the database and
+    /// showed the artwork; where it uses 1031 itself we have not seen, but it is the
+    /// same encoding as 1027, and without it no artwork can be added on the nano 2G.
+    public static let confirmedFormats: Set<UInt32> = [1027, 1031, 1055, 1060, 1061]
 
     public struct Outcome: Sendable {
         public let imageID: UInt32

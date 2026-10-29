@@ -49,11 +49,11 @@ struct DeviceSafetyTests {
     func exclusiveLock() throws {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent("locks-\(UUID().uuidString)")
         defer { try? FileManager.default.removeItem(at: directory) }
-        var first: DeviceWriteLock? = try DeviceWriteLock.acquire(identity: "000A2700198BD0A3", in: directory)
-        #expect(throws: ITDBError.self) { try DeviceWriteLock.acquire(identity: "000A2700198BD0A3", in: directory) }
+        var first: DeviceWriteLock? = try DeviceWriteLock.acquire(identity: "000A27000000AA01", in: directory)
+        #expect(throws: ITDBError.self) { try DeviceWriteLock.acquire(identity: "000A27000000AA01", in: directory) }
         _ = try DeviceWriteLock.acquire(identity: "000A27001234ABCD", in: directory)   // another iPod - allowed
         withExtendedLifetime(first) {}
         first = nil
-        _ = try DeviceWriteLock.acquire(identity: "000A2700198BD0A3", in: directory)
+        _ = try DeviceWriteLock.acquire(identity: "000A27000000AA01", in: directory)
     }
 }

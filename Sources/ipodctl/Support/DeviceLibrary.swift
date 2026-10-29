@@ -34,7 +34,7 @@ struct DeviceLibrary {
     func write(_ updated: ITLibrary, changes: ChangeSet = ChangeSet(), note: String,
                jumpTable: JumpTablePolicy = .derived) async throws -> WriteOutcome {
         var transaction = WriteTransaction(library: updated, changes: changes, device: device,
-                                           capabilities: IPodCapabilities.resolve(format: device.format, model: device.model),
+                                           capabilities: IPodCapabilities.resolve(for: device),
                                            environment: call.environment, note: note)
         transaction.expectedSourceDigest = digest
         transaction.allowWhileMusicRunning = call.has("--allow-music")

@@ -8,8 +8,6 @@ public enum ReadOnlyReason: Sendable, Hashable, CustomStringConvertible {
     case volumeReadOnly
     /// Identity sources disagree (USB, firmware, database scheme, GUID).
     case identityConflict(IdentityConflict)
-    /// A model outside the write scope chosen by the caller (`IPodDevice.WriteScope`).
-    case outsideWriteScope(model: String)
     /// A GUID found in a file, but it does not sign this iPod's database.
     case fireWireIDRejected(RejectedFireWireID)
     /// Without a GUID the database cannot be signed (hash58).
@@ -23,7 +21,6 @@ public enum ReadOnlyReason: Sendable, Hashable, CustomStringConvertible {
         switch self {
         case .volumeReadOnly: "volume mounted read-only"
         case .identityConflict(let conflict): "identity conflict: \(conflict)"
-        case .outsideWriteScope(let model): "\(model) outside the write scope"
         case .fireWireIDRejected(let rejected): "rejected \(rejected)"
         case .fireWireIDMissing: "FireWire GUID missing"
         case .unsignedRefused(let refusal): "unsigned database refused: \(refusal)"

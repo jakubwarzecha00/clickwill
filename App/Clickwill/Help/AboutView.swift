@@ -1,9 +1,7 @@
 import SwiftUI
 import AppKit
 
-/// The "About" panel: the legal text, in the variant for
-/// the free version for testers (no purchase
-/// and no terms pages yet). A lawyer reads the text before selling.
+/// The "About" panel: the legal text of a free app.
 /// The license section and the License button are the GPL's "Appropriate Legal
 /// Notices" (section 5d): copyright, no warranty, the right to convey, the license text.
 /// The name, version and author details come from `AboutFacts`.
@@ -52,7 +50,7 @@ struct AboutView: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text(AboutFacts.appName).font(.theme(.title, weight: .bold))
                 Text("Version \(AboutFacts.version)\(AboutFacts.stage.map { " · \($0)" } ?? "")").font(.theme(.callout)).foregroundStyle(Theme.f2)
-                Text("An independent library editor for iPod classic.").font(.theme(.body)).foregroundStyle(Theme.f2)
+                Text("An independent library editor for iPod classic and iPod nano.").font(.theme(.body)).foregroundStyle(Theme.f2)
             }
             Spacer()
         }
@@ -80,7 +78,7 @@ struct AboutView: View {
     private var independence: some View {
         section("Independence and trademarks") {
             para("\(AboutFacts.appName) is an independent product. It is not affiliated with, endorsed by, sponsored by, or otherwise connected to Apple Inc.")
-            para("iPod, iPod classic, Click Wheel, Cover Flow, iTunes, Apple Music, Mac, and macOS are trademarks of Apple Inc., registered in the U.S. and other countries. These names are used here solely to identify the devices and software this app works with, in a purely descriptive manner, and not to suggest any endorsement or association.")
+            para("iPod, iPod classic, iPod nano, Click Wheel, Cover Flow, iTunes, Apple Music, Mac, and macOS are trademarks of Apple Inc., registered in the U.S. and other countries. These names are used here solely to identify the devices and software this app works with, in a purely descriptive manner, and not to suggest any endorsement or association.")
             para("This app is signed with an Apple Developer ID and notarized by Apple. Notarization is an automated check for malicious software; it is not a review, approval, or endorsement of the app by Apple.")
         }
     }
@@ -89,7 +87,7 @@ struct AboutView: View {
 
     private var doesAndDoesNot: some View {
         section("What this app does, and does not do") {
-            para("This app reads and edits the music library on an iPod classic that you own and have connected to your Mac as an ordinary USB mass-storage volume.")
+            para("This app reads and edits the music library on an iPod classic or iPod nano that you own and have connected to your Mac as an ordinary USB mass-storage volume.")
             subhead("What it does")
             bullet("Reads the library database (iTunesDB) and artwork files that already exist on the device, in their documented, plain-file form.")
             bullet("Lets you add songs, change the order in which albums and songs appear, change album artwork, remove songs and their audio files, and merge the device's own play statistics back into the library.")
@@ -116,7 +114,7 @@ struct AboutView: View {
 
     private var testVersion: some View {
         section("About \(AboutFacts.thisVersion)") {
-            para("This is a test version of \(AboutFacts.appName)\(AboutFacts.isFree ? ", given free of charge to testers" : ""). It writes to iPod classic only; other iPods open read-only while support for them is in active development.")
+            para("This is a test version of \(AboutFacts.appName), free of charge. It writes to the iPod classic and the iPod nano (2nd to 4th generation); other iPods open read-only while support for them is in active development.")
             if let email = AboutFacts.supportEmail {
                 para("To report a problem, choose Help › Copy Diagnostic Report, add a description of what happened, and send it to \(email).")
             } else {
@@ -129,11 +127,7 @@ struct AboutView: View {
 
     private var warranty: some View {
         section("Warranty and liability") {
-            if AboutFacts.isFree {
-                para("This version is provided free of charge. To the fullest extent permitted by applicable law, it is provided \u{201C}as is\u{201D}, without warranty of any kind.")
-            } else {
-                para("To the fullest extent permitted by applicable law, this software is provided \u{201C}as is\u{201D}, without warranty of any kind, and the total liability of \(AboutFacts.author) for any claim arising from the software is limited to the amount you paid for it.")
-            }
+            para("This app is provided free of charge. To the fullest extent permitted by applicable law, it is provided \u{201C}as is\u{201D}, without warranty of any kind.")
             para("Your statutory rights are not affected. If you are a consumer, nothing in this notice limits any right you have under the laws of your country, including rights concerning conformity of digital content.")
         }
     }

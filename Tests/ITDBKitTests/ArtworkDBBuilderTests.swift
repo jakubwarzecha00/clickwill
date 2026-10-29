@@ -144,11 +144,22 @@ struct ArtworkDBBuilderTests {
     func unverifiedFormatsNeedConsent() throws {
         let paths = try Self.temporaryPaths()
         defer { try? FileManager.default.removeItem(at: paths.mountPoint) }
+        let formats = Self.nanoFormats + [DeviceDescription.ImageFormat(formatID: 1068, width: 128, height: 128, pixelFormat: "L565")]
         #expect(throws: ITDBError.self) {
             try ArtworkAddition.add(ownerPersistentID: 1, sourceByteCount: 1, trackCount: 1, in: paths,
-                                    deviceFormats: Self.nanoFormats) { Self.solid($0, $1) }
+                                    deviceFormats: formats) { Self.solid($0, $1) }
         }
         #expect(!FileManager.default.fileExists(atPath: paths.artworkDirectory.path))
+    }
+
+    @Test("the nano 2G formats are confirmed: first artwork without a trial, as the app adds it")
+    func nanoFormatsNeedNoTrial() throws {
+        let paths = try Self.temporaryPaths()
+        defer { try? FileManager.default.removeItem(at: paths.mountPoint) }
+        let added = try ArtworkAddition.add(ownerPersistentID: 1, sourceByteCount: 1, trackCount: 1, in: paths,
+                                            deviceFormats: Self.nanoFormats) { Self.solid($0, $1) }
+        #expect(added.createdDatabase)
+        #expect(Set(added.slotOffsets.keys) == [1027, 1031])
     }
 
     @Test("an encoding other than L565 - a refusal even with consent to a trial")

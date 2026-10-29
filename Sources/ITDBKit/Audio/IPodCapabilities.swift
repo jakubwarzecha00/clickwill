@@ -83,4 +83,35 @@ public struct IPodCapabilities: Sendable, Hashable {
         }
         return classic
     }
+
+    /// The profile for each USB family (`USBIdentity.families`). The USB identifier comes
+    /// from the firmware, so it names the model without guessing from the database.
+    static let byUSBProduct: [UInt16: IPodCapabilities] = [
+        0x1202: scrollWheel,
+        0x1201: clickWheel, 0x1203: clickWheel, 0x1204: clickWheel, 0x1205: clickWheel,
+        0x120A: clickWheel, 0x1260: clickWheel,
+        0x1209: classic, 0x1261: classic, 0x1262: classic, 0x1263: classic,
+    ]
+
+    /// The profile of a connected iPod: from its USB family when the family is known -
+    /// named after the model and not assumed - otherwise from the database and model
+    /// number (`resolve(format:model:)`). Video limits always come from the latter.
+    public static func resolve(for device: IPodDevice) -> IPodCapabilities {
+        let fromDatabase = resolve(format: device.format, model: device.model)
+        guard let usb = device.usb, let known = byUSBProduct[usb.productID], let name = usb.familyName else {
+            return fromDatabase
+        }
+        var profile = known.named(name)
+        profile.video = fromDatabase.video
+        return profile
+    }
+
+    /// The same limits under another name.
+    func named(_ name: String) -> IPodCapabilities {
+        var copy = IPodCapabilities(name: name, maximumSampleRate: maximumSampleRate, maximumBitDepth: maximumBitDepth,
+                                    maximumChannels: maximumChannels, maximumMP3BitRate: maximumMP3BitRate,
+                                    supportsAppleLossless: supportsAppleLossless, aacBitRate: aacBitRate, isAssumed: isAssumed)
+        copy.video = video
+        return copy
+    }
 }

@@ -117,8 +117,8 @@ struct ArtworkAdditionTests {
         let paths = IPodPaths(mountPoint: root)
         try FileManager.default.createDirectory(at: paths.artworkDirectory, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: root) }
-        // 1031 (42x42 nano 2G) - described by the firmware, but we have not seen it on screen yet.
-        let original = sampleDB(format: 1031)
+        // 1068 - a format no device has shown us yet.
+        let original = sampleDB(format: 1068)
         try original.write(to: paths.artworkDB)
         #expect(throws: (any Error).self) {
             try ArtworkAddition.add(ownerPersistentID: 1, sourceByteCount: 1, trackCount: 1, in: paths) { w, h in
@@ -126,7 +126,7 @@ struct ArtworkAdditionTests {
             }
         }
         #expect(try Data(contentsOf: paths.artworkDB) == original)
-        #expect(!FileManager.default.fileExists(atPath: paths.artworkDirectory.appendingPathComponent("F1031_1.ithmb").path))
+        #expect(!FileManager.default.fileExists(atPath: paths.artworkDirectory.appendingPathComponent("F1068_1.ithmb").path))
     }
 
     @Test("mhia: the artwork owner pointer")

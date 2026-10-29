@@ -54,10 +54,6 @@ public enum LibrarySource: Sendable, Hashable {
             return IPodPaths(mountPoint: mount, containmentRoot: source)
         }
     }
-
-    /// The write scope of the Mac release: alpha and beta write only to the iPod classic.
-    /// Other models are read-only until there is demand.
-    public static let writeScope: IPodDevice.WriteScope = .iPodClassic
 }
 
 extension IPodDevice: Hashable {

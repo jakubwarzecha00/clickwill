@@ -9,7 +9,9 @@ import Foundation
 /// 2. The second copy of the track identifier at 0xA8 and the album record
 ///    identity (`repairingSecondaryIdentifiers`, `repairingAlbumIdentities`).
 /// 3. The image owner after merging duplicates - written to `ArtworkDB`, before
-///    steps 4-5, because they read `ArtworkDB` from disk.
+///    steps 4-5, because they read `ArtworkDB` from disk. On an iPod that finds artwork
+///    by the track (nano 2G), every track of an album with one picture then gets
+///    its own image record (`trackImageShares`).
 /// 4. The artwork source size in tracks (0x7C, 0x80) and the image pointer
 ///    (0x160) - from `ArtworkDB` after step 3 and after images added in this
 ///    transaction.
@@ -34,6 +36,8 @@ public enum RepairPipeline {
         public var artworkSources: [String: Int] = [:]
         /// Tracks (by album) without an image record pointer at 0x160.
         public var artworkIdentifiers: [String: Int] = [:]
+        /// Tracks (by album) that got their own image record (nano 2G).
+        public var trackImages: [String: Int] = [:]
         /// Albums with corrected artwork coverage: "title (was → is)".
         public var coverage: [String] = []
         /// Whether any step wrote `ArtworkDB`.
@@ -49,6 +53,8 @@ public enum RepairPipeline {
         public enum Step: Sendable, Equatable {
             /// 3. The image owner after merging duplicates.
             case coverOwners
+            /// 3. An image record for every track (nano 2G).
+            case trackImages
             /// 4. Artwork source size and image pointer (0x7C, 0x80, 0x160).
             case imageLinks
             /// 5. Artwork coverage (`mhii` 0x38).
@@ -61,6 +67,7 @@ public enum RepairPipeline {
         public var description: String {
             switch step {
             case .coverOwners: "cover owner after merging duplicates: \(detail)"
+            case .trackImages: "image records per track: \(detail)"
             case .imageLinks: "image links (0x160): \(detail)"
             case .coverCounts: "cover coverage: \(detail)"
             }
@@ -109,6 +116,24 @@ public enum RepairPipeline {
                 }
             } catch {
                 report.problems.append(Problem(step: .coverOwners, detail: "\(error)"))
+            }
+        }
+
+        // 3. The nano 2G looks artwork up by the track, so every track of an album
+        // needs its own record - the same slices, no new pixels. New artwork and new
+        // albums get one record from the steps before; this gives the rest of the album theirs.
+        if device.findsArtworkByTrack, manager.fileExists(atPath: artworkDB.path) {
+            do {
+                let shares = try ArtworkDBParser.parse(Data(contentsOf: artworkDB)).trackImageShares(in: library)
+                if !shares.isEmpty { try beforeArtworkWrite() }
+                for share in shares {
+                    let created = try ArtworkAddition.sharing(imageID: share.imageID, withTracks: share.tracks, in: device.paths)
+                    guard !created.isEmpty else { continue }
+                    report.trackImages[share.album] = created.count
+                    report.wroteArtworkDB = true
+                }
+            } catch {
+                report.problems.append(Problem(step: .trackImages, detail: "\(error)"))
             }
         }
 

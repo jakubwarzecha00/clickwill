@@ -46,7 +46,7 @@ public struct LibrarySession: Sendable {
         let isDevice: Bool = { if case .device = source { return true } else { return false } }()
         let canCheck = isDevice || files.fileExists(at: paths.musicDirectory)
         let capabilities: IPodCapabilities = {
-            if case .device(let device) = source { return IPodCapabilities.resolve(format: device.format, model: device.model) }
+            if case .device(let device) = source { return IPodCapabilities.resolve(for: device) }
             var assumed = IPodCapabilities.classic
             assumed.isAssumed = true
             return assumed

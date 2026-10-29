@@ -156,8 +156,6 @@ enum ErrorPresenter {
         case .identityConflict(.firmwareGUID(let stated, let used)):
             "The iPod's firmware reports FireWire GUID \(stated), but the key found elsewhere is \(used). "
                 + "Clickwill won't sign a database with a key the device doesn't confirm."
-        case .outsideWriteScope(let model):
-            "Writing to \(model) is outside the write scope (iPod classic only)."
         case .fireWireIDRejected(let rejected):
             "\(guidSource(rejected.source)) gives FireWire GUID \(rejected.hex), but this iPod's library isn't signed with it. "
                 + "The file may come from another iPod, so this one opens read-only."
@@ -286,6 +284,8 @@ enum ErrorPresenter {
         switch problem.step {
         case .coverOwners:
             "A merged song's cover couldn't be moved to the copy that stays, so that song may show no cover. The next write tries again."
+        case .trackImages:
+            "Some songs may not show their album cover while they play. The next write tries again."
         case .imageLinks:
             "Some songs may not show their album cover on the iPod. The next write tries again."
         case .coverCounts:
@@ -351,10 +351,6 @@ enum ErrorPresenter {
     /// Why this iPod cannot be written to - for the label and the hint.
     static func readOnlyMessage(_ reason: ReadOnlyReason?) -> String {
         switch reason {
-        case .outsideWriteScope(let model)?:
-            // The write scope is a decision about this release of the app, not a fact about the device.
-            return "Writing to \(model) is in active development. This version of Clickwill writes to iPod classic only; "
-                + "you can still browse and play this iPod's library."
         case let reason?:
             return readOnlyFact(reason)
         case nil:

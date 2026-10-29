@@ -38,16 +38,17 @@ targets:
       properties:
         CFBundleName: Clickwill
         CFBundleDisplayName: Clickwill
-        # A Mac release outside the App Store. Stage: alpha (free, for the first
-        # testers) -> beta after collecting feedback -> "" at 1.0. The stage
-        # changes texts in the app and the DMG name. Every DMG for testers gets
-        # a new CFBundleVersion - that is how we recognize the version in a report.
-        ClickwillReleaseStage: alpha
+        # A free Mac release outside the App Store. Stage: alpha until 0.3.1, beta
+        # since 0.4.0, "" at 1.0. The stage changes texts in the app, the DMG name
+        # and the update channel name (both channels give the same free releases).
+        # Every DMG gets a new CFBundleVersion - that is how we recognize the
+        # version in a report.
+        ClickwillReleaseStage: beta
         # The version is in the settings below (MARKETING_VERSION, CURRENT_PROJECT_VERSION),
         # so the release script can override it without editing this file.
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
-        # Sparkle: the channel's release feed from the stage (alpha -> /updates/alpha.xml).
+        # Sparkle: the channel's release feed from the stage (beta -> /updates/beta.xml).
         # Checking once a day, without asking at first launch; only the app
         # version is sent (no system profile).
         SUFeedURL: "$(CLICKWILL_SITE_URL)/updates/$(CLICKWILL_UPDATE_CHANNEL).xml"
@@ -81,11 +82,11 @@ targets:
         # Semantic Versioning since 0.2.0: always three numbers,
         # MINOR - a new or changed feature, PATCH - fixes only. The stage (alpha/beta)
         # is ClickwillReleaseStage, not part of the number. The build always grows by one.
-        MARKETING_VERSION: "0.3.1"
-        CURRENT_PROJECT_VERSION: "15"
+        MARKETING_VERSION: "0.4.0"
+        CURRENT_PROJECT_VERSION: "16"
         # The website domain. Debug stays with the local server (npm run dev).
         CLICKWILL_SITE_URL: "https://clickwilldev.com"
-        CLICKWILL_UPDATE_CHANNEL: alpha
+        CLICKWILL_UPDATE_CHANNEL: beta
         CLICKWILL_SPARKLE_PUBLIC_KEY: "KgYtbuoaYVjY0JEsxqx2SrMe01bnJ7GNCSxwRalwJjY="
       configs:
         # Debug is signed ad hoc - see Clickwill/AdHocSigning.entitlements.

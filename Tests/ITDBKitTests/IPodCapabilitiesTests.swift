@@ -110,3 +110,39 @@ struct VideoCapabilityTests {
         #expect(IPodCapabilities.resolve(format: format(.unknown(3)), model: model(nil)).supportsVideo == false)
     }
 }
+
+@Suite("Profile from the USB family")
+struct USBProfileTests {
+
+    func device(_ usb: USBIdentity?, signing: DatabaseFormat.Signing) -> IPodDevice {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("profile-\(UUID().uuidString)")
+        return IPodDevice(volume: IPodVolume(paths: IPodPaths(mountPoint: root), name: "iPod", totalCapacity: 1, availableCapacity: 1, isReadOnly: false),
+                          fireWireID: nil, format: DatabaseFormat(headerLength: 244, version: 117, databaseID: 1, signing: signing),
+                          model: IPodModel(modelNumber: nil, name: "iPod", source: .databaseOnly), usb: usb)
+    }
+
+    @Test("the nano 2G is named and recognized from USB, not an assumed click-wheel iPod")
+    func nanoFromUSB() {
+        let profile = IPodCapabilities.resolve(for: device(USBIdentity(productID: 0x1260), signing: .presumedUnsigned))
+        #expect(profile.name == "iPod nano (2nd generation)")
+        #expect(!profile.isAssumed)
+        #expect(profile.supportsAppleLossless)
+        #expect(profile.video == nil)
+    }
+
+    @Test("the nano 3G gets the Classic limits under its own name, with video")
+    func nano3FromUSB() {
+        let profile = IPodCapabilities.resolve(for: device(USBIdentity(productID: 0x1262), signing: .hash58))
+        #expect(profile.name == "iPod nano (3rd generation)")
+        #expect(profile.maximumBitDepth == IPodCapabilities.classic.maximumBitDepth)
+        #expect(profile.video == .vga)
+    }
+
+    @Test("without USB the database decides, as before")
+    func withoutUSB() {
+        #expect(IPodCapabilities.resolve(for: device(nil, signing: .presumedUnsigned)).isAssumed)
+        #expect(IPodCapabilities.resolve(for: device(nil, signing: .hash58)) == IPodCapabilities.resolve(
+            format: DatabaseFormat(headerLength: 244, version: 117, databaseID: 1, signing: .hash58),
+            model: IPodModel(modelNumber: nil, name: "iPod", source: .databaseOnly)))
+    }
+}

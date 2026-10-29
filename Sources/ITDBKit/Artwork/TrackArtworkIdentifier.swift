@@ -95,19 +95,27 @@ extension ArtworkLibrary {
     /// All image record identifiers in the database.
     public var imageIdentifiers: Set<UInt32> { Set(images.map(\.id)) }
 
-    /// The image assigned to an album - only where the album has one record.
+    /// The image assigned to an album - where all of the album's records show
+    /// one picture.
     ///
-    /// An album with several records is skipped for the same reason
-    /// `imageSourcesByAlbum` skips it: there is no way to tell which of them
-    /// a track should point to, and guessing here means putting the wrong
-    /// artwork under it.
+    /// One record per album is the iPod classic. On an iPod that finds artwork by
+    /// the track (nano 2G) every song has its own record, all with the same slices
+    /// (`trackImageShares`); the album then points to the lowest identifier, the
+    /// record the others were copied from. Records with different slices are
+    /// different pictures: such an album is skipped for the same reason
+    /// `imageSourcesByAlbum` skips it - there is no way to tell which of them a
+    /// track should point to, and guessing here means putting the wrong artwork
+    /// under it.
     public func imageIdentifiersByAlbum(in library: ITLibrary) -> [String: UInt32] {
         let byTrack = indexedByTrack()
-        var found: [String: Set<UInt32>] = [:]
+        var found: [String: [UInt32: ArtworkImage]] = [:]
         for track in library.tracks {
             guard let image = byTrack[track.persistentID] else { continue }
-            found[track.album ?? "", default: []].insert(image.id)
+            found[track.album ?? "", default: [:]][image.id] = image
         }
-        return found.compactMapValues { $0.count == 1 ? $0.first : nil }
+        return found.compactMapValues { images in
+            guard Set(images.values.map(\.sliceSignature)).count == 1 else { return nil }
+            return images.keys.min()
+        }
     }
 }

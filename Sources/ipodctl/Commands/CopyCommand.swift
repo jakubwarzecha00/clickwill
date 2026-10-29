@@ -19,7 +19,7 @@ enum CopyCommand {
 
         let onDevice = try DeviceLibrary(reading: device, for: call)
         let library = onDevice.library
-        let capabilities = IPodCapabilities.resolve(format: device.format, model: device.model)
+        let capabilities = IPodCapabilities.resolve(for: device)
         var index = SongIndex(tracks: library.tracks)
         var additions: [PendingAddition] = []
         var sourceBytes: Int64 = 0

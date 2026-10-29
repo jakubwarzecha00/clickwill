@@ -21,7 +21,7 @@ struct DeviceDescriptionTests {
     </array>
     <key>FamilyID</key><integer>9</integer>
     <key>UpdaterFamilyID</key><integer>19</integer>
-    <key>FireWireGUID</key><string>000a2700198bd0a3</string>
+    <key>FireWireGUID</key><string>000a27000000aa01</string>
     <key>SerialNumber</key><string>5U1000AAVQ5</string>
     <key>VisibleBuildID</key><string>1.1.3</string>
     </dict></plist>
@@ -37,7 +37,7 @@ struct DeviceDescriptionTests {
         #expect(info.albumArt == expected)
         let allLittleEndian = info.albumArt.allSatisfy { $0.isLittleEndianRGB565 }
         #expect(allLittleEndian)
-        #expect(info.fireWireGUID == "000A2700198BD0A3")
+        #expect(info.fireWireGUID == "000A27000000AA01")
         #expect(info.familyID == 9)
         #expect(info.updaterFamilyID == 19)
         #expect(info.serialNumber == "5U1000AAVQ5")
@@ -60,7 +60,7 @@ struct DeviceDescriptionTests {
                                          source: .ioRegistry)
         func device(firmwareGUID: String) throws -> IPodDevice {
             let xml = String(decoding: Self.nanoLikeXML, as: UTF8.self)
-                .replacingOccurrences(of: "000a2700198bd0a3", with: firmwareGUID)
+                .replacingOccurrences(of: "000a27000000aa01", with: firmwareGUID)
             return IPodDevice(volume: IPodVolume(paths: IPodPaths(mountPoint: root), name: "iPod", totalCapacity: 1,
                                                  availableCapacity: 1, isReadOnly: false),
                               fireWireID: guid, format: format,
@@ -70,9 +70,9 @@ struct DeviceDescriptionTests {
         }
         let agreeing = try device(firmwareGUID: "000A27001234ABCD")
         #expect(agreeing.supportsWriting)
-        let mismatched = try device(firmwareGUID: "000A2700232B8867")
+        let mismatched = try device(firmwareGUID: "000A27005678EF01")
         #expect(!mismatched.supportsWriting)
-        #expect(mismatched.readOnlyReason?.description.contains("000A2700232B8867") == true)
+        #expect(mismatched.readOnlyReason?.description.contains("000A27005678EF01") == true)
     }
 
     @Test("an unsigned database: writing only when USB and the firmware confirm a nano 2G")

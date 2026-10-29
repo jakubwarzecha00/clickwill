@@ -21,7 +21,7 @@
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>ClickwillReleaseStage</key>
-	<string>alpha</string>
+	<string>beta</string>
 	<key>ClickwillSiteURL</key>
 	<string>$(CLICKWILL_SITE_URL)</string>
 	<key>LSApplicationCategoryType</key>

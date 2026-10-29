@@ -16,8 +16,6 @@ import DiskArbitration
 public struct USBIdentity: Sendable, Hashable {
     /// Apple.
     public static let appleVendorID: UInt16 = 0x05AC
-    /// iPod classic (6G, 6.5G, 7G) in disk mode.
-    public static let classicProductID: UInt16 = 0x1261
 
     public let productID: UInt16
 

@@ -44,8 +44,8 @@ struct WelcomeSheet: View {
                     "A backup before every write",
                     "You can restore an earlier library from Backups. Keep your own copy of the music files you care about.")
                 row("ipod", .secondary,
-                    "Made for iPod classic",
-                    "Clickwill edits the iPod classic. Other iPods open read-only for now.")
+                    "Made for iPod classic and nano",
+                    "Clickwill edits the iPod classic and the iPod nano (2nd to 4th generation). Other iPods open read-only for now.")
             }
             .padding(.top, 30)
 

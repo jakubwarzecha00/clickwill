@@ -1,7 +1,7 @@
 # Clickwill
 
-Clickwill is a Mac app for managing the music library on an iPod classic,
-without iTunes or Apple Music. It reads and writes the iPod's own database
+Clickwill is a Mac app for managing the music library on an iPod classic or
+iPod nano, without iTunes or Apple Music. It reads and writes the iPod's own database
 (`iTunesDB`) and artwork files directly on the device.
 
 With Clickwill you can browse the library in Cover Flow, add songs and albums,
@@ -19,8 +19,10 @@ Website: <https://clickwilldev.com>
   Clickwill understands changed, so undocumented fields survive.
 - The new database is parsed again, signed, written to a temporary file,
   read back from the disk and compared byte for byte before it replaces the old one.
-- Writing is allowed only for database formats confirmed on real hardware.
-  Today that is the iPod classic; other iPods open read-only.
+- Writing is allowed only where the iPod's database format and its USB identity
+  match. Tested on hardware: the iPod classic and the iPod nano (2nd generation).
+  The iPod nano (3rd and 4th generation) can be edited too, without new artwork
+  until its formats are confirmed. Other iPods open read-only.
 
 ## Requirements
 

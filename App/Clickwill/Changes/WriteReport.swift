@@ -59,6 +59,9 @@ struct WriteReport: Identifiable {
         if outcome.repairs.artworkMarkers > 0 {
             repairs.append("Made the cover show again on \(songs(outcome.repairs.artworkMarkers))")
         }
+        if !outcome.repairs.trackImages.isEmpty {
+            repairs.append("Gave \(songs(total(outcome.repairs.trackImages))) their album cover, so it shows while they play (\(albums(outcome.repairs.trackImages.keys)))")
+        }
         if !outcome.repairs.coverage.isEmpty {
             repairs.append("Made the cover show on every song of \(albums(outcome.repairs.coverage))")
         }

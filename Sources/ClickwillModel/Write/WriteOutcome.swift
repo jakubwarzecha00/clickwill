@@ -59,6 +59,7 @@ public struct WriteOutcome: Sendable {
             ("cover counts", repairs.coverage.count),
             ("image sizes", repairs.artworkSources.values.reduce(0, +)),
             ("image links (0x160)", repairs.artworkIdentifiers.values.reduce(0, +)),
+            ("image records per track", repairs.trackImages.values.reduce(0, +)),
             ("second identifiers", repairs.secondaryIdentifiers.values.reduce(0, +)),
             ("album records", repairs.albumIdentities.count),
         ].filter { $0.1 > 0 }

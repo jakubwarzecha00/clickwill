@@ -24,33 +24,6 @@ public struct IPodDevice: Sendable {
     /// A GUID found in a file on the iPod, but rejected because it does not sign
     /// its database - a sentence for the user on why writing is blocked.
     public var rejectedFireWireID: RejectedFireWireID? = nil
-    /// Which iPods may be written to in this release. The app narrows the scope
-    /// to the iPod classic; `ipodctl` and the tests keep all formats
-    /// confirmed on hardware.
-    public var scope: WriteScope = .confirmedFormats
-
-    /// The caller chooses the write scope - it is a release decision, not a format one:
-    /// a format may be confirmed and the model still be out of scope.
-    public enum WriteScope: Sendable {
-        /// Every format confirmed on hardware.
-        case confirmedFormats
-        /// Only the iPod classic (6G, 6.5G, 7G), hash58.
-        case iPodClassic
-    }
-
-    /// The Classic's FamilyID in the firmware description - measured on a 7G.
-    public static let classicFamilyID = 11
-
-    /// Whether this is an iPod classic according to the device itself: USB first, then the
-    /// firmware description. Neither means "we do not know", so not a Classic.
-    public var isIPodClassic: Bool {
-        if let usb { return usb.productID == USBIdentity.classicProductID }
-        if let family = firmwareDescription?.familyID { return family == Self.classicFamilyID }
-        return false
-    }
-
-    /// A model outside the write scope the caller chose (`scope`).
-    public var isOutsideWriteScope: Bool { scope == .iPodClassic && !isIPodClassic }
 
     /// A mismatch between sources that blocks writing: the USB family versus the database
     /// scheme, or the firmware GUID versus the GUID we would sign the database with.
@@ -85,7 +58,7 @@ public struct IPodDevice: Sendable {
     /// hardware**. An unknown or unconfirmed format means read-only
     /// mode - no exceptions and no attempts.
     public var supportsWriting: Bool {
-        guard !volume.isReadOnly, identityConflict == nil, !isOutsideWriteScope else { return false }
+        guard !volume.isReadOnly, identityConflict == nil else { return false }
         switch format.signing {
         case .hash58: return fireWireID != nil
         case .presumedUnsigned: return unsignedWriteRefusal == nil
@@ -97,7 +70,6 @@ public struct IPodDevice: Sendable {
     public var readOnlyReason: ReadOnlyReason? {
         if volume.isReadOnly { return .volumeReadOnly }
         if let conflict = identityConflict { return .identityConflict(conflict) }
-        if isOutsideWriteScope { return .outsideWriteScope(model: model.name) }
         switch format.signing {
         case .hash58:
             guard fireWireID == nil else { return nil }
@@ -107,6 +79,17 @@ public struct IPodDevice: Sendable {
         case .unknown(let scheme):
             return .unsupportedScheme(scheme)
         }
+    }
+
+    /// Families (FamilyID from the firmware description) that find a track's artwork by
+    /// the track itself (`mhii` 0x14 = the track's `persistentID`), not through the image owner
+    /// and `mhit` 0x160 as the Classic does. nano 2G (9), firmware 1.1.3, measured: one image
+    /// record per album showed the artwork only for the owner track.
+    public static let artworkByTrackFamilies: Set<Int> = [9]
+
+    /// Whether every track needs its own image record to show artwork during playback.
+    public var findsArtworkByTrack: Bool {
+        firmwareDescription?.familyID.map(Self.artworkByTrackFamilies.contains) ?? false
     }
 
     /// Families (FamilyID from the firmware description) on which we write an unsigned
@@ -127,8 +110,7 @@ public struct IPodDevice: Sendable {
         return nil
     }
 
-    /// - Parameter scope: which iPods may be written to (the app: Classic only).
-    public static func open(_ volume: IPodVolume, scope: WriteScope = .confirmedFormats) throws -> IPodDevice {
+    public static func open(_ volume: IPodVolume) throws -> IPodDevice {
         guard FileManager.default.fileExists(atPath: volume.paths.iTunesDB.path) else {
             throw ITDBError.pathMissing(volume.paths.iTunesDB)
         }
@@ -154,13 +136,12 @@ public struct IPodDevice: Sendable {
             model: IPodModel.detect(paths: volume.paths, format: format, usb: usb),
             usb: usb,
             firmwareDescription: firmwareDescription,
-            rejectedFireWireID: rejected,
-            scope: scope
+            rejectedFireWireID: rejected
         )
     }
 
-    public static func openFirst(scope: WriteScope = .confirmedFormats) throws -> IPodDevice {
-        try open(try IPodVolume.requireFirst(), scope: scope)
+    public static func openFirst() throws -> IPodDevice {
+        try open(try IPodVolume.requireFirst())
     }
 
     /// Loads the whole database. At 2.5 MB there is no point in complicating it.
