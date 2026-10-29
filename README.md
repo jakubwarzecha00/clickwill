@@ -1,15 +1,30 @@
 # Clickwill
 
-Clickwill is a Mac app for managing the music library on an iPod classic or
-iPod nano, without iTunes or Apple Music. It reads and writes the iPod's own database
-(`iTunesDB`) and artwork files directly on the device.
+**An iPod library manager for the Mac, and an alternative to iTunes for the
+iPod classic and iPod nano.**
+
+Clickwill manages the music library on an iPod without iTunes or Apple Music.
+It reads and writes the iPod's own database (`iTunesDB`) and artwork files
+directly on the device, so there is no library to keep in sync on the Mac:
+what you see is what is on the iPod.
+
+![Clickwill showing an iPod classic library in Cover Flow](docs/clickwill.png)
 
 With Clickwill you can browse the library in Cover Flow, add songs and albums,
 change artwork, reorder tracks, fix album metadata, merge duplicates, convert
 files the iPod cannot play, rip audio CDs, and restore earlier states of the
 library from backups.
 
-Website: <https://clickwilldev.com>
+**[Download the free beta](https://clickwilldev.com/#download)** &middot;
+[clickwilldev.com](https://clickwilldev.com)
+
+## Requirements
+
+- macOS 14 Sonoma or later, on Apple silicon or Intel
+- An iPod classic, or an iPod nano (2nd to 4th generation). Older iPods open
+  read-only.
+
+Nothing else to install: conversion and CD import use what is already in macOS.
 
 ## How it keeps the iPod safe
 
@@ -24,12 +39,6 @@ Website: <https://clickwilldev.com>
   The iPod nano (3rd and 4th generation) can be edited too, without new artwork
   until its formats are confirmed. Other iPods open read-only.
 
-## Requirements
-
-- macOS 14 or later
-- Xcode 27 (the app target uses Swift 6 with strict concurrency)
-- [XcodeGen](https://github.com/yonaskolb/XcodeGen) to generate the Xcode project
-
 ## Repository layout
 
 | Path | What it is |
@@ -43,6 +52,10 @@ Website: <https://clickwilldev.com>
 | `docs/byte-map.md` | What sits under which byte in `iTunesDB` and `ArtworkDB`, with how sure we are of each field. |
 
 ## Building
+
+To build from source you also need Xcode 27 (the app target uses Swift 6 with
+strict concurrency) and [XcodeGen](https://github.com/yonaskolb/XcodeGen) to
+generate the Xcode project.
 
 The tests use Swift Testing, which ships with Xcode rather than the Command
 Line Tools, so point the toolchain at Xcode:
