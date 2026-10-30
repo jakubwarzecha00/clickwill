@@ -118,9 +118,16 @@ struct ContentView: View {
         }
         .onKeyPress(.escape) {
             guard !sheetIsOpen else { return .ignored }
-            guard case .album = window.screen else { return .ignored }
-            window.closeAlbum()
-            return .handled
+            switch window.screen {
+            case .album:
+                window.closeAlbum()
+                return .handled
+            case .artist:
+                window.closeArtist()
+                return .handled
+            default:
+                return .ignored
+            }
         }
         // The start screen only once the library is really loaded.
         .onChange(of: model.state) { _, state in
@@ -177,6 +184,8 @@ struct ContentView: View {
         case .album(let album): return (model.current(album) ?? album).displayTitle
         case .reorder: return "Reorder Albums"
         case .songs: return "Songs"
+        case .artists: return "Artists"
+        case .artist(let artist): return artist
         case .overview: return "Overview"
         case .backups: return "Backups"
         case .audioCD: return ""
@@ -196,6 +205,11 @@ struct ContentView: View {
         case .album(let album): return (model.current(album) ?? album).displayArtist
         case .reorder: return "The order the iPod shows"
         case .songs: return "\(model.trackCount) songs"
+        case .artists: return "\(model.artistCount) artists"
+        case .artist(let artist):
+            let albumCount = model.albums.filter { $0.displayArtist == artist }.count
+            let songCount = model.albums.filter { $0.displayArtist == artist }.reduce(0) { $0 + model.tracks(of: $1).count }
+            return "\(albumCount) albums · \(songCount) songs"
         case .overview: return model.deviceName ?? model.source?.displayName ?? ""
         case .backups: return "Restore the iPod to an earlier state"
         case .audioCD: return ""
@@ -223,6 +237,12 @@ struct ContentView: View {
             ToolbarItem(placement: .navigation) {
                 Button { window.closeAlbum() } label: { Label(window.albumOriginTitle, systemImage: "chevron.left") }
                     .help("Back to \(window.albumOriginTitle)")
+            }
+        }
+        if case .artist = window.screen {
+            ToolbarItem(placement: .navigation) {
+                Button { window.closeArtist() } label: { Label("Artists", systemImage: "chevron.left") }
+                    .help("Back to Artists")
             }
         }
         if AppFeatures.reorderAlbums, model.state == .loaded, case .coverFlow = window.screen {
@@ -342,6 +362,10 @@ struct ContentView: View {
                 ReorderScreen()
             case .songs:
                 SongsScreen(openAlbum: window.open)
+            case .artists:
+                ArtistsScreen(openAlbum: window.open)
+            case .artist(let artist):
+                ArtistDetailScreen(artist: artist, openAlbum: window.open)
             case .overview:
                 OverviewScreen()
             case .backups:
