@@ -59,9 +59,13 @@ struct LaunchOptions: Sendable {
         case coverflow, albums, album, reorder, songs, overview, backups, pending
         /// The change list with a sample post-write report.
         case writeReport = "write-report"
+        /// Diagnostics and the Rockbox report with a sample iPod Video (`SampleDiagnostics`).
+        case diagnostics, rockbox
+        /// Send Diagnostic Report over the sample Diagnostics.
+        case sendReport = "send-report"
     }
 
-    /// `--screen coverflow|albums|album|reorder|songs|overview|backups|pending|write-report`.
+    /// `--screen coverflow|albums|album|reorder|songs|overview|backups|pending|write-report|diagnostics|rockbox|send-report`.
     /// An unknown name is `nil` - a normal launch.
     var screen: Screen? { value("--screen").flatMap(Screen.init(rawValue:)) }
     /// `--centered N`: the album in the middle of the strip (with `--screen albums` - of the wheel).
@@ -97,6 +101,16 @@ struct LaunchOptions: Sendable {
     var iPodGallery: URL? { file("--ipod-gallery") }
     /// `--diagnostics`: the diagnostic report to the output, then quit.
     var printsDiagnostics: Bool { has("--diagnostics") }
+
+    /// `--developer-mode`: Developer Mode from launch (`ExperimentalPermissions.developerMode`).
+    /// Exists only in a Debug build; a signed release ignores the flag.
+    var developerMode: Bool {
+        #if DEBUG
+        has("--developer-mode")
+        #else
+        false
+        #endif
+    }
     /// A launch for screenshots or diagnostics - nobody is sitting at the screen.
     var isAutomated: Bool { has("--diagnostics") || has("--screen") }
     /// `--check-updates`: checking for updates also in a Debug build.

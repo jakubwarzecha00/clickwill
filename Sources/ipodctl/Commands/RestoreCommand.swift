@@ -10,7 +10,7 @@ enum RestoreCommand {
         guard let id = call.positional().first else { throw CommandError("give a backup identifier") }
         let device = try openDevice(call)
         let store = try openStore(call)
-        let snapshot = try store.snapshot(deviceGUID: device.identity, id: id)
+        let snapshot = try store.snapshot(deviceGUIDs: device.identities, id: id)
         let before = try BackupService(device: device, store: store).restore(snapshot, expectedSourceDigest: nil)
         print("Restored backup \(snapshot.id) - \(snapshot.files.count) files.")
         print("  State from before the restore: backup \(before.id)")

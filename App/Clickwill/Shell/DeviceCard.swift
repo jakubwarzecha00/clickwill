@@ -56,6 +56,13 @@ struct DeviceCard: View {
                             free: device.volume.availableCapacity)
                 // A device whose format we have not confirmed on hardware
                 // must say so plainly - a silent block looks like a failure.
+                if device.writesOutsideConfirmedModels {
+                    Label(device.writePolicy == .developer ? "Developer Mode" : "Experimental",
+                          systemImage: device.writePolicy == .developer ? "hammer.fill" : "testtube.2")
+                        .font(.theme(.fine))
+                        .foregroundStyle(device.writePolicy == .developer ? Theme.destructive : Theme.warn)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
                 if !device.supportsWriting {
                     Label("Read-only. \(ErrorPresenter.readOnlyMessage(device.readOnlyReason))", systemImage: "lock.fill")
                         .font(.theme(.fine))

@@ -34,6 +34,12 @@ struct LaunchScript: Sendable {
         writesBlocked && options.screen == .writeReport ? .demo : nil
     }
 
+    /// `--demo --screen diagnostics|rockbox`: a sample iPod Video, because a demo library is
+    /// a backup on disk with nothing to measure.
+    var sampleDiagnostics: SampleDiagnostics? {
+        options.isDemo && ([.diagnostics, .rockbox, .sendReport].contains(options.screen)) ? .video : nil
+    }
+
     /// The drive, the lookup and ripping a disc - in demo mode to a temporary
     /// folder and with a saved response instead of the network (`CDServices.app`).
     var cdServices: CDServices { .app(options) }
@@ -79,6 +85,9 @@ struct LaunchScript: Sendable {
         case .overview: window.show(.overview)
         case .backups: window.show(.backups)
         case .pending, .writeReport: window.showPending()
+        case .diagnostics: window.show(.overview); window.showDiagnostics()
+        case .rockbox: window.show(.overview); window.showRockboxReport()
+        case .sendReport: window.show(.overview); window.showSendReport()
         case .coverflow, nil: break
         }
         if let url = options.importURL {

@@ -98,7 +98,7 @@ enum OrderCommand {
     private static func compareWithIntent(_ table: Table) async throws {
         let (device, library) = (table.device, table.library)
         let store = try table.call.environment.orderIntents()
-        guard let intent = try store.load(deviceGUID: device.identity) else {
+        guard let intent = try store.load(deviceGUIDs: device.identities) else {
             print("No saved intent for this device. Capture one: order --capture")
             return
         }

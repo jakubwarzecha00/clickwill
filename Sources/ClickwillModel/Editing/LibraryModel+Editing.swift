@@ -59,17 +59,27 @@ extension LibraryModel {
     // MARK: - Removal (RemovalEdits)
 
     public func deleteTrack(_ track: TrackRow, in album: AlbumCard, keepCopiesIn archive: URL? = nil) throws {
+        let archive = archiveForRemoval(archive)
         try edit { try $0.deleteTrack(track, in: album, keepCopiesIn: archive) }
     }
 
     @discardableResult
     public func deleteAlbum(_ album: AlbumCard, keepCopiesIn archive: URL? = nil) throws -> Int {
-        try edit { try $0.deleteAlbum(album, keepCopiesIn: archive) } ?? 0
+        let archive = archiveForRemoval(archive)
+        return try edit { try $0.deleteAlbum(album, keepCopiesIn: archive) } ?? 0
     }
 
     @discardableResult
     public func mergeDuplicates(_ groups: [DuplicateGroup], keepCopiesIn archive: URL? = nil) throws -> Int {
-        try edit { try $0.mergeDuplicates(groups, keepCopiesIn: archive) } ?? 0
+        let archive = archiveForRemoval(archive)
+        return try edit { try $0.mergeDuplicates(groups, keepCopiesIn: archive) } ?? 0
+    }
+
+    /// On an experimental iPod a removed file is always copied to the Mac first: a backup
+    /// holds the database and artwork, not the audio, so only the copy makes a removal reversible.
+    private func archiveForRemoval(_ chosen: URL?) -> URL? {
+        guard let device, device.writesOutsideConfirmedModels, device.writePolicy == .experimental else { return chosen }
+        return chosen ?? environment.experimentalRemovalArchive
     }
 
     // MARK: - Artwork (ArtworkEdits)

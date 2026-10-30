@@ -12,6 +12,19 @@ import ITDBKit
 /// the database write (because the database must already point to finished images).
 public enum TrackAdditionRunner {
 
+    /// What the device's `WritePolicy` allows when adding.
+    public struct AdditionRules: Sendable {
+        public var crossKindTemplates = true
+        public var unverifiedArtworkFormats = false
+
+        public init() {}
+
+        public init(for device: IPodDevice) {
+            crossKindTemplates = !device.writesOutsideConfirmedModels || device.writePolicy == .developer
+            unverifiedArtworkFormats = device.writePolicy == .developer
+        }
+    }
+
     public struct Outcome: Sendable {
         public var library: ITLibrary
         /// Files copied to the device - to clean up if the database write fails.
@@ -35,11 +48,14 @@ public enum TrackAdditionRunner {
     /// - Parameters:
     ///   - artworkFormats: artwork formats from the firmware description - needed when
     ///     the iPod has no `ArtworkDB` yet.
+    ///   - rules: on an unconfirmed model only a template of the same kind; in developer
+    ///     mode also artwork formats that aren't measured yet (`ArtworkAddition`).
     ///   - ensureMounted: called before every file and before the artwork; an error
     ///     stops the whole queue (`IPodVolume.ensureStillMounted`).
     ///   - progress: one line per track, to show as it goes.
     public static func run(_ additions: [PendingAddition], into library: ITLibrary, paths: IPodPaths,
                            artworkFormats: [DeviceDescription.ImageFormat] = [],
+                           rules: AdditionRules = AdditionRules(),
                            ensureMounted: @Sendable () throws -> Void = {},
                            progress: (@Sendable (String) -> Void)? = nil) async -> Outcome {
         var outcome = Outcome(library: library)
@@ -86,7 +102,8 @@ public enum TrackAdditionRunner {
                 // The identifier is drawn here, so we know which track
                 // the new album's artwork should point to.
                 let persistentID = UInt64.random(in: 1...UInt64.max)
-                outcome.library = try outcome.library.addingTracks([draft], persistentID: { persistentID })
+                outcome.library = try outcome.library.addingTracks([draft], crossKindTemplates: rules.crossKindTemplates,
+                                                                   persistentID: { persistentID })
                 outcome.done.append(addition.id)
                 // Adding appends the record at the end of the track list.
                 if let added = outcome.library.tracks.last, added.persistentID == persistentID {
@@ -118,7 +135,8 @@ public enum TrackAdditionRunner {
                 let (image, byteCount) = try TrackAdditionRunner.coverImage(from: owner.source)
                 _ = try ArtworkAddition.add(ownerPersistentID: owner.id, sourceByteCount: byteCount,
                                             trackCount: UInt32(owner.tracks), in: paths,
-                                            deviceFormats: artworkFormats) { width, height in
+                                            deviceFormats: artworkFormats,
+                                            allowingUnverifiedFormats: rules.unverifiedArtworkFormats) { width, height in
                     try ITHMBImage(rendering: image, width: width, height: height)
                 }
                 outcome.library = outcome.library

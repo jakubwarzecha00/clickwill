@@ -15,6 +15,7 @@ struct AdditionPhase: WritePhase {
         let volume = device.volume
         let outcome = await TrackAdditionRunner.run(additions, into: library, paths: device.paths,
                                                     artworkFormats: device.firmwareDescription?.albumArt ?? [],
+                                                    rules: .init(for: device),
                                                     ensureMounted: { try volume.ensureStillMounted() },
                                                     progress: progress)
         ledger.placed += outcome.copied

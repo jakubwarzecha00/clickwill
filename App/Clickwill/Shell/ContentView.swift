@@ -366,6 +366,11 @@ struct ContentView: View {
             FeedbackSheet().environment(model).foregroundStyle(Theme.fg)
         case .about:
             AboutView().foregroundStyle(Theme.fg)
+        case .diagnostics(let send):
+            DiagnosticsSheet(sendComment: send).environment(model).environment(window)
+                .environment(\.sampleDiagnostics, launch.sampleDiagnostics).foregroundStyle(Theme.fg)
+        case .rockboxReport:
+            RockboxReportSheet().environment(model).environment(\.sampleDiagnostics, launch.sampleDiagnostics).foregroundStyle(Theme.fg)
         case .switchConfirmation:
             // A question, not a sheet - the iPod card shows it (`DeviceCard`).
             EmptyView()

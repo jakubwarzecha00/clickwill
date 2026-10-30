@@ -56,6 +56,7 @@ extension IPodDevice {
 
         let previous = try readDatabase()
         try Self.ensureUnchanged(previous, since: options.expectedSourceDigest)
+        try ensureUnderstood(previous)
         let snapshot = try store.capture(from: self, reason: reason, note: note ?? "before database write")
 
         // Plays correspond to records by position in the database that lies on disk -
@@ -65,6 +66,12 @@ extension IPodDevice {
         var outgoing = library
         var merged = 0
         if let counts = try readPlayCounts() {
+            // On an unconfirmed model only the measured layout is merged. Reading entries
+            // of another length on a guess could hand plays to the wrong songs.
+            if writesOutsideConfirmedModels && writePolicy == .experimental && !counts.hasMeasuredLayout {
+                throw ITDBError.writeRefused(.unmergedPlayCounts(
+                    "Play Counts layout not measured on an unconfirmed model (\(counts.layoutSummary))"))
+            }
             let onDisk = try ITunesDBParser.parse(previous)
             // The file corresponds to records by position - any length mismatch means
             // there is no telling which tracks the statistics belong to.
@@ -130,6 +137,14 @@ extension IPodDevice {
             writtenLibrary: outgoing,
             playCountsRemoved: playCountsRemoved
         )
+    }
+
+    /// An experimental device writes only while we understand its database: the bytes
+    /// on it must rebuild exactly before every write, not only during diagnostics.
+    func ensureUnderstood(_ database: Data) throws {
+        guard writesOutsideConfirmedModels, writePolicy == .experimental else { return }
+        let trip = try RoundTrip.measure(database, fireWireID: fireWireID?.bytes)
+        guard trip.isIdentical else { throw ITDBError.writeRefused(.databaseNotReproduced(trip.summary)) }
     }
 
     /// Rejects the write when the database on the device is not the one the edit

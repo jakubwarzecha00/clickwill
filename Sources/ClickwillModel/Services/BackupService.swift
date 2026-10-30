@@ -63,7 +63,7 @@ public struct BackupService {
     }
 
     /// Backups of this iPod, newest first.
-    func list() -> [Snapshot] { (try? store.list(deviceGUID: device.identity)) ?? [] }
+    func list() -> [Snapshot] { (try? store.list(deviceGUIDs: device.identities)) ?? [] }
 
     /// An on-demand backup - before something another program will do to the iPod
     /// (for example Music). Only reads the device; does not write to the iPod.

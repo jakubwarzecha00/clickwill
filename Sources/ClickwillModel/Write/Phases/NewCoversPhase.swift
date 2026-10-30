@@ -20,13 +20,15 @@ struct NewCoversPhase: WritePhase {
                 let added = try ArtworkAddition.add(ownerPersistentID: job.ownerPersistentID, sourceByteCount: job.sourceByteCount,
                                                     trackCount: UInt32(job.trackCount), in: device.paths,
                                                     deviceFormats: device.firmwareDescription?.albumArt ?? [],
-                                                    allowingUnverifiedFormats: job.allowingUnverifiedFormats) { width, height in
+                                                    allowingUnverifiedFormats: job.allowingUnverifiedFormats
+                                                        || device.writePolicy == .developer) { width, height in
                     try ITHMBImage(rendering: job.image, width: width, height: height)
                 }
                 library = library
                     .linkingAlbumArtwork(album: job.album, ownerPersistentID: job.ownerPersistentID)
                     .markingAlbumArtwork(album: job.album, sourceByteCount: job.sourceByteCount)
                 ledger.completed.covers.insert(key)
+                ledger.artworkAlbums.insert(job.album)
                 ledger.coversWritten += 1
                 ledger.artworkChanged = true
                 progress?("\(job.album): artwork, mhii \(added.imageID)" + (added.createdDatabase ? ", new ArtworkDB" : ""))
@@ -38,6 +40,7 @@ struct NewCoversPhase: WritePhase {
             do {
                 let created = try ArtworkAddition.sharing(imageID: job.imageID, withTracks: job.trackIDs, in: device.paths)
                 ledger.completed.sharedCovers.insert(key)
+                ledger.artworkAlbums.insert(job.album)
                 ledger.coversWritten += 1
                 ledger.artworkChanged = true
                 progress?("\(job.album): image \(job.imageID) for more tracks, mhii "

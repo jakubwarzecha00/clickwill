@@ -56,6 +56,9 @@ public struct SnapshotRetention: Sendable, Hashable {
     /// to roll back. The floor is there so that the rule "a backup
     /// before every write" means something in that case too.
     public let alwaysKeepNewest: Int
+    /// Backups kept regardless of age (`Snapshot.id`) - the one from before the first write
+    /// on an experimental iPod.
+    public var pinned: Set<String> = []
 
     public init(days: Int, alwaysKeepNewest: Int) {
         self.days = days
@@ -74,7 +77,7 @@ public struct SnapshotRetention: Sendable, Hashable {
         let newestFirst = snapshots.sorted { $0.createdAt > $1.createdAt }
         let cutoff = now.addingTimeInterval(-Double(days) * 86_400)
         return newestFirst.enumerated().compactMap { position, snapshot in
-            if position < alwaysKeepNewest { return nil }
+            if position < alwaysKeepNewest || pinned.contains(snapshot.id) { return nil }
             return snapshot.createdAt < cutoff ? snapshot : nil
         }
     }

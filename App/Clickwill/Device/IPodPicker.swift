@@ -42,7 +42,13 @@ private struct IPodPickerRow: View {
                         .font(.theme(.caption)).foregroundStyle(.secondary)
                     Text("\(choice.totalCapacity.gigabytes) · \(choice.availableCapacity.gigabytes) free")
                         .font(.theme(.caption)).foregroundStyle(.secondary).monospacedDigit()
-                    if choice.isReadOnly {
+                    if choice.outsideConfirmedModels {
+                        // The same badge as on the device card.
+                        Label(choice.writePolicy == .developer ? "Developer Mode" : "Experimental",
+                              systemImage: choice.writePolicy == .developer ? "hammer.fill" : "testtube.2")
+                            .font(.theme(.small))
+                            .foregroundStyle(choice.writePolicy == .developer ? Theme.destructive : Theme.warn)
+                    } else if choice.isReadOnly {
                         Label("Read-only", systemImage: "lock.fill")
                             .font(.theme(.small))
                             .foregroundStyle(Theme.warn)

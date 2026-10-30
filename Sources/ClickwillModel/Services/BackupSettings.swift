@@ -39,7 +39,7 @@ public struct BackupUsage: Equatable, Sendable {
     /// `nil` when there is no iPod or the backup folder cannot be read.
     public static func measure(device: IPodDevice?, store: SnapshotStore?, retention: SnapshotRetention) -> BackupUsage? {
         guard let device, let store,
-              let snapshots = try? store.list(deviceGUID: device.identity) else { return nil }
+              let snapshots = try? store.list(deviceGUIDs: device.identities) else { return nil }
         return BackupUsage(count: snapshots.count,
                            bytes: allocatedSize(of: store.root),
                            expired: retention.expired(among: snapshots).count)

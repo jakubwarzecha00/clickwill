@@ -27,7 +27,12 @@ public final class DeviceConnections {
         /// mounting, an empty disk with an iPod_Control folder) is skipped.
         public static let system = Discovery(
             mountPoints: { IPodVolume.mounted().map(\.mountPoint) },
-            devices: { IPodVolume.mounted().compactMap { try? IPodDevice.open($0) } })
+            devices: {
+                let aliases = try? DeviceAliasStore.standard()
+                return IPodVolume.mounted().compactMap { volume in
+                    (try? IPodDevice.open(volume)).map { aliases?.resolve($0) ?? $0 }
+                }
+            })
     }
 
     /// The last loaded iPod (`IPodDevice.identity`).
@@ -73,8 +78,10 @@ public final class DeviceConnections {
 
     /// `loaded`: the loaded source and the name from its library - we do not read it
     /// from disk a second time. `force`: after opening the chooser, because a write may
-    /// have changed the used space.
-    func refresh(force: Bool, loaded: LibrarySource?, loadedName: String?) {
+    /// have changed the used space. `policy`: the write policy each iPod gets when loaded, so the
+    /// list says what loading it gives.
+    func refresh(force: Bool, loaded: LibrarySource?, loadedName: String?,
+                 policy: (IPodDevice) -> WritePolicy = { _ in .standard }) {
         guard demoChoices.isEmpty else { return }
         // A backup from disk (--snapshot) is not one of the connected iPods -
         // the list would mix it with real devices.
@@ -82,7 +89,9 @@ public final class DeviceConnections {
         let current = discovery.mountPoints()
         guard force || current != mounts else { return }
         mounts = current
-        choices = discovery.devices().map { device in
+        choices = discovery.devices().map { found in
+            var device = found
+            device.writePolicy = policy(found)
             let name = (LibrarySource.device(device) == loaded ? loadedName : nil) ?? IPodChoice.storedName(of: device)
             return IPodChoice(device: device, name: name)
         }
@@ -97,6 +106,6 @@ public final class DeviceConnections {
     }
 
     nonisolated static func preferred(among devices: [IPodDevice], lastUsed: String?) -> IPodDevice? {
-        devices.first { $0.identity == lastUsed } ?? devices.first
+        devices.first { device in lastUsed.map(device.identities.contains) ?? false } ?? devices.first
     }
 }

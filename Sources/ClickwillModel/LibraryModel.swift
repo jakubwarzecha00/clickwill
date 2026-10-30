@@ -113,11 +113,15 @@ public final class LibraryModel {
     public let connections: DeviceConnections
     /// Demo mode - fixed from the moment the model is created.
     public let demo: DemoMode
+    /// Experimental iPods and Developer Mode: the `WritePolicy` a loaded device gets.
+    public let permissions: ExperimentalPermissions
 
-    public init(environment: LibraryEnvironment = .standard, connections: DeviceConnections? = nil, demo: DemoMode = .off) {
+    public init(environment: LibraryEnvironment = .standard, connections: DeviceConnections? = nil, demo: DemoMode = .off,
+                permissions: ExperimentalPermissions? = nil) {
         self.environment = environment
         self.connections = connections ?? DeviceConnections()
         self.demo = demo
+        self.permissions = permissions ?? ExperimentalPermissions()
         if !demo.choices.isEmpty { self.connections.demoChoices = demo.choices }
     }
 
@@ -186,10 +190,11 @@ public final class LibraryModel {
 
     /// `force`: after opening the chooser - a write may have changed the used space.
     public func refreshConnectedChoices(force: Bool = false) {
-        connections.refresh(force: force, loaded: source, loadedName: library?.deviceName)
+        connections.refresh(force: force, loaded: source, loadedName: library?.deviceName, policy: permissions.policy(for:))
     }
 
     public func load(_ source: LibrarySource) async {
+        let source = withWritePolicy(source)
         state = .loading
         do {
             var session = try LibrarySession.open(source, files: environment.files)
@@ -384,12 +389,18 @@ public final class LibraryModel {
             guard state == .loaded, let device, let library else {
                 throw WriteBlocked.notFromDevice
             }
+            guard permissions.policy(for: device) == device.writePolicy else { throw WriteBlocked.permissionChanged }
             var transaction = WriteTransaction(library: library, changes: changes, device: device, capabilities: capabilities,
                                                environment: environment, note: "Clickwill: \(changes.log.count) changes")
             transaction.expectedSourceDigest = sourceDigest
             transaction.backupReason = .beforeWrite(changes: changes.log.count)
             transaction.backupRetention = backupRetention
+            transaction.backupRetention.pinned = permissions.pinnedBackups(for: device)
+            let changeCount = changes.log.count
             let result = try await transaction.run()
+            if device.writesOutsideConfirmedModels && device.writePolicy == .experimental {
+                permissions.recordWrite(on: device, changes: changeCount, backupID: result.outcome.result.snapshot.id)
+            }
             adopt(result, from: device)
             lastWriteFailure = nil
             lastWriteSummary = result.outcome.summary

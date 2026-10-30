@@ -45,11 +45,12 @@ enum OverviewFacts {
     }
 
     /// A missing GUID means something different on a Classic than on an older iPod:
-    /// a database signed with hash58 requires it, it just could not be read.
+    /// a database signed with hash58 requires it, an unsigned one doesn't. Not "none": the
+    /// nano 2G has one and macOS gives it on some connections only.
     private static func missingGUID(_ device: IPodDevice) -> String {
         device.format.signing == .hash58
             ? "not found, needed to sign this iPod's database"
-            : "none, this generation has no GUID"
+            : "not read on this connection, not needed for an unsigned database"
     }
 
     private static let clearPreflight = "Clear: Music is closed, no pending play counts"

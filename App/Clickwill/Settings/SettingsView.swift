@@ -3,8 +3,8 @@ import AppKit
 import ClickwillModel
 import ITDBKit
 
-/// Settings. For now just one: how long we keep backups
-/// (`BackupSettings`), and next to it, how much space the backups really take (`BackupUsage`).
+/// Settings: how long we keep backups (`BackupSettings`), how much space they really take
+/// (`BackupUsage`), and Experimental iPods (`ExperimentalSection`).
 struct SettingsView: View {
     @Environment(LibraryModel.self) private var model
     @AppStorage(BackupSettings.daysKey) private var days = BackupSettings.defaultDays
@@ -59,6 +59,7 @@ struct SettingsView: View {
                         .disabled(busy || (usage?.expired ?? 0) == 0)
                 }
             }
+            ExperimentalSection()
         }
         .formStyle(.grouped)
         .frame(width: 480)
@@ -76,7 +77,7 @@ struct SettingsView: View {
 
     private func pruneNow() {
         guard let device = model.device, let store = try? model.environment.backups() else { return }
-        let removed = store.prune(deviceGUID: device.identity,
+        let removed = store.prune(deviceGUIDs: device.identities,
                                   retention: BackupSettings.retention(days: days))
         lastPrune = removed.isEmpty
             ? "Nothing was old enough to delete."

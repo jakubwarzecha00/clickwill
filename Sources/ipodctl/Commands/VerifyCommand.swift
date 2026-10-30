@@ -7,7 +7,7 @@ enum VerifyCommand {
         guard let id = call.positional().first else { throw CommandError("give a backup identifier") }
         let device = try openDevice(call)
         let store = try openStore(call)
-        let snapshot = try store.snapshot(deviceGUID: device.identity, id: id)
+        let snapshot = try store.snapshot(deviceGUIDs: device.identities, id: id)
         try store.verify(snapshot)
         print("Backup \(snapshot.id) is consistent - \(snapshot.files.count) files match their checksums.")
     }

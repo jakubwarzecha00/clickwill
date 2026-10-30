@@ -111,7 +111,7 @@ public struct WriteTransaction: Sendable {
         // From the library that went to disk - with added tracks where they were placed.
         let intentSaved = saveOrderIntent(of: written.writtenLibrary)
         // An error cleaning up backups has no right to undermine the write - `prune` does not throw.
-        let pruned = store.prune(deviceGUID: device.identity, retention: backupRetention).count
+        let pruned = store.prune(deviceGUIDs: device.identities, retention: backupRetention).count
 
         return Result(outcome: WriteOutcome(result: written, ledger: ledger, orderIntentSaved: intentSaved, prunedBackups: pruned),
                       writtenLibrary: written.writtenLibrary, sourceDigest: written.digest,
@@ -127,7 +127,8 @@ public struct WriteTransaction: Sendable {
             ConversionPhase(jobs: changes.conversions, capabilities: capabilities, progress: progress),
             FileImportPhase(jobs: changes.fileImports, capabilities: capabilities),
             AdditionPhase(additions: changes.additions, progress: progress),
-            RepairPhase(artworkOwnerRedirects: changes.artworkOwnerRedirects, store: store),
+            RepairPhase(artworkOwnerRedirects: changes.artworkOwnerRedirects,
+                        replacedArtwork: Set(changes.artworkReplacements.values.map(\.album)), store: store),
         ]
     }
 

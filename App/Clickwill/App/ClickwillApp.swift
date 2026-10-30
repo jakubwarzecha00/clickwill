@@ -23,7 +23,10 @@ struct ClickwillApp: App {
     init() {
         // Before the window is created: otherwise it would open in the default place.
         WindowFrameMigration.run(sceneID: Self.libraryWindowID)
-        let model = LibraryModel(demo: options.demoMode)
+        // A demo copy keeps the switch and the permissions in memory: screenshots never touch the user's.
+        let permissions = ExperimentalPermissions(storage: options.isDemo ? .memory() : .standard)
+        permissions.developerMode = options.developerMode
+        let model = LibraryModel(demo: options.demoMode, permissions: permissions)
         _model = State(initialValue: model)
         _monitor = State(initialValue: DeviceMonitor(model: model))
         _playback = State(initialValue: PlaybackController(fileURL: { [weak model] in model?.fileURL(for: $0) },
@@ -78,7 +81,7 @@ struct ClickwillApp: App {
                 WindowMenuButton(title: "Send Feedback…") { $0.showFeedback() }
                 Divider()
                 Button("Before You Edit Your iPod…") { welcomeSeen = false }
-                Button("Copy Diagnostic Report") { DiagnosticsClipboard.copy(model) }
+                WindowMenuButton(title: "Send Diagnostic Report…") { $0.showSendReport() }
             }
         }
 

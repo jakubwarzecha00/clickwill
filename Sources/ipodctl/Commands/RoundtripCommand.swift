@@ -16,58 +16,43 @@ enum RoundtripCommand {
             original = try device.readDatabase()
             fireWireID = device.fireWireID?.bytes
         }
-        let library = try ITunesDBParser.parse(original)
-        // The signature according to the format that lies in the file. A database we cannot
-        // sign is compared without a signature - reading and assembling can be checked
-        // on every generation before any of them gets a write module.
-        let format = try DatabaseFormat.detect(header: original)
-        let serialized = ITunesDBWriter.serialize(library)
-        let rebuilt: Data
-        if format.signing == .hash58 {
-            guard fireWireID != nil else { throw CommandError("a hash58 database - give --guid <16 hex characters>") }
-            rebuilt = try DatabaseSigner(format: format, fireWireID: fireWireID).sign(serialized)
-        } else {
-            print("  format \(format.name): comparison without a signature")
-            rebuilt = serialized
+        if try DatabaseFormat.detect(header: original).signing == .hash58, fireWireID == nil {
+            throw CommandError("a hash58 database - give --guid <16 hex characters>")
         }
+        let trip = try RoundTrip.measure(original, fireWireID: fireWireID)
+        if !trip.signed {
+            print("  format \(try DatabaseFormat.detect(header: original).name): comparison without a signature")
+        }
+        let library = try ITunesDBParser.parse(original)
 
         report("Round-trip gate", [
-            ("original", "\(original.count) B"),
-            ("rebuilt", "\(rebuilt.count) B"),
+            ("original", "\(trip.original.count) B"),
+            ("rebuilt", "\(trip.rebuilt.count) B"),
             ("tracks", "\(library.tracks.count)"),
             ("playlists", "\(library.playlists.count)"),
             ("albums in the index", "\(library.albums.count)"),
         ])
 
-        guard original.count == rebuilt.count else {
-            let delta = rebuilt.count - original.count
+        guard trip.original.count == trip.rebuilt.count else {
+            let delta = trip.rebuilt.count - trip.original.count
             throw CommandError("the size differs by \(delta) B - the writer loses or adds data")
         }
 
-        let a = [UInt8](original), b = [UInt8](rebuilt)
-        var differences: [Int] = []
-        for index in a.indices where a[index] != b[index] {
-            differences.append(index)
-            if differences.count > 4096 { break }
-        }
-
-        if differences.isEmpty {
+        if trip.isIdentical {
             print("\n  IDENTICAL TO THE BYTE - the writer reproduces the database unchanged.")
             return
         }
 
-        print("\n  DIFFERENCES: \(differences.count)\(differences.count > 4096 ? "+" : "") bytes")
-        // We group them into continuous areas, so it is visible which fields drifted
-        var runs: [(Int, Int)] = []
-        for index in differences {
-            if let last = runs.last, index == last.1 { runs[runs.count - 1].1 = index + 1 }
-            else { runs.append((index, index + 1)) }
-        }
-        for (start, end) in runs.prefix(12) {
+        // Grouped into continuous areas, so it is visible which fields drifted.
+        let runs = trip.differingRegions()
+        let a = [UInt8](trip.original), b = [UInt8](trip.rebuilt)
+        let count = runs.reduce(0) { $0 + $1.count }
+        print("\n  DIFFERENCES: \(count)\(count >= 4096 ? "+" : "") bytes")
+        for run in runs.prefix(12) {
             let slice = { (data: [UInt8]) in
-                data[start..<min(end, start + 16)].map { String(format: "%02x", $0) }.joined(separator: " ")
+                data[run.lowerBound..<min(run.upperBound, run.lowerBound + 16)].map { String(format: "%02x", $0) }.joined(separator: " ")
             }
-            print("    @\(String(format: "%#08x", start)) (\(end - start) B)")
+            print("    @\(String(format: "%#08x", run.lowerBound)) (\(run.count) B)")
             print("        original: \(slice(a))")
             print("        rebuilt:  \(slice(b))")
         }

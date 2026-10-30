@@ -114,10 +114,11 @@ public enum ArtworkCoverage {
     /// Brings coverage in line with the track count where this can be done
     /// unambiguously. Works both ways: an album that gained tracks has too
     /// little coverage, and an album that lost tracks has too much.
+    /// `albums`: only these titles; `nil` for all.
     public static func repairing(
-        _ artworkDB: Data, library: ITLibrary, paths: IPodPaths? = nil
+        _ artworkDB: Data, library: ITLibrary, paths: IPodPaths? = nil, albums scope: Set<String>? = nil
     ) throws -> (data: Data, repaired: [Album]) {
-        let albums = try audit(library: library, artworkDB: artworkDB, paths: paths)
+        let albums = try audit(library: library, artworkDB: artworkDB, paths: paths).filter { scope?.contains($0.title) ?? true }
         let current = Dictionary(try ArtworkDBEditor.trackCounts(in: artworkDB).map { ($0.imageID, $0.trackCount) },
                                  uniquingKeysWith: { first, _ in first })
 

@@ -22,6 +22,11 @@ final class WindowState {
         case importFiles([URL])
         case feedback
         case about
+        /// Diagnostics of the loaded iPod (`DiagnosticsSheet`); with a comment, Send Diagnostic
+        /// Report opens over it straight away, the comment filled in.
+        case diagnostics(send: String?)
+        /// How the library looks in Rockbox (`RockboxReportSheet`).
+        case rockboxReport
         /// The question about discarding unsaved changes before loading another iPod.
         case switchConfirmation(IPodChoice)
 
@@ -31,6 +36,8 @@ final class WindowState {
             case .importFiles(let urls): "import:" + urls.map(\.path).joined(separator: "|")
             case .feedback: "feedback"
             case .about: "about"
+            case .diagnostics: "diagnostics"
+            case .rockboxReport: "rockbox"
             case .switchConfirmation(let choice): "switch:" + choice.id
             }
         }
@@ -145,6 +152,14 @@ final class WindowState {
     func showFeedback() { present(.feedback) }
 
     func showAbout() { present(.about) }
+
+    func showDiagnostics() { present(.diagnostics(send: nil)) }
+
+    /// Diagnostics with Send Diagnostic Report over it - from the Help menu, Overview and
+    /// the question after an experimental write.
+    func showSendReport(comment: String = "") { present(.diagnostics(send: comment)) }
+
+    func showRockboxReport() { present(.rockboxReport) }
 
     func confirmSwitch(to choice: IPodChoice) { present(.switchConfirmation(choice)) }
 

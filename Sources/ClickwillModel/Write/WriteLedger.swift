@@ -25,6 +25,9 @@ struct WriteLedger {
     var coverImages: [UInt64: CGImage] = [:]
     /// Whether `ArtworkDB` on the iPod changed.
     var artworkChanged = false
+    /// Albums that got artwork in this write - on an unconfirmed model the artwork steps of
+    /// `RepairPhase` run only for these and for albums with added songs.
+    var artworkAlbums: Set<String> = []
 
     // MARK: - For the report (`WriteOutcome`)
 

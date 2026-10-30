@@ -116,7 +116,7 @@ struct AboutView: View {
         section("About \(AboutFacts.thisVersion)") {
             para("This is a test version of \(AboutFacts.appName), free of charge. It writes to the iPod classic and the iPod nano (2nd to 4th generation); other iPods open read-only while support for them is in active development.")
             if let email = AboutFacts.supportEmail {
-                para("To report a problem, choose Help › Copy Diagnostic Report, add a description of what happened, and send it to \(email).")
+                para("To report a problem, choose Help › Send Diagnostic Report and add a description of what happened, or write to \(email).")
             } else {
                 para("To report a problem, choose Send Feedback in the sidebar or in the Help menu, describe what happened, and send it together with the diagnostic report.")
             }

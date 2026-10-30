@@ -13,8 +13,13 @@ ipodctl - \(ProductInfo.name) developer tool
   usage: ipodctl COMMAND [options] - the command always comes first
 
   --volume IPOD         which iPod: nano, classic, GUID or path (required when several are connected)
+  --developer           Developer Mode for testing new models and disk images: lifts the list of
+                        confirmed unsigned families, the USB confirmation and the list of measured
+                        artwork formats. Never lifts the signature, identity conflicts or backups.
 
   info                  information about the connected iPod
+  diagnose [--rockbox]  every diagnostic check, read-only; --rockbox also reads every song file
+                        and lists albums that look different in Rockbox
   hash58                database signature verification (gate T1.2)
   library               library summary
   check [--remove-orphans [--apply]]
@@ -81,6 +86,7 @@ ipodctl - \(ProductInfo.name) developer tool
 /// is the only place that ends the process.
 let command: ((Invocation) async throws -> Void)? = switch CommandLine.arguments.dropFirst().first {
 case "info": InfoCommand.run
+case "diagnose": DiagnoseCommand.run
 case "sysinfo": SysInfoCommand.run
 case "hash58": Hash58Command.run
 case "library": LibraryCommand.run

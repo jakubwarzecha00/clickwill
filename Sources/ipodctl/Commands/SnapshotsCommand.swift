@@ -5,7 +5,7 @@ import ITDBKit
 enum SnapshotsCommand {
     static func run(_ call: Invocation) async throws {
         let device = try openDevice(call)
-        let snapshots = try openStore(call).list(deviceGUID: device.identity)
+        let snapshots = try openStore(call).list(deviceGUIDs: device.identities)
         guard !snapshots.isEmpty else {
             print("No backups for \(device.identity).")
             return

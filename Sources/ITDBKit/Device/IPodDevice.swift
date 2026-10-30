@@ -24,6 +24,13 @@ public struct IPodDevice: Sendable {
     /// A GUID found in a file on the iPod, but rejected because it does not sign
     /// its database - a sentence for the user on why writing is blocked.
     public var rejectedFireWireID: RejectedFireWireID? = nil
+    /// Who allows writing outside the confirmed lists. Chosen by the app or `ipodctl`,
+    /// never read from the device.
+    public var writePolicy: WritePolicy = .standard
+    /// The GUID an earlier connection read together with this database (`DeviceAliasStore`).
+    /// The registry doesn't give the USB serial number on every connection (nano 2G),
+    /// and without it the same iPod came out as another device.
+    public var rememberedIdentity: String? = nil
 
     /// A mismatch between sources that blocks writing: the USB family versus the database
     /// scheme, or the firmware GUID versus the GUID we would sign the database with.
@@ -51,8 +58,17 @@ public struct IPodDevice: Sendable {
     /// lies in a file we read anyway.
     public var identity: String {
         if let fireWireID { return fireWireID.hex }
-        return String(format: "DB-%016llX", format.databaseID)
+        if let rememberedIdentity { return rememberedIdentity }
+        return databaseIdentity
     }
+
+    /// From the database identifier: the identity of an iPod whose GUID was never read.
+    public var databaseIdentity: String { String(format: "DB-%016llX", format.databaseID) }
+
+    /// Every name this iPod's data on the Mac may be filed under, `identity` first. Before
+    /// 0.4.1 a connection without the GUID filed backups and permissions under the database
+    /// identity, so both are read.
+    public var identities: [String] { identity == databaseIdentity ? [identity] : [identity, databaseIdentity] }
 
     /// Writing is allowed only for formats **confirmed on
     /// hardware**. An unknown or unconfirmed format means read-only
@@ -101,13 +117,26 @@ public struct IPodDevice: Sendable {
     /// looks the same on a nano 2G and in a file copied by hand from another iPod.
     /// That is why two confirmations independent of the database are needed - the family
     /// from USB and the family from the firmware. Missing either means a refusal.
+    ///
+    /// `experimental` keeps USB and drops the family list: the user allowed this device after
+    /// diagnostics. `developer` drops both, so a disk image can be written in tests.
     public var unsignedWriteRefusal: UnsignedRefusal? {
-        guard format.signing == .presumedUnsigned else { return nil }
+        guard format.signing == .presumedUnsigned, writePolicy != .developer else { return nil }
         guard let usb, usb.expectedScheme == 0 else { return .usbNotConfirmed }
+        guard writePolicy == .standard else { return nil }
         guard let family = firmwareDescription?.familyID, Self.unsignedWriteFamilies.contains(family) else {
             return .familyNotConfirmed
         }
         return nil
+    }
+
+    /// Whether this device writes only because the policy lifted a list - an
+    /// unconfirmed family. On such a device the writer takes extra care.
+    public var writesOutsideConfirmedModels: Bool {
+        guard writePolicy != .standard, format.signing == .presumedUnsigned else { return false }
+        var standard = self
+        standard.writePolicy = .standard
+        return standard.unsignedWriteRefusal != nil
     }
 
     public static func open(_ volume: IPodVolume) throws -> IPodDevice {

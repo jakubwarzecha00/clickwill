@@ -17,6 +17,12 @@ struct IPodChoiceTests {
         #expect(choice.readOnlyReason == nil)
     }
 
+    @Test("--demo-ipod with a policy: the experimental badge for screenshots")
+    func demoArgumentPolicy() throws {
+        let choice = try #require(IPodChoice(demoArgument: "/tmp/backup|Val's iPod|iPod (5th generation)|30|12|video:black:experimental"))
+        #expect(choice.outsideConfirmedModels && choice.writePolicy == .experimental)
+    }
+
     @Test("--demo-ipod with a missing field or number is not an iPod")
     func demoArgumentRejected() {
         #expect(IPodChoice(demoArgument: "/tmp/backup|Car iPod|iPod classic|80") == nil)
@@ -77,5 +83,26 @@ struct AlbumsWithCoverTests {
         let model = LibraryModel(); await model.load(.snapshot(root))
         #expect(!model.albums.isEmpty)
         #expect(model.albumsWithCover == 0)
+    }
+}
+
+@Suite("Chooser and write policy")
+@MainActor
+struct ChooserPolicyTests {
+    @Test("an iPod with an experimental permission is listed as experimental, not read-only")
+    func experimentalInList() throws {
+        let device = try ExperimentalPermissionsTests.video()
+        let connections = DeviceConnections(
+            discovery: .init(mountPoints: { [device.volume.mountPoint] }, devices: { [device] }),
+            lastUsed: .init(load: { nil }, save: { _ in }))
+        connections.refresh(force: true, loaded: nil, loadedName: nil)
+        #expect(connections.choices.first?.isReadOnly == true, "without the permission: read-only")
+        #expect(connections.choices.first?.outsideConfirmedModels == false)
+
+        connections.refresh(force: true, loaded: nil, loadedName: nil, policy: { _ in .experimental })
+        let choice = try #require(connections.choices.first)
+        #expect(!choice.isReadOnly)
+        #expect(choice.outsideConfirmedModels)
+        #expect(choice.writePolicy == .experimental)
     }
 }

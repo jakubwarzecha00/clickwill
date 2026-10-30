@@ -1,20 +1,15 @@
 import AppKit
 import ClickwillModel
+import ITDBKit
 
-/// Reporting a problem without the network: the tester copies the report and pastes it into an e-mail.
+/// The diagnostic report as text - for Send Diagnostic Report, Send Feedback and `--diagnostics`.
 /// What is in the report, and what is deliberately not - `DiagnosticReport`.
 enum DiagnosticsClipboard {
     @MainActor
-    static func report(_ model: LibraryModel, album: String? = nil) -> String {
+    static func report(_ model: LibraryModel, album: String? = nil, diagnostics: Diagnostics? = nil) -> String {
         DiagnosticReport.text(for: model, appVersion: AboutFacts.version + (AboutFacts.stage.map { " \($0)" } ?? ""),
                               system: "macOS \(ProcessInfo.processInfo.operatingSystemVersionString)",
-                              hardware: hardwareModel, album: album)
-    }
-
-    @MainActor
-    static func copy(_ model: LibraryModel) {
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(report(model), forType: .string)
+                              hardware: hardwareModel, album: album, diagnostics: diagnostics)
     }
 
     /// E.g. `Mac16,10`. A model identifier, not a unit's.

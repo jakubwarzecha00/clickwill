@@ -188,6 +188,18 @@ public struct SnapshotStore: Sendable {
         .sorted { $0.id > $1.id }
     }
 
+    /// Backups filed under any of `deviceGUIDs` (`IPodDevice.identities`), newest first.
+    public func list(deviceGUIDs: [String]) throws -> [Snapshot] {
+        try deviceGUIDs.flatMap { try list(deviceGUID: $0) }.sorted { $0.id > $1.id }
+    }
+
+    public func snapshot(deviceGUIDs: [String], id: String) throws -> Snapshot {
+        guard let match = try list(deviceGUIDs: deviceGUIDs).first(where: { $0.id == id }) else {
+            throw ITDBError.snapshotNotFound(id)
+        }
+        return match
+    }
+
     public func snapshot(deviceGUID: String, id: String) throws -> Snapshot {
         guard let match = try list(deviceGUID: deviceGUID).first(where: { $0.id == id }) else {
             throw ITDBError.snapshotNotFound(id)
@@ -289,7 +301,15 @@ public struct SnapshotStore: Sendable {
     @discardableResult
     public func prune(deviceGUID: String, retention: SnapshotRetention = .standard,
                       now: Date = Date()) -> [Snapshot] {
-        guard let all = try? list(deviceGUID: deviceGUID) else { return [] }
+        prune(deviceGUIDs: [deviceGUID], retention: retention, now: now)
+    }
+
+    /// One retention over the backups of every name of one iPod - counted per name, the
+    /// "keep the last N" rule would keep N of each.
+    @discardableResult
+    public func prune(deviceGUIDs: [String], retention: SnapshotRetention = .standard,
+                      now: Date = Date()) -> [Snapshot] {
+        guard let all = try? list(deviceGUIDs: deviceGUIDs) else { return [] }
         var removed: [Snapshot] = []
         for snapshot in retention.expired(among: all, now: now) {
             do { try delete(snapshot); removed.append(snapshot) } catch { continue }

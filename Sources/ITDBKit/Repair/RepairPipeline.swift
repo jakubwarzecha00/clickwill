@@ -17,6 +17,12 @@ import Foundation
 ///    transaction.
 /// 5. Artwork coverage (`mhii` 0x38) - on the final library to be written.
 ///
+/// On a model outside the confirmed ones (`albums` given) only the artwork steps that finish
+/// this write's own changes run, and only for those albums: the image record per track (3),
+/// the source size and pointer (4) and the coverage (5). Without them a first cover written
+/// there showed nowhere on the iPod (nano 2G as an unconfirmed model). Steps 1,
+/// 2 and the owner move change albums the user didn't touch, by rules from other models.
+///
 /// Steps 1, 2 and 4 change only the library in memory. Steps 3 and 5 write
 /// `ArtworkDB`; `beforeArtworkWrite` (a backup) is called before the first such
 /// write. A step that failed or could not run (for example an unreadable
@@ -82,31 +88,36 @@ public enum RepairPipeline {
     public static func run(
         _ library: ITLibrary, on device: IPodDevice,
         artworkOwnerRedirects: [UInt64: UInt64] = [:],
+        albums scope: Set<String>? = nil,
         beforeArtworkWrite: () throws -> Void
     ) -> (library: ITLibrary, report: Report) {
         var library = library
         var report = Report()
         let manager = FileManager.default
         let artworkDB = device.paths.artworkDB
+        func inScope(_ album: String) -> Bool { scope?.contains(album) ?? true }
+        func scoped<Value>(_ byAlbum: [String: Value]) -> [String: Value] { byAlbum.filter { inScope($0.key) } }
 
-        // 1. Records added by earlier versions had zero at 0x7E
-        // and did not show artwork for the song playing.
-        let markers = library.repairingArtworkMarkers()
-        library = markers.library
-        report.artworkMarkers = markers.repaired
+        if scope == nil {
+            // 1. Records added by earlier versions had zero at 0x7E
+            // and did not show artwork for the song playing.
+            let markers = library.repairingArtworkMarkers()
+            library = markers.library
+            report.artworkMarkers = markers.repaired
 
-        // 2. Both defects look the same - artwork in Cover Flow is there,
-        // for the song it is not - but they have different causes.
-        let secondary = library.repairingSecondaryIdentifiers()
-        library = secondary.library
-        report.secondaryIdentifiers = secondary.repaired
-        let identities = library.repairingAlbumIdentities()
-        library = identities.library
-        report.albumIdentities = identities.repaired
+            // 2. Both defects look the same - artwork in Cover Flow is there,
+            // for the song it is not - but they have different causes.
+            let secondary = library.repairingSecondaryIdentifiers()
+            library = secondary.library
+            report.secondaryIdentifiers = secondary.repaired
+            let identities = library.repairingAlbumIdentities()
+            library = identities.library
+            report.albumIdentities = identities.repaired
+        }
 
         // 3. Cover Flow finds artwork through the owner. If the database write
         // failed, the old database has both tracks, so moving the owner breaks nothing.
-        if !artworkOwnerRedirects.isEmpty, manager.fileExists(atPath: artworkDB.path) {
+        if scope == nil, !artworkOwnerRedirects.isEmpty, manager.fileExists(atPath: artworkDB.path) {
             do {
                 let outcome = try ArtworkDBEditor.settingOwners(artworkOwnerRedirects, in: Data(contentsOf: artworkDB))
                 if outcome.changed > 0 {
@@ -125,6 +136,7 @@ public enum RepairPipeline {
         if device.findsArtworkByTrack, manager.fileExists(atPath: artworkDB.path) {
             do {
                 let shares = try ArtworkDBParser.parse(Data(contentsOf: artworkDB)).trackImageShares(in: library)
+                    .filter { inScope($0.album) }
                 if !shares.isEmpty { try beforeArtworkWrite() }
                 for share in shares {
                     let created = try ArtworkAddition.sharing(imageID: share.imageID, withTracks: share.tracks, in: device.paths)
@@ -144,11 +156,11 @@ public enum RepairPipeline {
         // then the step did not happen and the report must say so.
         do {
             if let artwork = try device.readArtwork() {
-                let sources = library.repairingArtworkSources(imageSourcesByAlbum: artwork.imageSourcesByAlbum(in: library))
+                let sources = library.repairingArtworkSources(imageSourcesByAlbum: scoped(artwork.imageSourcesByAlbum(in: library)))
                 library = sources.library
                 report.artworkSources = sources.repaired
                 let identifiers = library.repairingArtworkIdentifiers(
-                    imageIdentifiersByAlbum: artwork.imageIdentifiersByAlbum(in: library),
+                    imageIdentifiersByAlbum: scoped(artwork.imageIdentifiersByAlbum(in: library)),
                     existingIdentifiers: artwork.imageIdentifiers)
                 library = identifiers.library
                 report.artworkIdentifiers = identifiers.repaired
@@ -162,7 +174,8 @@ public enum RepairPipeline {
         // throws that number off, so we settle it on the final library.
         if manager.fileExists(atPath: artworkDB.path) {
             do {
-                let outcome = try ArtworkCoverage.repairing(Data(contentsOf: artworkDB), library: library, paths: device.paths)
+                let outcome = try ArtworkCoverage.repairing(Data(contentsOf: artworkDB), library: library, paths: device.paths,
+                                                            albums: scope)
                 if !outcome.repaired.isEmpty {
                     try beforeArtworkWrite()
                     try outcome.data.write(to: artworkDB, options: .atomic)

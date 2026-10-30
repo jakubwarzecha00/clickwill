@@ -13,16 +13,26 @@ public struct LibraryEnvironment: Sendable {
     public var files: any FileSystem
     public var backups: @Sendable () throws -> SnapshotStore
     public var orderIntents: @Sendable () throws -> OrderIntentStore
+    /// Which GUID belongs to which database (`DeviceAliasStore`).
+    public var deviceAliases: @Sendable () throws -> DeviceAliasStore
     public var isMusicRunning: @Sendable () -> Bool
+    /// Where files removed from an experimental iPod are copied first
+    /// (`LibraryModel.deleteTrack`).
+    public var experimentalRemovalArchive: URL
 
     public init(files: any FileSystem = LocalFileSystem(),
                 backups: @escaping @Sendable () throws -> SnapshotStore,
                 orderIntents: @escaping @Sendable () throws -> OrderIntentStore,
-                isMusicRunning: @escaping @Sendable () -> Bool) {
+                deviceAliases: @escaping @Sendable () throws -> DeviceAliasStore = { try DeviceAliasStore.standard() },
+                isMusicRunning: @escaping @Sendable () -> Bool,
+                experimentalRemovalArchive: URL = CDRipper.defaultRoot
+                    .appendingPathComponent("Removed from Experimental iPods", isDirectory: true)) {
         self.files = files
         self.backups = backups
         self.orderIntents = orderIntents
+        self.deviceAliases = deviceAliases
         self.isMusicRunning = isMusicRunning
+        self.experimentalRemovalArchive = experimentalRemovalArchive
     }
 
     public static let standard = LibraryEnvironment(
@@ -35,6 +45,8 @@ public struct LibraryEnvironment: Sendable {
         LibraryEnvironment(
             backups: { SnapshotStore(root: directory.appendingPathComponent("Backups", isDirectory: true)) },
             orderIntents: { OrderIntentStore(root: directory.appendingPathComponent("Devices", isDirectory: true)) },
-            isMusicRunning: { false })
+            deviceAliases: { DeviceAliasStore(file: directory.appendingPathComponent("Devices/identities.json")) },
+            isMusicRunning: { false },
+            experimentalRemovalArchive: directory.appendingPathComponent("Removed", isDirectory: true))
     }
 }

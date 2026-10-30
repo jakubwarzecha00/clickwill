@@ -25,12 +25,27 @@ func resolveDevice(_ wanted: String) throws -> IPodDevice {
 /// iPods and no choice, a refusal: "the first on the list" is not a choice, and a write
 /// to the wrong device is irreversible in practice.
 func openDevice(_ call: Invocation) throws -> IPodDevice {
-    if let wanted = call.value(for: "--volume") { return try resolveDevice(wanted) }
-    let volumes = IPodVolume.mounted()
-    guard volumes.count <= 1 else {
-        throw CommandError("connected iPods: \(volumes.count) - choose one with --volume (nano, classic, GUID or path)")
+    var device: IPodDevice
+    if let wanted = call.value(for: "--volume") {
+        device = try resolveDevice(wanted)
+    } else {
+        let volumes = IPodVolume.mounted()
+        guard volumes.count <= 1 else {
+            throw CommandError("connected iPods: \(volumes.count) - choose one with --volume (nano, classic, GUID or path)")
+        }
+        do { device = try IPodDevice.openFirst() } catch { throw CommandError("\(error)") }
     }
-    do { return try IPodDevice.openFirst() } catch { throw CommandError("\(error)") }
+    // The same identity as in the app on a connection without the USB serial number.
+    if let aliases = try? call.environment.deviceAliases() { device = aliases.resolve(device) }
+    // Experimental permissions live in the app; ipodctl knows only the standard policy and
+    // Developer Mode, which says so on every run.
+    if call.has("--developer") {
+        device.writePolicy = .developer
+        if device.writesOutsideConfirmedModels {
+            print("DEVELOPER MODE: writing outside the confirmed models (\(device.model.name)) - a backup comes first")
+        }
+    }
+    return device
 }
 
 /// Backups from the invocation environment (in tests - a temporary folder).

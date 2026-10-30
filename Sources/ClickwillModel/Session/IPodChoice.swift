@@ -16,6 +16,11 @@ public struct IPodChoice: Identifiable, Hashable, Sendable {
     /// A read-only iPod; the reason, when the device knows it.
     public let isReadOnly: Bool
     public let readOnlyReason: ReadOnlyReason?
+    /// The policy the iPod writes under (`ExperimentalPermissions`) - the chooser shows an
+    /// experimental iPod as one, not as read-only.
+    public var writePolicy: WritePolicy = .standard
+    /// Writing outside the confirmed models (`IPodDevice.writesOutsideConfirmedModels`).
+    public var outsideConfirmedModels = false
     /// From the model catalog - for the drawing; `nil` when the catalog does not know this iPod.
     public var generation: IPodCatalog.Generation? = nil
     public var finish: IPodCatalog.Finish? = nil
@@ -43,10 +48,13 @@ public struct IPodChoice: Identifiable, Hashable, Sendable {
                   isReadOnly: !device.supportsWriting, readOnlyReason: device.supportsWriting ? nil : device.readOnlyReason)
         generation = entry?.generation
         finish = entry?.finishOrDefault
+        writePolicy = device.writePolicy
+        outsideConfirmedModels = device.writesOutsideConfirmedModels
     }
 
-    /// `--demo-ipod "<backup folder>|<name>|<model>|<GB total>|<GB used>[|<generation>:<color>]"`,
-    /// e.g. `...|classic3:black` - generation and color from `IPodCatalog` for the drawing.
+    /// `--demo-ipod "<backup folder>|<name>|<model>|<GB total>|<GB used>[|<generation>:<color>[:<policy>]]"`,
+    /// e.g. `...|classic3:black` - generation and color from `IPodCatalog` for the drawing;
+    /// `...|video:black:experimental` shows the chooser's experimental badge.
     public init?(demoArgument: String) {
         let parts = demoArgument.split(separator: "|", omittingEmptySubsequences: false).map(String.init)
         guard parts.count == 5 || parts.count == 6, let total = Double(parts[3]), let used = Double(parts[4]) else { return nil }
@@ -57,6 +65,10 @@ public struct IPodChoice: Identifiable, Hashable, Sendable {
             let look = parts[5].split(separator: ":").map(String.init)
             generation = look.first.flatMap(IPodCatalog.Generation.init(rawValue:))
             finish = look.count > 1 ? IPodCatalog.Finish(rawValue: look[1]) : nil
+            if look.count > 2, let policy = ["experimental": WritePolicy.experimental, "developer": .developer][look[2]] {
+                writePolicy = policy
+                outsideConfirmedModels = true
+            }
         }
     }
 }

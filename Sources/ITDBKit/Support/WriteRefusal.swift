@@ -32,6 +32,9 @@ public enum WriteRefusal: Sendable, Equatable, CustomStringConvertible {
     case unmergedPlayCounts(String)
     /// The database cannot be signed.
     case cannotSign(SigningRefusal)
+    /// An experimental device: the database on it no longer rebuilds byte for byte,
+    /// so we no longer understand it. The detail is `RoundTrip.summary`.
+    case databaseNotReproduced(String)
     /// An internal condition was not met - a technical description.
     case inconsistent(String)
 
@@ -49,6 +52,7 @@ public enum WriteRefusal: Sendable, Equatable, CustomStringConvertible {
         case .unsupportedArtwork(let detail): "unsupported artwork: \(detail)"
         case .unmergedPlayCounts(let detail): "unmerged play counts: \(detail)"
         case .cannotSign(let refusal): "cannot sign: \(refusal)"
+        case .databaseNotReproduced(let detail): "database not reproduced: \(detail)"
         case .inconsistent(let detail): "inconsistent: \(detail)"
         }
     }

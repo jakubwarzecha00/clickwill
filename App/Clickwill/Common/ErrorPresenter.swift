@@ -106,6 +106,8 @@ enum ErrorPresenter {
             "the iPod holds plays that can't be merged safely (\(detail))."
         case .cannotSign(let refusal):
             "the library can't be signed: \(signing(refusal))"
+        case .databaseNotReproduced(let detail):
+            "experimental iPod: the library no longer rebuilds byte for byte (\(detail)). Run Diagnostics again."
         case .inconsistent(let detail):
             "an internal check failed (\(detail))."
         }
@@ -246,6 +248,7 @@ enum ErrorPresenter {
         switch error {
         case .demoCopy: "This is a demo copy, so nothing is written to the iPod."
         case .notFromDevice: "The library isn't from a connected iPod, or it hasn't finished loading."
+        case .permissionChanged: "Experimental writing for this iPod was turned off. Nothing was written."
         }
     }
 

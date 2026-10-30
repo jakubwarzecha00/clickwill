@@ -146,6 +146,12 @@ public struct OrderIntentStore: Sendable {
         return try decoder.decode(OrderIntent.self, from: Data(contentsOf: file))
     }
 
+    /// The intent filed under the first of `deviceGUIDs` that has one (`IPodDevice.identities`).
+    public func load(deviceGUIDs: [String]) throws -> OrderIntent? {
+        for guid in deviceGUIDs { if let intent = try load(deviceGUID: guid) { return intent } }
+        return nil
+    }
+
     public func save(_ intent: OrderIntent, deviceGUID guid: String) throws {
         let file = url(forDevice: guid)
         try FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)

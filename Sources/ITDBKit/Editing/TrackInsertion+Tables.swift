@@ -11,19 +11,23 @@ import Foundation
 extension ITLibrary {
 
     /// Adds tracks. Each must already have its file copied to the device.
+    ///
+    /// - Parameter crossKindTemplates: whether a kind this iPod has no record of may be
+    ///   built from another kind with the profile measured on the Classic
+    ///   (`crossKindTemplate`). Off on an unconfirmed model, where that profile is a guess.
     public func addingTracks(
-        _ drafts: [TrackDraft], now: Date = Date(),
+        _ drafts: [TrackDraft], now: Date = Date(), crossKindTemplates: Bool = true,
         persistentID: @Sendable () -> UInt64 = { UInt64.random(in: 1...UInt64.max) }
     ) throws -> ITLibrary {
         var result = self
         for draft in drafts {
-            result = try result.addingTrack(draft, now: now, persistentID: persistentID)
+            result = try result.addingTrack(draft, now: now, crossKindTemplates: crossKindTemplates, persistentID: persistentID)
         }
         return result
     }
 
     func addingTrack(
-        _ draft: TrackDraft, now: Date, persistentID: @Sendable () -> UInt64
+        _ draft: TrackDraft, now: Date, crossKindTemplates: Bool = true, persistentID: @Sendable () -> UInt64
     ) throws -> ITLibrary {
         guard !draft.title.trimmingCharacters(in: .whitespaces).isEmpty else {
             throw TrackInsertionError.emptyTitle
@@ -32,7 +36,7 @@ extension ITLibrary {
         guard !existing.contains(where: { $0.relativePath == draft.relativePath }) else {
             throw TrackInsertionError.pathAlreadyUsed(draft.relativePath)
         }
-        guard let template = templateTrack(for: draft.kind) ?? crossKindTemplate(for: draft.kind) else {
+        guard let template = templateTrack(for: draft.kind) ?? (crossKindTemplates ? crossKindTemplate(for: draft.kind) : nil) else {
             throw TrackInsertionError.noTemplate(draft.kind)
         }
         guard masterPlaylist != nil else { throw TrackInsertionError.noMasterPlaylist }

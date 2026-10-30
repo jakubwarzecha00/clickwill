@@ -11,7 +11,7 @@ enum CopyCommand {
         let device = try openDevice(call)
         guard let from = call.value(for: "--from") else { throw CommandError("copy needs --from (classic, nano, GUID or path)") }
         let source = try resolveDevice(from)
-        guard source.identity != device.identity else { throw CommandError("the source and the target are the same iPod") }
+        guard Set(source.identities).isDisjoint(with: device.identities) else { throw CommandError("the source and the target are the same iPod") }
         let sourceLibrary = try source.readLibrary()
         let albums = call.values(for: "--album")
         guard !albums.isEmpty else { throw CommandError("give at least one --album") }
