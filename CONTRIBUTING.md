@@ -50,15 +50,58 @@ change; if it does, explain why in the pull request.
 Before writing to your iPod: close Apple Music, and keep the backup Clickwill
 makes before the first write (`swift run ipodctl backup` makes one by hand).
 
-## Measuring with a Debug build
+## Developer Mode
 
-A Debug build from this repository has **Developer Mode** in **Settings ›
-Experimental iPods**, and `ipodctl` takes `--developer`. It lifts the confirmed
-lists and the USB check, so you can measure a model, or write to a disk image
-with an iPod folder on it. It never skips the signature, identity conflicts or
-the backup before a write. Use it on an iPod whose library you can restore.
+**Settings › Experimental iPods › Developer Mode** is for developers measuring a
+model that isn't confirmed yet. It lifts the confirmed lists, the USB check and
+the list of measured artwork formats, so you can write to a new model or to a
+disk image with an iPod folder on it. It never skips the signature, identity
+conflicts or the backup before a write.
+
+It needs the Experimental iPods switch on, asks first with a warning, and ends
+when Clickwill quits. In Clickwill 0.4.1 the switch exists only in a build from
+this repository; later releases have it too. On the command line, `ipodctl`
+takes `--developer` for the same thing.
+
+Use it on an iPod whose library you can restore. To show that a model works for
+everyone, the test above should pass with Experimental iPods alone, without
+Developer Mode.
 
 Building and the test commands are in the [README](README.md#building).
+
+## Checking your iPod with an AI coding assistant
+
+If you use an assistant that runs commands in a terminal, such as Claude Code or
+Codex, open it in a clone of this repository, connect the iPod and paste:
+
+```text
+Help me check whether Clickwill can safely write to my iPod, and collect the
+evidence CONTRIBUTING.md asks for. Read CONTRIBUTING.md and README.md first.
+
+Rules:
+- Read-only first. Never write to the iPod, and never run a command with
+  --apply, --developer, restore or remove, without asking me and waiting for my yes.
+- Before any write: Apple Music is closed, and a backup exists
+  (swift run ipodctl backup, then swift run ipodctl snapshots).
+- Never put my GUID, serial number, iPod name, song titles, file names or my
+  database, artwork or audio files into an issue, a commit or a message.
+  `ipodctl info` prints the GUID: don't copy its output anywhere.
+
+Steps:
+1. export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer, then
+   swift build.
+2. swift run ipodctl diagnose and swift run ipodctl roundtrip. Explain every
+   check that didn't pass and what the measurements lines say about it.
+3. If every required check passed, walk me through the test on the iPod from
+   CONTRIBUTING.md in the Clickwill app, one step at a time. I do each step
+   myself; after each, check the result read-only (diagnose, roundtrip,
+   ipodctl library) and ask me what the iPod shows.
+4. Draft the New iPod issue: model, firmware, the diagnose output, the
+   roundtrip result, and the result of each step. If I want a pull request,
+   change only Sources/ITDBKit/Device/ConfirmedModels.swift (and USBIdentity for
+   a new USB product), add tests on a synthetic library, run Tools/check.sh,
+   and commit with git commit -s.
+```
 
 ## Pull requests
 
