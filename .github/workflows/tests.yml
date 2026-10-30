@@ -1,0 +1,21 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  core:
+    name: Core and model tests
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Swift Testing ships with Xcode, not the Command Line Tools; the newest Xcode on the runner.
+      - name: Select Xcode
+        run: |
+          XCODE=$(ls -d /Applications/Xcode*.app | sort -V | tail -1)
+          echo "DEVELOPER_DIR=$XCODE/Contents/Developer" >> "$GITHUB_ENV"
+          echo "Using $XCODE"
+      - run: swift --version
+      - run: swift test

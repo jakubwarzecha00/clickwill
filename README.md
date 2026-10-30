@@ -21,8 +21,9 @@ library from backups.
 ## Requirements
 
 - macOS 14 Sonoma or later, on Apple silicon or Intel
-- An iPod classic, or an iPod nano (2nd to 4th generation). Older iPods open
-  read-only.
+- An iPod classic, or an iPod nano (2nd to 4th generation). Other iPods open
+  read-only: **Run Diagnostics…** in Overview shows why, and if every required
+  check passes, **Settings › Experimental iPods** can allow writing to that iPod.
 
 Nothing else to install: conversion and CD import use what is already in macOS.
 
@@ -121,6 +122,13 @@ based on a proof of concept by wtbw). Its lookup tables were also compared with
 correctness check. `Tools/generate-hash58-tables.py` regenerates the tables
 from both references and stops if they differ. The full notice is in
 [THIRD-PARTY-NOTICES](THIRD-PARTY-NOTICES).
+
+## Contributing
+
+The best help is an iPod Clickwill hasn't been confirmed on: send its
+diagnostic report, or confirm the model in
+[`ConfirmedModels.swift`](Sources/ITDBKit/Device/ConfirmedModels.swift) with the
+evidence described in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 

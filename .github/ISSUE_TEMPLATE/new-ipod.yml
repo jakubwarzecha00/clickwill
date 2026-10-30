@@ -1,0 +1,48 @@
+name: New iPod
+description: An iPod that Clickwill opens read-only, or one you tried with Experimental iPods.
+title: "New iPod: "
+labels: ["new iPod"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks! The diagnostic report is what lets a model be confirmed. In Clickwill: **Overview › Run Diagnostics… › Send Report… › Copy Report**. It has no GUID, serial number, iPod name, song titles or folder names.
+  - type: input
+    id: model
+    attributes:
+      label: iPod model
+      description: As Clickwill names it in Overview, and the capacity.
+      placeholder: iPod (5th generation), 30 GB
+    validations:
+      required: true
+  - type: input
+    id: firmware
+    attributes:
+      label: Firmware
+      description: Settings › About on the iPod. Say if it is modified or runs Rockbox.
+      placeholder: 1.3, original
+    validations:
+      required: true
+  - type: textarea
+    id: report
+    attributes:
+      label: Diagnostic report
+      description: The whole report, including the measurements lines.
+      render: text
+    validations:
+      required: true
+  - type: dropdown
+    id: experimental
+    attributes:
+      label: Did you write with Experimental iPods?
+      options:
+        - "No"
+        - "Yes, and the iPod showed the changes"
+        - "Yes, and something went wrong"
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: What you did and what the iPod showed
+      description: Each change you wrote, and what you saw on the iPod afterwards. Photos of the iPod screen help.
