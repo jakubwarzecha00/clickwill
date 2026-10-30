@@ -29,7 +29,8 @@ func announce(_ outcome: WriteOutcome) {
 
 /// The repairs the transaction made during the write (`RepairPipeline`).
 private func printRepairs(_ repairs: RepairPipeline.Report) {
-    let done = [
+    // Typed: without it an older compiler (Swift 6.3) gives up type-checking the literal.
+    let done: [(String, Int)] = [
         ("artwork markers 0x7E", repairs.artworkMarkers),
         ("artwork coverage", repairs.coverage.count),
         ("image sizes", repairs.artworkSources.values.reduce(0, +)),
