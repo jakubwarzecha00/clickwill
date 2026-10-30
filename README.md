@@ -22,8 +22,9 @@ library from backups.
 
 - macOS 14 Sonoma or later, on Apple silicon or Intel
 - An iPod classic, or an iPod nano (2nd to 4th generation). Other iPods open
-  read-only: **Run Diagnostics…** in Overview shows why, and if every required
-  check passes, **Settings › Experimental iPods** can allow writing to that iPod.
+  read-only: **Run Diagnostics…** in Overview shows why. To write to one, turn
+  on **Settings › Experimental iPods**, then click **Allow Experimental
+  Writing…** in Diagnostics once every required check passes.
 
 Nothing else to install: conversion and CD import use what is already in macOS.
 

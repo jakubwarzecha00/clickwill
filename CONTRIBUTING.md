@@ -6,17 +6,23 @@ model is confirmed only from measurements on the real thing.
 
 ## Report an iPod
 
-Clickwill opens a model it hasn't confirmed read-only. To report one:
+Clickwill opens a model it hasn't confirmed read-only. To check it, report it
+and, if it passes, write to it:
 
-1. Connect the iPod, open **Overview** and click **Run Diagnostics…**
-2. Click **Send Report…**. The whole report is shown before it goes. It has no
-   GUID, serial number, iPod name, song titles or folder names.
-
-Or open a [New iPod issue](../../issues/new?template=new-ipod.yml) and paste the
-report: **Send Report…** › **Copy Report**. If every required check passes,
-**Settings › Experimental iPods** lets you write to that one iPod, and the
-answer to "Were the changes visible on the iPod?" after the first write is
-part of the evidence.
+1. Open **Clickwill › Settings… › Experimental iPods** and turn on **Allow
+   writing to unconfirmed iPod models**. Without it, Diagnostics still runs and
+   the report can still be sent, but writing can't be allowed.
+2. Connect the iPod, open **Overview** and click **Run Diagnostics…**
+3. Click **Send Report…**. The whole report is shown before it goes. It has no
+   GUID, serial number, iPod name, song titles or folder names. Or open a
+   [New iPod issue](../../issues/new?template=new-ipod.yml) and paste the
+   report: **Send Report…** › **Copy Report**.
+4. If every required check passed, click **Allow Experimental Writing…** in
+   Diagnostics and confirm. The permission is for this one iPod and ends when
+   its firmware changes.
+5. Make a change and choose **Write to iPod**. On the next connection Overview
+   asks "Were the changes visible on the iPod?"; the answer goes into the
+   report and is part of the evidence.
 
 ## Confirm a model in code
 
@@ -92,8 +98,10 @@ Steps:
    swift build.
 2. swift run ipodctl diagnose and swift run ipodctl roundtrip. Explain every
    check that didn't pass and what the measurements lines say about it.
-3. If every required check passed, walk me through the test on the iPod from
-   CONTRIBUTING.md in the Clickwill app, one step at a time. I do each step
+3. If every required check passed, walk me through the steps in "Report an
+   iPod" and the test on the iPod from CONTRIBUTING.md in the Clickwill app,
+   one step at a time: the Experimental iPods switch in Settings first, then
+   Run Diagnostics and Allow Experimental Writing. I do each step
    myself; after each, check the result read-only (diagnose, roundtrip,
    ipodctl library) and ask me what the iPod shows.
 4. Draft the New iPod issue: model, firmware, the diagnose output, the
