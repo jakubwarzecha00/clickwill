@@ -97,21 +97,11 @@ public struct IPodDevice: Sendable {
         }
     }
 
-    /// Families (FamilyID from the firmware description) that find a track's artwork by
-    /// the track itself (`mhii` 0x14 = the track's `persistentID`), not through the image owner
-    /// and `mhit` 0x160 as the Classic does. nano 2G (9), firmware 1.1.3, measured: one image
-    /// record per album showed the artwork only for the owner track.
-    public static let artworkByTrackFamilies: Set<Int> = [9]
-
-    /// Whether every track needs its own image record to show artwork during playback.
+    /// Whether every track needs its own image record to show artwork during playback
+    /// (`ConfirmedModels.artworkByTrackFamilies`).
     public var findsArtworkByTrack: Bool {
-        firmwareDescription?.familyID.map(Self.artworkByTrackFamilies.contains) ?? false
+        firmwareDescription?.familyID.map(ConfirmedModels.artworkByTrackFamilies.contains) ?? false
     }
-
-    /// Families (FamilyID from the firmware description) on which we write an unsigned
-    /// database. nano 2G (9): the database from Finder measured - scheme 0,
-    /// empty signature fields, USB 0x1260.
-    public static let unsignedWriteFamilies: Set<Int> = [9]
 
     /// An unsigned database has nothing to defend itself against a mistake with: a missing signature
     /// looks the same on a nano 2G and in a file copied by hand from another iPod.
@@ -124,7 +114,7 @@ public struct IPodDevice: Sendable {
         guard format.signing == .presumedUnsigned, writePolicy != .developer else { return nil }
         guard let usb, usb.expectedScheme == 0 else { return .usbNotConfirmed }
         guard writePolicy == .standard else { return nil }
-        guard let family = firmwareDescription?.familyID, Self.unsignedWriteFamilies.contains(family) else {
+        guard let family = firmwareDescription?.familyID, ConfirmedModels.unsignedWriteFamilies.contains(family) else {
             return .familyNotConfirmed
         }
         return nil

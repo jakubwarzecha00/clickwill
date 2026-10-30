@@ -10,16 +10,6 @@ import Foundation
 /// pointing to an image that does not exist is what we avoid.
 public enum ArtworkAddition {
 
-    /// Artwork formats whose pixel encoding we **measured** (RGB565
-    /// little-endian, Classic 7G). Dimensions and slot size are read from the
-    /// device anyway; only the encoding is unconfirmed. The nano 2G firmware
-    /// describes 1027 (100x100) and 1031 (42x42) as L565 (VPD readout).
-    /// 1027 showed up correctly on the nano's Now Playing screen (photo of the
-    /// screen). 1031 was written in the same file: the nano read the database and
-    /// showed the artwork; where it uses 1031 itself we have not seen, but it is the
-    /// same encoding as 1027, and without it no artwork can be added on the nano 2G.
-    public static let confirmedFormats: Set<UInt32> = [1027, 1031, 1055, 1060, 1061]
-
     public struct Outcome: Sendable {
         public let imageID: UInt32
         public let slotOffsets: [UInt32: UInt32]
@@ -34,7 +24,7 @@ public enum ArtworkAddition {
     ///     Without `ArtworkDB` they are the only source of formats; with an existing
     ///     file they serve as a check - dimensions from the file and the device must match.
     ///   - allowingUnverifiedFormats: hardware trial of a format outside
-    ///     `confirmedFormats`. Allows only a format that the device itself
+    ///     `ConfirmedModels.artworkFormats`. Allows only a format that the device itself
     ///     describes as RGB565 little-endian.
     public static func add(
         ownerPersistentID: UInt64, sourceByteCount: UInt32, trackCount: UInt32,
@@ -93,7 +83,7 @@ public enum ArtworkAddition {
         }
         // Wrongly encoded pixels are garbage on the iPod screen, not an error
         // anyone notices before the write - hence a refusal, not an attempt.
-        let unconfirmed = artwork.formats.map(\.correlationID).filter { !confirmedFormats.contains($0) }
+        let unconfirmed = artwork.formats.map(\.correlationID).filter { !ConfirmedModels.artworkFormats.contains($0) }
         if !unconfirmed.isEmpty {
             guard allowingUnverifiedFormats else {
                 throw ITDBError.writeRefused(.unsupportedArtwork("cover formats \(unconfirmed.sorted()) aren't measured on a device yet"))

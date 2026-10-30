@@ -49,7 +49,7 @@ extension Diagnostics {
             let stated = Dictionary(device.firmwareDescription?.albumArt.map { ($0.formatID, $0) } ?? [], uniquingKeysWith: { a, _ in a })
             let formats = artwork.formats.map { format in
                 let image = stated[format.correlationID].map { " \($0.width)×\($0.height) \($0.pixelFormat)" } ?? " not in SysInfoExtended"
-                return "\(format.correlationID)\(image)\(ArtworkAddition.confirmedFormats.contains(format.correlationID) ? "" : " (not measured)")"
+                return "\(format.correlationID)\(image)\(ConfirmedModels.artworkFormats.contains(format.correlationID) ? "" : " (not measured)")"
             }
             lines.append("artwork/formats: \(formats.joined(separator: ", "))")
         }

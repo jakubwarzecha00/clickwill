@@ -244,7 +244,7 @@ public struct Diagnostics: Sendable {
             return Check(id: .artwork, weight: .advisory, status: .info, detail: "no ArtworkDB")
         }
         let formats = artwork.formats.map(\.correlationID)
-        let unmeasured = formats.filter { !ArtworkAddition.confirmedFormats.contains($0) }.sorted()
+        let unmeasured = formats.filter { !ConfirmedModels.artworkFormats.contains($0) }.sorted()
         let list = formats.map(String.init).joined(separator: ", ")
         guard unmeasured.isEmpty else {
             return Check(id: .artwork, weight: .advisory, status: .warning,

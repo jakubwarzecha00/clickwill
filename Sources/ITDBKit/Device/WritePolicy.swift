@@ -7,8 +7,7 @@ import Foundation
 /// Rules that no policy lifts: a signing scheme we cannot produce, hash58 without
 /// a key, an identity conflict, a read-only volume, the backup before a write.
 public enum WritePolicy: Sendable, Hashable, CustomStringConvertible {
-    /// Only what was measured on hardware (`IPodDevice.unsignedWriteFamilies`,
-    /// `ArtworkAddition.confirmedFormats`).
+    /// Only what was measured on hardware (`ConfirmedModels`).
     case standard
     /// A model outside the lists, allowed by the user for this one device after every
     /// required diagnostic check passed. USB must still confirm an unsigned family, and

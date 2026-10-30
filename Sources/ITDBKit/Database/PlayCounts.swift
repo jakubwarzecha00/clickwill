@@ -31,11 +31,12 @@ public struct PlayCounts: Sendable {
     public let entryLength: Int
     public let rawHeader: [UInt8]
 
-    /// The layout measured on hardware: a 0x60-byte header and 28-byte entries
-    /// (iPod nano 2G, firmware 1.1.3). On a model outside the confirmed ones
-    /// the file is merged only in this layout - the firmware writes it after every
-    /// database it loads, so refusing it outright would block every second write.
-    public var hasMeasuredLayout: Bool { rawHeader.count == 0x60 && entryLength == 28 }
+    /// Whether the layout was measured on hardware (`ConfirmedModels.playCountsLayouts`). On a
+    /// model outside the confirmed ones the file is merged only in such a layout - the firmware
+    /// writes it after a database it loads, so refusing it outright would block writing.
+    public var hasMeasuredLayout: Bool {
+        ConfirmedModels.playCountsLayouts.contains(.init(header: rawHeader.count, entry: entryLength))
+    }
 
     public var layoutSummary: String { "header \(rawHeader.count) B, entries \(entryLength) B" }
 
