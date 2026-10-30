@@ -65,6 +65,7 @@ extension LibraryEditor {
         let byTrack = artwork?.indexedByTrack() ?? [:]
         let tracks = records(of: album)
         guard let owner = tracks.first else { return }
+        try refuseArtwork(for: tracks, album: album.title)
         let slots = ArtworkReplacement.slots(for: tracks.compactMap { byTrack[$0.persistentID] })
 
         if !slots.isEmpty {

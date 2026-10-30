@@ -27,6 +27,8 @@ public struct LibrarySession: Sendable {
     public internal(set) var capabilities: IPodCapabilities
     /// The session reads and checks files through this file system.
     let files: any FileSystem
+    /// The iPod's own library sync, when its firmware has one (`OnDeviceSync`).
+    public let onDeviceSync: OnDeviceSync?
 
     public var device: IPodDevice? {
         if case .device(let device) = source { return device }
@@ -51,10 +53,11 @@ public struct LibrarySession: Sendable {
             assumed.isAssumed = true
             return assumed
         }()
+        let sync = OnDeviceSync.detect(at: paths.mountPoint)
         return LibrarySession(source: source, paths: paths, library: library, artwork: artwork,
                               sourceDigest: IPodDevice.digest(of: data),
-                              missingFileIDs: canCheck ? missingFiles(in: library, paths: paths, files: files) : [],
-                              canCheckFiles: canCheck, capabilities: capabilities, files: files)
+                              missingFileIDs: canCheck ? missingFiles(in: library, paths: paths, files: files, sync: sync) : [],
+                              canCheckFiles: canCheck, capabilities: capabilities, files: files, onDeviceSync: sync)
     }
 
     /// The state after a successful write: the library as it went to disk, and the digest
@@ -62,12 +65,14 @@ public struct LibrarySession: Sendable {
     mutating func adopt(_ written: ITLibrary, sourceDigest: String, filesReplaced: Bool) {
         library = written
         self.sourceDigest = sourceDigest
-        if filesReplaced { missingFileIDs = Self.missingFiles(in: written, paths: paths, files: files) }
+        if filesReplaced { missingFileIDs = Self.missingFiles(in: written, paths: paths, files: files, sync: onDeviceSync) }
     }
 
-    static func missingFiles(in library: ITLibrary, paths: IPodPaths, files: any FileSystem) -> Set<UInt32> {
+    /// With an on-device sync its entries have their file outside `iPod_Control`.
+    static func missingFiles(in library: ITLibrary, paths: IPodPaths, files: any FileSystem, sync: OnDeviceSync?) -> Set<UInt32> {
         Set(library.tracks.filter { track in
-            guard let url = track.fileURL(on: paths) else { return true }
+            let synced = sync == nil ? nil : OnDeviceSync.file(of: track, on: paths)
+            guard let url = synced ?? track.fileURL(on: paths) else { return true }
             return !files.fileExists(at: url)
         }.map(\.uniqueID))
     }

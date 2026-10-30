@@ -32,6 +32,8 @@ struct LibraryEditor {
     let missingFileIDs: Set<UInt32>
     let formatVerdicts: [UInt32: AudioCompatibility.Verdict]
     let formatLabels: [UInt32: String]
+    /// The iPod's own library sync: its songs can't be removed or get a new cover (`SyncedTracks`).
+    let onDeviceSync: OnDeviceSync?
 
     /// Previews of artwork waiting to be written, by track identifier.
     private(set) var coverPreviews: [(image: CGImage, trackIDs: [UInt64])] = []
@@ -53,6 +55,7 @@ struct LibraryEditor {
         self.missingFileIDs = session.missingFileIDs
         self.formatVerdicts = formatVerdicts
         self.formatLabels = formatLabels
+        self.onDeviceSync = session.onDeviceSync
     }
 
     // MARK: - Shared

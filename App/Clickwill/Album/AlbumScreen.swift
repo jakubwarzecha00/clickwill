@@ -40,6 +40,8 @@ struct AlbumScreen: View {
     private var current: AlbumCard { model.current(album) ?? album }
     private var image: CGImage? { model.artwork(for: current.artworkTrackID) }
     private var tint: Color { image.map(DominantColor.of) ?? Theme.accent }
+    /// Songs the iPod's own library sync rebuilds from their files: no removal, no new cover.
+    private var synced: Bool { model.isSyncedOnDevice(current) }
 
     /// One curve for opening and closing the panel, from every place.
     static let editorAnimation = Animation.smooth(duration: 0.32)
@@ -125,6 +127,7 @@ struct AlbumScreen: View {
                     .disabled(rows.isEmpty)
                     albumMenu
                     if current.isCompilation { compilationBadge }
+                    if synced { syncedBadge }
                     if current.missingFiles > 0 { missingFilesButton }
                     Spacer()
                 }.padding(.top, 6)
@@ -161,6 +164,16 @@ struct AlbumScreen: View {
             .help("The songs of this album carry iTunes' compilation tag. “\(current.displayArtist)” is their album artist.")
     }
 
+    /// Just information: the iPod's firmware rebuilds these songs from their files itself.
+    private var syncedBadge: some View {
+        Label("Synced by the iPod", systemImage: "arrow.triangle.2.circlepath")
+            .font(.theme(.body, weight: .medium)).foregroundStyle(Theme.f2)
+            .padding(.horizontal, 12).frame(height: 30)
+            .background(Theme.row, in: RoundedRectangle(cornerRadius: 8))
+            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Theme.glassBorder, lineWidth: 0.5))
+            .help("This iPod rebuilds these songs from its Music folder. Deleting them and changing the cover happen in that folder.")
+    }
+
     /// Rare and irreversible actions sit under the three dots next to "Play".
     /// Red shows up only in the expanded menu - a permanently red button
     /// in the header drew the eye too much.
@@ -180,6 +193,7 @@ struct AlbumScreen: View {
             // and the album is gone.
             Section("Remove from the iPod") {
                 Button("Delete Album…", systemImage: "trash", role: .destructive, action: deleteAlbum)
+                    .disabled(synced)
             }
         } label: {
             Image(systemName: "ellipsis")
@@ -206,7 +220,8 @@ struct AlbumScreen: View {
     /// menu, dropping an image file. Preview right away, the file on the iPod
     /// only after "Write to iPod".
     private func coverEditor(size: CGFloat, corner: CGFloat) -> some View {
-        CoverEditor(size: size, corner: corner, image: image, choose: chooseCover, drop: { url in setCover(from: url) })
+        CoverEditor(size: size, corner: corner, image: image, choose: chooseCover, drop: { url in setCover(from: url) },
+                    locked: synced ? "This iPod takes the cover from the album's folder in its Music folder." : nil)
     }
 
     private func chooseCover() {
@@ -477,6 +492,7 @@ struct AlbumScreen: View {
         }
         Divider()
         Button("Delete from iPod", role: .destructive) { delete(row) }
+            .disabled(model.isSyncedOnDevice(row))
     }
 
     private func clearCompilation() {
@@ -513,6 +529,7 @@ struct AlbumScreen: View {
                 }
             }
             splitNotice
+            syncedNotice
             Section("Album") {
                 editableField(.title, current.title)
                 editableField(.albumArtist, current.artist, placeholder: "Unknown Artist")
@@ -557,6 +574,16 @@ struct AlbumScreen: View {
                         }
                     }
                 }
+            }
+        }
+    }
+
+    @ViewBuilder private var syncedNotice: some View {
+        if synced {
+            Section {
+                Label("Synced by the iPod", systemImage: "arrow.triangle.2.circlepath")
+                Text("This iPod rebuilds these songs from the album's folder in its Music folder every time it starts or leaves a Mac. Changes to titles and details last until the file changes. To delete a song or change the cover, change the folder on the iPod.")
+                    .foregroundStyle(.secondary)
             }
         }
     }

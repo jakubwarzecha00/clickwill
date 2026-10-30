@@ -18,6 +18,7 @@ enum ErrorPresenter {
         case let error as ITDBError: return message(for: error)
         case let error as FileImportError: return message(for: error)
         case let error as ArtworkError: return message(for: error)
+        case let error as SyncedTracksRefusal: return message(for: error)
         case let error as ConversionQueueError: return message(for: error)
         case let error as MetadataError: return message(for: error)
         case let error as AudioConversionError: return message(for: error)
@@ -201,6 +202,15 @@ enum ErrorPresenter {
         case .noExistingArtwork(let album):
             "Can't add a cover to \u{201C}\(album)\u{201D} yet: this iPod has no covers at all. Add one album with a cover using Music, then try again."
         case .unreadableImage(let url): "Couldn't read an image from \(url.lastPathComponent)."
+        }
+    }
+
+    static func message(for error: SyncedTracksRefusal) -> String {
+        switch error {
+        case .removal(let songs):
+            "This iPod rebuilds its library from its Music folder every time it starts or leaves a Mac, so \(songs == 1 ? "this song" : "\(songs) of these songs") would come back. Delete \(songs == 1 ? "its file" : "their files") from the Music folder on the iPod instead."
+        case .artwork(let album):
+            "This iPod shows the cover of \u{201C}\(album)\u{201D} from the album's folder in its Music folder, not from the library. Put the new cover there as cover.jpg instead."
         }
     }
 

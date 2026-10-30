@@ -105,7 +105,7 @@ struct SongsScreen: View {
         Button(ids.count > 1 ? "Delete \(ids.count) Songs from iPod" : "Delete from iPod", role: .destructive) {
             delete(ids, in: shown)
         }
-        .disabled(ids.isEmpty)
+        .disabled(ids.isEmpty || shown.contains { ids.contains($0.id) && model.isSyncedOnDevice($0.track) })
     }
 
     /// Deleting is a change in the queue, as in the album view - "Discard All" undoes it.

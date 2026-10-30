@@ -231,8 +231,9 @@ public struct Diagnostics: Sendable {
             "\(report.sizeMismatches.count) size mismatches",
             "\(report.danglingReferences.count) dead playlist references",
         ].joined(separator: " · ")
+        let synced = report.syncedFiles > 0 ? " · \(report.syncedFiles) files outside iPod_Control, owned by the on-device sync" : ""
         return Check(id: .files, weight: .advisory, status: report.isClean ? .passed : .warning,
-                     detail: "\(report.trackCount) entries, \(report.audioFileCount) files · \(counts)")
+                     detail: "\(report.trackCount) entries, \(report.audioFileCount) files · \(counts)\(synced)")
     }
 
     static func artwork(_ device: IPodDevice) -> Check {

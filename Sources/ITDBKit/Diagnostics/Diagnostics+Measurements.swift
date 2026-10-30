@@ -57,6 +57,9 @@ extension Diagnostics {
         if let rockbox = RockboxProbe.read(at: device.paths.mountPoint) {
             lines += rockbox.reportLines(library: library, paths: device.paths, iTunesDBModified: modified)
         }
+        if let sync = OnDeviceSync.detect(at: device.paths.mountPoint) {
+            lines += sync.reportLines(library: library, paths: device.paths, iTunesDBModified: modified)
+        }
         return lines
     }
 

@@ -80,6 +80,13 @@ struct DiagnosticsSheet: View {
                                 .font(.theme(.footnote)).foregroundStyle(.secondary)
                         }
                     }
+                    if let sync = model.onDeviceSync {
+                        Section("Library Sync on the iPod") {
+                            LabeledContent("Firmware with its own sync", value: sync.stateVersion.map { "state version \($0)" } ?? "no sync yet")
+                            Text("The firmware rebuilds iTunesDB from /Music at boot and after every USB session. Songs added under iPod_Control stay. FLAC songs and videos outside iPod_Control follow their files: removal and cover changes are refused for them.")
+                                .font(.theme(.footnote)).foregroundStyle(.secondary)
+                        }
+                    }
                     if let failure {
                         Section { Label(failure, systemImage: "exclamationmark.triangle.fill").foregroundStyle(Theme.warn) }
                     }

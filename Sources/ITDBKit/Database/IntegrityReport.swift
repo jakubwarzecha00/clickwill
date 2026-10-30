@@ -36,6 +36,9 @@ public struct IntegrityReport: Sendable {
 
     public let trackCount: Int
     public let audioFileCount: Int
+    /// Entries of the iPod's own library sync whose file lies outside `iPod_Control`
+    /// (`OnDeviceSync`) - found, so not missing.
+    public var syncedFiles = 0
 
     public var isClean: Bool {
         missingFiles.isEmpty && orphanedFiles.isEmpty && locationlessTracks.isEmpty
@@ -47,19 +50,22 @@ public struct IntegrityReport: Sendable {
 
     public static func build(library: ITLibrary, paths: IPodPaths) throws -> IntegrityReport {
         let manager = FileManager.default
+        let sync = OnDeviceSync.detect(at: paths.mountPoint)
 
         var missing: [MissingFile] = []
         var mismatches: [SizeMismatch] = []
         var locationless: [UInt32] = []
         var referenced: Set<String> = []
+        var syncedCount = 0
 
         for track in library.tracks {
             guard let relative = track.relativePath else {
                 locationless.append(track.uniqueID)
                 continue
             }
-            let url = paths.musicFile(relative)
-            if let url { referenced.insert(url.standardizedFileURL.path) }
+            let synced = sync == nil ? nil : OnDeviceSync.file(of: track, on: paths)
+            let url = synced ?? paths.musicFile(relative)
+            if let url, synced == nil { referenced.insert(url.standardizedFileURL.path) }
 
             guard let url, let attributes = try? manager.attributesOfItem(atPath: url.path),
                   let size = attributes[.size] as? UInt64
@@ -74,6 +80,7 @@ public struct IntegrityReport: Sendable {
                 )
                 continue
             }
+            if synced != nil { syncedCount += 1 }
             if size != UInt64(track.sizeBytes) {
                 mismatches.append(
                     SizeMismatch(
@@ -118,7 +125,7 @@ public struct IntegrityReport: Sendable {
             }
         }
 
-        return IntegrityReport(
+        var report = IntegrityReport(
             missingFiles: missing,
             orphanedFiles: orphaned.sorted(),
             locationlessTracks: locationless,
@@ -127,5 +134,7 @@ public struct IntegrityReport: Sendable {
             trackCount: library.tracks.count,
             audioFileCount: audioCount
         )
+        report.syncedFiles = syncedCount
+        return report
     }
 }

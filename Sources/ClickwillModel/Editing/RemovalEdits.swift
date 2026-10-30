@@ -11,6 +11,7 @@ extension LibraryEditor {
     /// Removes a track from the database. `archive`: the folder for a copy of the file before deletion.
     mutating func deleteTrack(_ track: TrackRow, in album: AlbumCard, keepCopiesIn archive: URL?) throws {
         let removed = library.tracks.filter { $0.uniqueID == track.id }
+        try refuseRemoval(of: removed)
         library = try library.removingTracks(uniqueIDs: [track.id])
         let queued = changes.queueFiles(of: removed, keeping: library, paths: paths, files: files, keepCopiesIn: archive)
         recordChange(.trackDeleted(album: title(of: album), track: track.displayTitle, fileOnDisk: !queued.isEmpty))
@@ -27,6 +28,7 @@ extension LibraryEditor {
         guard let album = current(album) else { return 0 }
         let records = records(of: album)
         guard !records.isEmpty else { return 0 }
+        try refuseRemoval(of: records)
         library = try library.removingTracks(uniqueIDs: Set(records.map(\.uniqueID)))
         let queued = changes.queueFiles(of: records, keeping: library, paths: paths, files: files, keepCopiesIn: archive)
         recordChange(.albumDeleted(album: album.displayTitle, artist: album.displayArtist,
@@ -63,6 +65,7 @@ extension LibraryEditor {
         }
         guard !redirects.isEmpty else { return 0 }
         let removed = Set(redirects.keys)
+        try refuseRemoval(of: removed.compactMap { byID[$0] })
 
         library = try library
             .mappingTracks { merged[$0.uniqueID] ?? $0 }

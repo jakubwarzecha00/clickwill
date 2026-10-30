@@ -9,6 +9,8 @@ struct CoverEditor: View {
     let image: CGImage?
     let choose: () -> Void
     let drop: (URL) -> Void
+    /// Why the cover can't be changed here (`nil`: it can). Then no button, menu or drop.
+    var locked: String? = nil
     @State private var hovering = false
     @State private var targeted = false
     /// Hover faked in a demo recording (`--demo`), without moving the cursor.
@@ -21,7 +23,7 @@ struct CoverEditor: View {
             } else {
                 ZStack { Theme.card; Image(systemName: "music.note").font(.system(size: size / 6, weight: .light)).foregroundStyle(Theme.f3) }
             }
-            if hovering || targeted || demoHover == "cover" {
+            if locked == nil, hovering || targeted || demoHover == "cover" {
                 Color.black.opacity(0.35)
                 Button(action: choose) {
                     // On the small artwork in the panel the full label got truncated ("Change Cov…").
@@ -34,17 +36,18 @@ struct CoverEditor: View {
         }
         .frame(width: size, height: size)
         .clipShape(RoundedRectangle(cornerRadius: corner))
-        .overlay(RoundedRectangle(cornerRadius: corner).stroke(targeted ? Theme.accent : .clear, lineWidth: 2))
+        .overlay(RoundedRectangle(cornerRadius: corner).stroke(targeted && locked == nil ? Theme.accent : .clear, lineWidth: 2))
         .onHover { hovering = $0 }
-        .contextMenu { Button("Change Cover…", action: choose) }
+        .contextMenu { Button("Change Cover…", action: choose).disabled(locked != nil) }
+        .help(locked ?? "")
         // For VoiceOver (and demo recordings): the artwork as a single button.
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Album Cover")
         .accessibilityAddTraits(.isButton)
-        .accessibilityAction { choose() }
-        .accessibilityAction(named: "Change Cover…") { choose() }
+        .accessibilityAction { if locked == nil { choose() } }
+        .accessibilityAction(named: "Change Cover…") { if locked == nil { choose() } }
         .onDrop(of: [.fileURL], isTargeted: $targeted) { providers in
-            guard let provider = providers.first else { return false }
+            guard locked == nil, let provider = providers.first else { return false }
             Task { if let url = await NSItemProvider.fileURLs(from: [provider]).first { drop(url) } }
             return true
         }
