@@ -54,7 +54,8 @@ public struct WriteOutcome: Sendable {
             + "songs added \(addedTracks), files deleted \(deletedFiles), files converted \(convertedFiles)"]
         // The reason alone, without the album title - the user sends the report.
         lines += coversFailed.map { "  cover failure: \($0.reason)" }
-        let repaired = [
+        // Typed: without it an older compiler (Swift 6.3) gives up type-checking the literal.
+        let repaired: [(String, Int)] = [
             ("artwork markers", repairs.artworkMarkers),
             ("cover counts", repairs.coverage.count),
             ("image sizes", repairs.artworkSources.values.reduce(0, +)),
