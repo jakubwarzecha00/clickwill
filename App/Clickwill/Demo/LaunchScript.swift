@@ -88,6 +88,7 @@ struct LaunchScript: Sendable {
         case .diagnostics: window.show(.overview); window.showDiagnostics()
         case .rockbox: window.show(.overview); window.showRockboxReport()
         case .sendReport: window.show(.overview); window.showSendReport()
+        case .developerMode: _ = ExperimentalConsent.askDeveloperMode()
         case .coverflow, nil: break
         }
         if let url = options.importURL {

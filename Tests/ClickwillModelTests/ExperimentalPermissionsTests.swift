@@ -141,6 +141,17 @@ struct WritePolicyRig {
 }
 
 extension ExperimentalPermissionsTests {
+    @Test("turning the switch off ends Developer Mode")
+    func switchOffEndsDeveloperMode() throws {
+        let permissions = ExperimentalPermissions(storage: .memory())
+        permissions.isEnabled = true
+        permissions.developerMode = true
+        #expect(permissions.policy(for: try Self.video()) == .developer)
+        permissions.isEnabled = false
+        #expect(!permissions.developerMode)
+        #expect(permissions.policy(for: try Self.video()) == .standard)
+    }
+
     @Test("a permission rests on a model the release confirms")
     func permissionOnConfirmedModel() throws {
         let permissions = ExperimentalPermissions(storage: .memory())

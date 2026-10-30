@@ -63,15 +63,19 @@ public final class ExperimentalPermissions {
         var grants: [Grant]
     }
 
-    /// The switch in Settings › Experimental iPods.
+    /// The switch in Settings › Experimental iPods. Turning it off also ends Developer Mode.
     public var isEnabled: Bool {
         didSet {
-            if !isEnabled { grants = [] }
+            if !isEnabled {
+                grants = []
+                developerMode = false
+            }
             persist()
         }
     }
     public private(set) var grants: [Grant]
-    /// Developer Mode. Only a Debug build sets it; it is not stored.
+    /// Developer Mode: in Settings › Experimental iPods after a warning, and from `--developer-mode`
+    /// in a Debug build. Not stored - it ends when the app quits.
     public var developerMode = false
 
     private let storage: Storage

@@ -1,8 +1,8 @@
 import SwiftUI
 import ClickwillModel
 
-/// Settings › Experimental iPods: the switch, the allowed devices, and in a Debug
-/// build Developer Mode. Technical wording, without the first person.
+/// Settings › Experimental iPods: the switch, the allowed devices, and Developer Mode
+/// (after a warning, `ExperimentalConsent.askDeveloperMode`). Technical wording, without the first person.
 struct ExperimentalSection: View {
     @Environment(LibraryModel.self) private var model
 
@@ -20,9 +20,10 @@ struct ExperimentalSection: View {
                     Text("Allowed \(grant.allowedAt.formatted(date: .abbreviated, time: .omitted)) · firmware \(grant.firmwareVersion ?? "not reported")")
                 }
             }
-            #if DEBUG
-            Toggle("Developer Mode", isOn: $permissions.developerMode)
-            #endif
+            Toggle("Developer Mode", isOn: Binding(
+                get: { permissions.developerMode },
+                set: { on in permissions.developerMode = on ? ExperimentalConsent.askDeveloperMode() : false }))
+                .disabled(!permissions.isEnabled)
         } header: {
             Text("Experimental iPods")
         } footer: {
@@ -33,18 +34,14 @@ struct ExperimentalSection: View {
     }
 
     private var footer: String {
-        var text = """
-            Shows “Allow Experimental Writing…” in Diagnostics when all required checks pass \
-            on an iPod with an unsigned database. Permission is per device and lapses on a firmware change. \
-            Turning this off revokes all permissions.
-            """
-        #if DEBUG
-        text += """
-            \n\nDeveloper Mode (Debug builds only): writing to any unsigned database, disk images included, \
-            without the family list, the USB confirmation or the list of measured artwork formats. \
-            The signature, identity conflicts and the backup before every write stay.
-            """
-        #endif
-        return text
+        """
+        Shows “Allow Experimental Writing…” in Diagnostics when all required checks pass \
+        on an iPod with an unsigned database. Permission is per device and lapses on a firmware change. \
+        Turning this off revokes all permissions and ends Developer Mode.
+
+        Developer Mode, for developers measuring a new model: writing to any unsigned database, disk images included, \
+        without the family list, the USB confirmation or the list of measured artwork formats. \
+        The signature, identity conflicts and the backup before every write stay. Ends when Clickwill quits.
+        """
     }
 }

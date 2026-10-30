@@ -4,6 +4,26 @@ import AppKit
 /// and what undoes it; Cancel is the default button.
 enum ExperimentalConsent {
 
+    /// The warning before Developer Mode, which lifts more than a permission for one iPod does.
+    @MainActor
+    static func askDeveloperMode() -> Bool {
+        let alert = NSAlert()
+        alert.messageText = "Turn on Developer Mode?"
+        alert.informativeText = """
+            Developer Mode is for developers measuring an iPod model that is not confirmed yet. \
+            It allows writing to any iPod with an unsigned database, and to disk images, without \
+            the list of confirmed models, the USB confirmation or the list of measured artwork formats.
+
+            A write the iPod does not understand can leave its library empty or broken until a backup \
+            is restored. Kept: the signature check, identity conflicts and the backup before every write.
+            Developer Mode ends when Clickwill quits.
+            """
+        alert.alertStyle = .critical
+        alert.addButton(withTitle: "Cancel")
+        alert.addButton(withTitle: "Turn On")
+        return alert.runModal() == .alertSecondButtonReturn
+    }
+
     @MainActor
     static func ask(modelName: String) -> Bool {
         let alert = NSAlert()

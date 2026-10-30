@@ -63,9 +63,11 @@ struct LaunchOptions: Sendable {
         case diagnostics, rockbox
         /// Send Diagnostic Report over the sample Diagnostics.
         case sendReport = "send-report"
+        /// The warning before Developer Mode (`ExperimentalConsent.askDeveloperMode`).
+        case developerMode = "developer-mode"
     }
 
-    /// `--screen coverflow|albums|album|reorder|songs|overview|backups|pending|write-report|diagnostics|rockbox|send-report`.
+    /// `--screen coverflow|albums|album|reorder|songs|overview|backups|pending|write-report|diagnostics|rockbox|send-report|developer-mode`.
     /// An unknown name is `nil` - a normal launch.
     var screen: Screen? { value("--screen").flatMap(Screen.init(rawValue:)) }
     /// `--centered N`: the album in the middle of the strip (with `--screen albums` - of the wheel).
@@ -102,8 +104,9 @@ struct LaunchOptions: Sendable {
     /// `--diagnostics`: the diagnostic report to the output, then quit.
     var printsDiagnostics: Bool { has("--diagnostics") }
 
-    /// `--developer-mode`: Developer Mode from launch (`ExperimentalPermissions.developerMode`).
-    /// Exists only in a Debug build; a signed release ignores the flag.
+    /// `--developer-mode`: Developer Mode from launch, without the warning
+    /// (`ExperimentalPermissions.developerMode`). Only a Debug build reads the flag; a release
+    /// turns Developer Mode on only in Settings, after the warning.
     var developerMode: Bool {
         #if DEBUG
         has("--developer-mode")
