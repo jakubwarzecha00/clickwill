@@ -152,6 +152,10 @@ public final class LibraryModel {
     /// Anything waiting for the write - a log entry or a device task.
     public var hasPendingChanges: Bool { !changes.isEmpty }
     public var trackCount: Int { library?.tracks.count ?? 0 }
+    public var artistCount: Int {
+        guard let library else { return 0 }
+        return Set(library.tracks.compactMap { $0.artist }).count
+    }
 
     public var device: IPodDevice? { session?.device }
     /// Whether the loaded iPod has Cover Flow (`IPodCatalog.Generation.hasCoverFlow`).
