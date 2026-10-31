@@ -107,14 +107,10 @@ final class WindowState {
         guard case .album(let album) = screen else { return }
         if case .albums = albumOrigin {
             if let index = model.albumsDisplay.firstIndex(where: { $0.id == album.id }) { albumsCentered = index }
-        } else if case .artist = albumOrigin {
-            // Return to artist detail view
-            show(albumOrigin, animated: animated)
         } else if let index = model.coverFlowDisplay.firstIndex(where: { $0.id == album.id }) {
             centered = index
-        } else {
-            show(albumOrigin, animated: animated)
         }
+        show(albumOrigin, animated: animated)
     }
 
     /// Going back from artist detail to the artists tab.
@@ -138,7 +134,11 @@ final class WindowState {
         switch screen {
         case .coverFlow: return .coverFlow
         case .albums, .reorder: return .albums
-        case .album: return albumOrigin == .albums ? .albums : (albumOrigin == .artists ? .artists : .coverFlow)
+        case .album:
+            if case .albums = albumOrigin { return .albums }
+            if case .artists = albumOrigin { return .artists }
+            if case .artist = albumOrigin { return .artists }
+            return .coverFlow
         case .songs: return .songs
         case .artists, .artist: return .artists
         case .overview: return .overview

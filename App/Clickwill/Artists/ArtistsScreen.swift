@@ -8,7 +8,7 @@ struct ArtistsScreen: View {
     @Environment(WindowState.self) private var window
     /// Opens the artist's album.
     var openAlbum: (AlbumCard) -> Void = { _ in }
-    @State private var sortOrder: [KeyPathComparator<Row>] = []
+    @State private var sortOrder: [KeyPathComparator<Row>] = [KeyPathComparator(\Row.artist, comparator: .localizedStandard)]
     @State private var query = ""
     @State private var selection = Set<String>()
     @State private var error: String?
@@ -53,7 +53,11 @@ struct ArtistsScreen: View {
                 window.openArtist(artist)
             }
         }
-        .onDeleteCommand { delete(selection) }
+        .onDeleteCommand {
+            if !selection.isEmpty {
+                delete(selection)
+            }
+        }
         .searchable(text: $query, placement: .toolbar, prompt: "Search Artists")
         .scrollContentBackground(.hidden)
         .background(Theme.stage)
@@ -67,9 +71,8 @@ struct ArtistsScreen: View {
             Button("Show Albums") { window.openArtist(artist) }
             Divider()
             Button("Delete Artist from iPod", role: .destructive) {
-                delete(artists)
+                delete(artist)
             }
-            .disabled(rows.contains { artists.contains($0.id) && $0.albums.allSatisfy { model.isSyncedOnDevice(model.tracks(of: $0).first!) } })
         } else if !artists.isEmpty {
             Button("Delete \(artists.count) Artists from iPod", role: .destructive) {
                 delete(artists)
@@ -77,18 +80,64 @@ struct ArtistsScreen: View {
         }
     }
 
-    private func delete(_ artists: Set<String>) {
+    private func delete(_ artist: String) {
+        guard let row = rows.first(where: { $0.id == artist }) else { return }
+        let albums = row.albums
+        let trackCount = row.songCount
+        let fileCount = albums.reduce(0) { $0 + model.deletableFileCount(of: $1) }
+        let albumTitle = albums.count == 1 ? albums[0].displayTitle : artist
+
+        let choice = DeleteAlbumConfirmation.ask(
+            album: albumTitle, artist: artist,
+            trackCount: trackCount, fileCount: fileCount
+        )
+
+        let archive: URL?
+        switch choice {
+        case .cancelled: return
+        case .delete: archive = nil
+        case .deleteKeepingCopies(let url): archive = url
+        }
+
         do {
-            for row in rows where artists.contains(row.id) {
-                for album in row.albums {
-                    for track in model.tracks(of: album) {
-                        try model.deleteTrack(track, in: album)
-                    }
-                }
+            for album in albums {
+                try model.deleteAlbum(album, keepCopiesIn: archive)
             }
-            selection.subtract(artists)
+            selection.remove(artist)
         } catch {
             self.error = ErrorPresenter.message(for: error)
+        }
+    }
+
+    private func delete(_ artists: Set<String>) {
+        for artist in artists {
+            guard let row = rows.first(where: { $0.id == artist }) else { continue }
+            let albums = row.albums
+            let trackCount = row.songCount
+            let fileCount = albums.reduce(0) { $0 + model.deletableFileCount(of: $1) }
+            let albumTitle = albums.count == 1 ? albums[0].displayTitle : artist
+
+            let choice = DeleteAlbumConfirmation.ask(
+                album: albumTitle, artist: artist,
+                trackCount: trackCount, fileCount: fileCount
+            )
+
+            let archive: URL?
+            switch choice {
+            case .cancelled: continue
+            case .delete: archive = nil
+            case .deleteKeepingCopies(let url): archive = url
+            }
+
+            do {
+                for album in albums {
+                    try model.deleteAlbum(album, keepCopiesIn: archive)
+                }
+                selection.remove(artist)
+            } catch {
+                self.error = ErrorPresenter.message(for: error)
+                return
+            }
         }
     }
 }
