@@ -125,3 +125,8 @@ contribution is licensed the same way.
 
 Confirming a model changes what Clickwill does for everyone who owns one, so a
 pull request that confirms a model is merged only with the evidence above.
+
+## Contact
+
+Feedback sent from the app can't be answered. If you'd like a reply, email
+[clickwilldev@protonmail.com](mailto:clickwilldev@protonmail.com).

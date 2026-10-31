@@ -131,6 +131,11 @@ diagnostic report, or confirm the model in
 [`ConfirmedModels.swift`](Sources/ITDBKit/Device/ConfirmedModels.swift) with the
 evidence described in [CONTRIBUTING.md](CONTRIBUTING.md).
 
+## Contact
+
+Feedback sent from the app can't be answered. If you'd like a reply, email
+[clickwilldev@protonmail.com](mailto:clickwilldev@protonmail.com).
+
 ## License
 
 Clickwill is free software: you can redistribute it and/or modify it under the
