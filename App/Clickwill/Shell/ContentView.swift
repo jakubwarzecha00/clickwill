@@ -186,20 +186,25 @@ struct ContentView: View {
     private var subtitle: String {
         if let cdSession {
             return cdSession.draft.albumArtist.isEmpty
-                ? "\(cdSession.draft.songs.count) songs · \(AudioCDScreen.time(UInt64(cdSession.disc.duration * 1000)))"
+                ? "\(Self.count(cdSession.draft.songs.count, "song")) · \(AudioCDScreen.time(UInt64(cdSession.disc.duration * 1000)))"
                 : cdSession.draft.albumArtist
         }
         guard model.state == .loaded else { return "" }
         switch window.screen {
         // As many albums as the iPod shows - an album scattered across the table is one.
-        case .coverFlow, .albums: return "\(model.coverFlowAlbums.count) albums · \(model.trackCount) songs"
+        case .coverFlow, .albums: return "\(Self.count(model.coverFlowAlbums.count, "album")) · \(Self.count(model.trackCount, "song"))"
         case .album(let album): return (model.current(album) ?? album).displayArtist
         case .reorder: return "The order the iPod shows"
-        case .songs: return "\(model.trackCount) songs"
+        case .songs: return Self.count(model.trackCount, "song")
         case .overview: return model.deviceName ?? model.source?.displayName ?? ""
         case .backups: return "Restore the iPod to an earlier state"
         case .audioCD: return ""
         }
+    }
+
+    /// "1 album", "18 albums".
+    static func count(_ number: Int, _ noun: String) -> String {
+        "\(number) \(number == 1 ? noun : noun + "s")"
     }
 
     /// The playback bar at the bottom of the window: when a track was chosen, when playback reported

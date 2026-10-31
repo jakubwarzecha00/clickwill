@@ -128,7 +128,7 @@ final class WindowState {
 
     func select(_ item: SidebarItem) {
         switch item {
-        // Clicking the tab that the open album belongs to leaves the album.
+        // Clicking the tab that the open album belongs to keeps the album open.
         case .coverFlow:
             if sidebarSelection != .coverFlow { show(.coverFlow) }
         case .albums:
