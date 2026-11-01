@@ -80,16 +80,26 @@ final class WindowState {
 
     func open(_ album: AlbumCard) {
         switch screen {
-        case .coverFlow, .albums: albumOrigin = screen
+        case .coverFlow, .albums, .artists: albumOrigin = screen
+        case .artist(let artist):
+            albumOrigin = .artist(artist)
         // From Songs and from the change list we go back to the first library screen.
         default: albumOrigin = home
         }
         show(.album(album), animated: true)
     }
 
+    func openArtist(_ artist: String) {
+        show(.artist(artist), animated: true)
+    }
+
     /// The name of the tab Back returns to.
     var albumOriginTitle: String {
-        if case .albums = albumOrigin { "Albums" } else { "Cover Flow" }
+        switch albumOrigin {
+        case .albums: return "Albums"
+        case .artists, .artist: return "Artists"
+        default: return "Cover Flow"
+        }
     }
 
     /// Going back from an album to the tab it was opened from - with that album in the middle.
@@ -101,6 +111,12 @@ final class WindowState {
             centered = index
         }
         show(albumOrigin, animated: animated)
+    }
+
+    /// Going back from artist detail to the artists tab.
+    func closeArtist(animated: Bool = true) {
+        guard case .artist = screen else { return }
+        show(.artists, animated: animated)
     }
 
     /// From the toolbar and the View menu (HIG: every toolbar item has its counterpart in the menu).
@@ -118,8 +134,13 @@ final class WindowState {
         switch screen {
         case .coverFlow: return .coverFlow
         case .albums, .reorder: return .albums
-        case .album: return albumOrigin == .albums ? .albums : .coverFlow
+        case .album:
+            if case .albums = albumOrigin { return .albums }
+            if case .artists = albumOrigin { return .artists }
+            if case .artist = albumOrigin { return .artists }
+            return .coverFlow
         case .songs: return .songs
+        case .artists, .artist: return .artists
         case .overview: return .overview
         case .backups: return .backups
         case .audioCD: return nil
@@ -134,6 +155,8 @@ final class WindowState {
         case .albums:
             if sidebarSelection != .albums { show(.albums) }
         case .songs: show(.songs)
+        case .artists:
+            if sidebarSelection != .artists { show(.artists) }
         case .overview: show(.overview)
         case .backups: show(.backups)
         case .disc(let volume): show(.audioCD(volume))
