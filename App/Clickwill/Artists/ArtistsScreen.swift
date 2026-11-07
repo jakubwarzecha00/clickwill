@@ -13,7 +13,11 @@ struct ArtistsScreen: View {
     @State private var selection = Set<String>()
     @State private var error: String?
 
-    struct Row: Identifiable {
+    @State private var rows = TableRows<Row>()
+    /// Column widths: kept here, because a search or a sort puts a new table in place (`TableRows.arrangement`).
+    @State private var columns = TableColumnCustomization<Row>()
+
+    struct Row: Identifiable, Sendable {
         let id: String
         let artist: String
         let albumCount: Int
@@ -21,30 +25,33 @@ struct ArtistsScreen: View {
         let albums: [AlbumCard]
     }
 
-    private var rows: [Row] {
+    private func allRows() -> [Row] {
         let artistMap: [String: (albums: [AlbumCard], songs: Int)] = model.albums.reduce(into: [:]) { dict, album in
             let artist = album.displayArtist
             if dict[artist] == nil {
                 dict[artist] = (albums: [], songs: 0)
             }
             dict[artist]?.albums.append(album)
-            dict[artist]?.songs += model.tracks(of: album).count
+            dict[artist]?.songs += album.trackCount
         }
 
-        let all = artistMap.map { (artist, data) in
+        return artistMap.map { (artist, data) in
             Row(id: artist, artist: artist, albumCount: data.albums.count, songCount: data.songs, albums: data.albums)
         }
-
-        let text = query.trimmingCharacters(in: .whitespaces)
-        let found = text.isEmpty ? all : all.filter { $0.artist.localizedStandardContains(text) }
-        return sortOrder.isEmpty ? found : found.sorted(using: sortOrder)
     }
 
     var body: some View {
-        Table(rows, selection: $selection, sortOrder: $sortOrder) {
-            TableColumn("Artist", value: \.artist)
+        let request = TableRows<Row>.Request(revision: model.catalogRevision, query: query, sortOrder: sortOrder)
+        Table(rows.shown, selection: $selection, sortOrder: $sortOrder, columnCustomization: $columns) {
+            TableColumn("Artist", value: \.artist).customizationID("artist").disabledCustomizationBehavior([.reorder, .visibility])
             TableColumn("Albums", value: \.albumCount) { Text("\($0.albumCount)").monospacedDigit() }.width(60)
+                .customizationID("albums").disabledCustomizationBehavior([.reorder, .visibility])
             TableColumn("Songs", value: \.songCount) { Text("\($0.songCount)").monospacedDigit() }.width(60)
+                .customizationID("songs").disabledCustomizationBehavior([.reorder, .visibility])
+        }
+        .id(rows.arrangement)
+        .onChange(of: request, initial: true) {
+            rows.update(for: request, build: allRows) { row, text in row.artist.localizedStandardContains(text) }
         }
         .contextMenu(forSelectionType: String.self) { artists in
             menu(for: artists)
@@ -81,7 +88,7 @@ struct ArtistsScreen: View {
     }
 
     private func delete(_ artist: String) {
-        guard let row = rows.first(where: { $0.id == artist }) else { return }
+        guard let row = rows.shown.first(where: { $0.id == artist }) else { return }
         let albums = row.albums
         let trackCount = row.songCount
         let fileCount = albums.reduce(0) { $0 + model.deletableFileCount(of: $1) }
@@ -111,7 +118,7 @@ struct ArtistsScreen: View {
 
     private func delete(_ artists: Set<String>) {
         for artist in artists {
-            guard let row = rows.first(where: { $0.id == artist }) else { continue }
+            guard let row = rows.shown.first(where: { $0.id == artist }) else { continue }
             let albums = row.albums
             let trackCount = row.songCount
             let fileCount = albums.reduce(0) { $0 + model.deletableFileCount(of: $1) }

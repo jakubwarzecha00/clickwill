@@ -109,7 +109,8 @@ struct FormatScanQueueTests {
         let albumIDs = model.tracks(of: album).map { String($0.id) }
 
         files.askedAudio = []
-        files.onFirstAudio = { MainActor.assumeIsolated { model.prioritizeFormatCheck(of: album) } }
+        // The scan asks away from the main thread; the user clicks on it, while the scan waits for the answer.
+        files.onFirstAudio = { DispatchQueue.main.sync { MainActor.assumeIsolated { model.prioritizeFormatCheck(of: album) } } }
         await try #require(model.formatScan).value
 
         let first = try #require(files.askedAudio.first)

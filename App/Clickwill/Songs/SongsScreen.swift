@@ -18,28 +18,40 @@ struct SongsScreen: View {
     @State private var error: String?
     /// Duplicates to review - collected at the moment of the click, not on every redraw of the sheet.
     @State private var duplicates: [DuplicateGroup]?
+    /// How many songs the bar above the table reports - counted once per library change.
+    @State private var duplicateCount = 0
+    @State private var rows = TableRows<Row>()
+    /// Column widths: kept here, because a search or a sort puts a new table in place (`TableRows.arrangement`).
+    @State private var columns = TableColumnCustomization<Row>()
 
-    struct Row: Identifiable {
+    struct Row: Identifiable, Sendable {
         let id: UInt32; let title: String; let artist: String; let album: String; let duration: TimeInterval; let plays: UInt32
         let track: TrackRow; let card: AlbumCard
     }
-    private var rows: [Row] {
-        let all = model.albums.flatMap { album in
+
+    private func allRows() -> [Row] {
+        model.albums.flatMap { album in
             model.tracks(of: album).map { Row(id: $0.id, title: $0.displayTitle, artist: $0.artist, album: album.displayTitle,
                                               duration: $0.duration, plays: $0.playCount, track: $0, card: album) }
         }
-        let text = query.trimmingCharacters(in: .whitespaces)
-        let found = text.isEmpty ? all : all.filter {
-            $0.title.localizedStandardContains(text) || $0.artist.localizedStandardContains(text) || $0.album.localizedStandardContains(text)
-        }
-        return sortOrder.isEmpty ? found : found.sorted(using: sortOrder)
     }
 
     var body: some View {
-        let shown = rows
+        let request = TableRows<Row>.Request(revision: model.catalogRevision, query: query, sortOrder: sortOrder)
         VStack(spacing: 0) {
             duplicatesBar
-            table(shown)
+            table(rows.shown)
+        }
+        .onChange(of: request, initial: true) {
+            rows.update(for: request, build: allRows) { row, text in
+                row.title.localizedStandardContains(text) || row.artist.localizedStandardContains(text)
+                    || row.album.localizedStandardContains(text)
+            }
+        }
+        .task(id: model.catalogRevision) {
+            // In --demo also on a backup from Backups (a website video): writing is blocked anyway.
+            let count = model.isWritable || model.writesBlocked ? await model.duplicateCount() : 0
+            if !Task.isCancelled { duplicateCount = count }
         }
         .sheet(isPresented: Binding(get: { duplicates != nil }, set: { if !$0 { duplicates = nil } })) {
             DuplicatesSheet(groups: duplicates ?? []).environment(model)
@@ -48,13 +60,11 @@ struct SongsScreen: View {
 
     /// The bar above the table only when there are duplicates on the iPod.
     @ViewBuilder private var duplicatesBar: some View {
-        // In --demo also on a backup from Backups (a website video): writing is blocked anyway.
-        let groups = model.isWritable || model.writesBlocked ? model.duplicateGroups() : []
-        if !groups.isEmpty {
+        if duplicateCount > 0 {
             HStack(spacing: 10) {
                 Image(systemName: "square.on.square").foregroundStyle(Theme.accent)
-                Text(groups.count == 1 ? "1 song is on your iPod more than once."
-                                       : "\(groups.count) songs are on your iPod more than once.")
+                Text(duplicateCount == 1 ? "1 song is on your iPod more than once."
+                                         : "\(duplicateCount) songs are on your iPod more than once.")
                     .font(.theme(.body))
                 Spacer()
                 Button("Review Duplicates…") { duplicates = model.duplicateGroups() }
@@ -68,13 +78,16 @@ struct SongsScreen: View {
     }
 
     private func table(_ shown: [Row]) -> some View {
-        Table(shown, selection: $selection, sortOrder: $sortOrder) {
-            TableColumn("Title", value: \.title)
-            TableColumn("Artist", value: \.artist)
-            TableColumn("Album", value: \.album)
+        Table(shown, selection: $selection, sortOrder: $sortOrder, columnCustomization: $columns) {
+            TableColumn("Title", value: \.title).customizationID("title").disabledCustomizationBehavior([.reorder, .visibility])
+            TableColumn("Artist", value: \.artist).customizationID("artist").disabledCustomizationBehavior([.reorder, .visibility])
+            TableColumn("Album", value: \.album).customizationID("album").disabledCustomizationBehavior([.reorder, .visibility])
             TableColumn("Plays", value: \.plays) { Text("\($0.plays)").monospacedDigit() }.width(60)
+                .customizationID("plays").disabledCustomizationBehavior([.reorder, .visibility])
             TableColumn("Time", value: \.duration) { Text($0.duration.clockLabel).monospacedDigit() }.width(60)
+                .customizationID("time").disabledCustomizationBehavior([.reorder, .visibility])
         }
+        .id(rows.arrangement)
         .contextMenu(forSelectionType: UInt32.self) { ids in
             menu(for: ids, in: shown)
         } primaryAction: { ids in

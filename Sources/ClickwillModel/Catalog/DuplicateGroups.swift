@@ -40,6 +40,16 @@ extension LibraryModel {
         }
     }
 
+    /// How many songs are on the iPod more than once - the same number as `duplicateGroups().count`.
+    /// Formats and missing files only decide which copy stays, so the format scan does not change
+    /// it: the answer lasts until the library changes (`catalogRevision`).
+    public func duplicateCount() async -> Int {
+        guard let tracks = library?.tracks else { return 0 }
+        return await Task.detached(priority: .userInitiated) {
+            Self.duplicateClusters(tracks, missing: [], unsupported: []).count
+        }.value
+    }
+
     /// Copies of the same song, the best one at the start of each group.
     ///
     /// Which one stays: first the one that has a file, then the one the iPod plays,

@@ -67,7 +67,12 @@ public final class LibraryModel {
     /// Format limits of the connected model; without a source, the Classic profile.
     public var capabilities: IPodCapabilities { session?.capabilities ?? .classic }
     /// Album cards: the album table and the Cover Flow strip (`AlbumCatalog`).
-    public private(set) var catalog = AlbumCatalog.empty
+    public private(set) var catalog = AlbumCatalog.empty {
+        didSet { catalogRevision += 1 }
+    }
+    /// Grows every time the cards are rebuilt, so after every library change. A screen that works
+    /// out a long list from the library watches this instead of redoing the list on every redraw.
+    public private(set) var catalogRevision = 0
     /// The order from the album table - it governs the Albums menu and the track order.
     public var albums: [AlbumCard] { catalog.albums }
     /// The order in which Cover Flow shows covers on the iPod.
@@ -200,21 +205,28 @@ public final class LibraryModel {
     public func load(_ source: LibrarySource) async {
         let source = withWritePolicy(source)
         state = .loading
+        generation += 1
+        let loadGeneration = generation
         do {
-            var session = try LibrarySession.open(source, files: environment.files)
+            // Reading checks one file per song, which takes seconds on a full iPod: away from the
+            // main thread, so the window stays alive and shows that it is reading.
+            let files = environment.files
+            var session = try await Task.detached(priority: .userInitiated) {
+                try LibrarySession.open(source, files: files)
+            }.value
+            // While reading, another load may have started or the iPod may have disappeared.
+            guard generation == loadGeneration else { return }
             // A backup shown as an iPod pretends to be a recognized iPod classic.
             if demo.presentsAsDevice(source) { session.capabilities.isAssumed = false }
 
             // The new state comes in whole only after a successful read - after an error
             // the old library must not be tied to a new write target.
-            generation += 1
             let sameSource = self.source == source
             self.session = session
             // With several iPods connected, the next launch will start from this one.
             if let device = session.device { connections.remember(device) }
             changes = ChangeSet()
             formats = FormatReport()
-            let loadGeneration = generation
             await covers.reload(paths: session.paths, artwork: session.artwork, keepRequested: sameSource)
             // While waiting, the iPod may have disappeared (a USB reset in the dock) and
             // `deviceDisconnected()` has already cleared the model. Without this check
@@ -226,6 +238,7 @@ public final class LibraryModel {
             state = .loaded
             startFormatScan()
         } catch {
+            guard generation == loadGeneration else { return }
             state = .failed(.loading(error))
         }
     }
@@ -259,8 +272,9 @@ public final class LibraryModel {
     }
 
     /// Examines the files of the connected iPod (`FormatScanner`) and adds verdicts in batches,
-    /// so the view refreshes along the way. A new load or a new scan stops
-    /// the previous one - both read from one queue, so only one ever runs.
+    /// so the view refreshes along the way. A verdict changes nothing on the album cards, so
+    /// they are not rebuilt here. A new load or a new scan stops the previous one - both read
+    /// from one queue, so only one ever runs.
     private func scanFormats() async {
         guard let session, session.canCheckFiles else { return }
         let started = generation
@@ -273,7 +287,6 @@ public final class LibraryModel {
         let isCurrent = { self.generation == started && self.scanNumber == number }
         let finished = await scanner.scan(next: { scanQueue.next() }, isCurrent: isCurrent) { batch in
             formats.merge(batch)
-            rebuildCards()
         }
         if finished { formats.isComplete = true }
     }

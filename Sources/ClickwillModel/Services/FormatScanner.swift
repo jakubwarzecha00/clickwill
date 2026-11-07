@@ -16,40 +16,51 @@ public struct FormatReport: Sendable {
 }
 
 /// Reads the header of every audio file on the iPod and judges it against the model's
-/// format limits. The library has over a thousand files, so the results come in batches:
+/// format limits. A library can have tens of thousands of files, so the results come in batches:
 /// the view refreshes along the way, and the caller can stop the scan between
 /// batches (e.g. when another library was loaded).
-struct FormatScanner {
+struct FormatScanner: Sendable {
     let paths: IPodPaths
     let capabilities: IPodCapabilities
     var files: any FileSystem = LocalFileSystem()
-    var batchSize = 50
+    /// How often results are handed over. Each batch redraws every screen that shows formats,
+    /// so it depends on time and not on a number of files: a fast disk must not refresh more often.
+    var deliveryInterval: Duration = .seconds(1)
 
-    /// Takes tracks from `next` (usually `FormatScanQueue`) until it returns `nil`,
-    /// and hands over the results in batches of `batchSize` files; the last may be smaller.
+    /// Takes tracks from `next` (usually `FormatScanQueue`) until it returns `nil`, and hands over
+    /// the results every `deliveryInterval`; the last batch comes at the end and may be empty.
     /// `isCurrent` is asked before taking each track: `false` ends the scan
     /// without handing over the rest, and the track not taken stays in the queue for a newer scan.
     /// Result: whether the scan went through all tracks.
     func scan(next: () -> ITTrack?, isolation: isolated (any Actor)? = #isolation,
               isCurrent: () -> Bool, deliver: (FormatReport) -> Void) async -> Bool {
         var batch = FormatReport()
+        var lastDelivery = ContinuousClock.now
         while true {
             guard isCurrent() else { return false }
             guard let track = next() else { break }
             // A missing file is not a format verdict - the missing files count shows it.
-            guard let url = track.fileURL(on: paths), files.fileExists(at: url),
-                  let stream = await AudioFiles.stream(at: url) else { continue }
-            batch.verdicts[track.uniqueID] = AudioCompatibility.verdict(for: stream, on: capabilities, purpose: .playing)
-            batch.labels[track.uniqueID] = AudioCompatibility.label(for: stream)
-            if batch.verdicts.count == batchSize {
+            guard let found = await inspect(track) else { continue }
+            batch.verdicts[track.uniqueID] = found.verdict
+            batch.labels[track.uniqueID] = found.label
+            if ContinuousClock.now - lastDelivery >= deliveryInterval {
                 guard isCurrent() else { return false }
                 deliver(batch)
                 batch = FormatReport()
+                lastDelivery = .now
             }
         }
         guard isCurrent() else { return false }
         deliver(batch)
         return true
+    }
+
+    /// The disk is touched here and only here. `nonisolated`, so it never runs on the caller's
+    /// actor: the caller is the main thread, and an iPod's disk can stall for seconds.
+    private nonisolated func inspect(_ track: ITTrack) async -> (verdict: AudioCompatibility.Verdict, label: String)? {
+        guard let url = track.fileURL(on: paths), files.fileExists(at: url),
+              let stream = await AudioFiles.stream(at: url) else { return nil }
+        return (AudioCompatibility.verdict(for: stream, on: capabilities, purpose: .playing), AudioCompatibility.label(for: stream))
     }
 }
 
