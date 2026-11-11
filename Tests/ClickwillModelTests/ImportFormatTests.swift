@@ -120,6 +120,35 @@ struct ImportFormatTests {
         #expect(session.candidates.filter(\.mayBeSkipped).count == 2)
     }
 
+    @Test("One song can get another format; the sheet's format then shows mixed and sets every song again")
+    func songFormat() {
+        var session = ImportSession(existing: SongIndex())
+        #expect(session.commonFormat == .automatic)
+        session.add([file("One", kind: .flac, sourceKind: .flac, verdict: Self.flacVerdict),
+                     file("Two", kind: .flac, sourceKind: .flac, verdict: Self.flacVerdict)], problems: [])
+        let one = session.candidates[0].id
+
+        session.setFormat(.original, for: one)
+        #expect(session.commonFormat == nil)
+        #expect(session.candidates[0].mayBeSkipped)
+        #expect(target(session.candidates[1]) == .appleLossless(sampleRate: 44_100))
+        #expect(session.candidates.filter(\.mayBeSkipped).count == 1)
+
+        // Back to the same format as the rest: no longer mixed.
+        session.setFormat(.automatic, for: one)
+        #expect(session.commonFormat == .automatic)
+
+        session.setFormat(.original, for: one)
+        session.setFormat(.aac128)
+        #expect(session.commonFormat == .aac128)
+        #expect(session.candidates.allSatisfy { target($0) == .aac(bitRate: 128_000) })
+
+        // Every song changed one by one to the same format reads as that format.
+        session.setFormat(.original, for: session.candidates[0].id)
+        session.setFormat(.original, for: session.candidates[1].id)
+        #expect(session.commonFormat == .original)
+    }
+
     @Test("Only files really going to the iPod count towards the warning")
     func warningCount() async throws {
         let rig = try await WriteTests.rig(); defer { rig.cleanUp() }

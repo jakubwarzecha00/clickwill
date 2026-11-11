@@ -134,8 +134,16 @@ struct ImportSheet: View {
     private var controls: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 12) {
-                Picker("Format", selection: Binding(get: { session.format }, set: { session.setFormat($0) })) {
-                    ForEach(ImportFormat.allCases) { Text($0.label).tag($0) }
+                // Sets every song. When songs differ, it shows the mixed state (HIG, Pop-up buttons).
+                Picker("Format", selection: Binding<ImportFormat?>(
+                    get: { session.commonFormat },
+                    set: { if let format = $0 { session.setFormat(format) } }
+                )) {
+                    if session.commonFormat == nil {
+                        Text("Mixed").tag(ImportFormat?.none)
+                        Divider()
+                    }
+                    ForEach(ImportFormat.allCases) { Text($0.label).tag(ImportFormat?.some($0)) }
                 }
                 .pickerStyle(.menu)
                 .fixedSize()
@@ -144,7 +152,7 @@ struct ImportSheet: View {
                 Button("Choose More Files…") { choose() }
                     .disabled(reading)
             }
-            Text(session.format.detail)
+            Text(session.commonFormat?.detail ?? "Songs have different formats. Choosing one here sets it for every song.")
                 .font(.caption).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             notes
@@ -240,6 +248,10 @@ struct ImportSheet: View {
     private func formatColumn(_ candidate: AudioImport.Candidate) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(candidate.formatLabel).foregroundStyle(.secondary)
+            formatPicker(candidate)
+            if let reason = unchangedReason(candidate) {
+                Text("Stays as it is").foregroundStyle(.secondary).help(reason)
+            }
             if candidate.verdict.isSupported == false, let target = conversionTarget(candidate) {
                 Label(target, systemImage: "arrow.triangle.2.circlepath")
                     .foregroundStyle(.secondary)
@@ -249,6 +261,38 @@ struct ImportSheet: View {
         }
         .font(.subheadline)
         .lineLimit(1)
+    }
+
+    /// One song's format. The Format pop-up at the top shows "Mixed" once songs differ.
+    private func formatPicker(_ candidate: AudioImport.Candidate) -> some View {
+        Picker("Format of \(candidate.draft.title)", selection: Binding(
+            get: { session.format(of: candidate) },
+            set: { session.setFormat($0, for: candidate.id) }
+        )) {
+            ForEach(ImportFormat.allCases) { Text($0.label).tag($0) }
+        }
+        .pickerStyle(.menu)
+        .labelsHidden()
+        .controlSize(.small)
+        .fixedSize()
+        .help("The format of this song only.")
+    }
+
+    /// Why a chosen format leaves this file as it is. Without it, choosing Apple Lossless for an
+    /// AAC file would look like a choice that did nothing. Automatic and Keep Original leave
+    /// files as they are by definition, so they need no explanation.
+    private func unchangedReason(_ candidate: AudioImport.Candidate) -> String? {
+        guard candidate.verdict.isSupported else { return nil }
+        switch session.format(of: candidate) {
+        case .automatic, .original:
+            return nil
+        case .appleLossless:
+            return candidate.draft.kind.isLossless
+                ? "It's already Apple Lossless that your iPod can play."
+                : "It's a compressed file, so Apple Lossless wouldn't improve the sound. It would only take more space."
+        case .aac256, .aac128:
+            return "Its bit rate is already this low or lower, so converting it would only lose quality."
+        }
     }
 
     /// A warning: the system's multicolor triangle next to plain text.

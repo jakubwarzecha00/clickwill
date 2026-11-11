@@ -50,8 +50,10 @@ public struct ImportSession: Sendable {
     /// Tracks that already exist, but the user wants to add them anyway.
     private var addAnyway: Set<UUID> = []
     private var choices: [UUID: AlbumChoice] = [:]
-    /// The format chosen for the whole sheet.
+    /// The format last chosen for the whole sheet; files added later get it too.
     public private(set) var format: ImportFormat = .automatic
+    /// Files given another format than the sheet's, one by one.
+    private var ownFormats: [UUID: ImportFormat] = [:]
     /// Each file's own verdict, so that any format can be chosen and taken back.
     private var fileVerdicts: [UUID: AudioCompatibility.Verdict] = [:]
     private let capabilities: IPodCapabilities
@@ -81,7 +83,7 @@ public struct ImportSession: Sendable {
         }
         for candidate in fresh { fileVerdicts[candidate.id] = candidate.verdict }
         candidates += fresh.filter { !$0.isHopeless }
-            .map { format.applied(to: $0, fileVerdict: $0.verdict, on: capabilities) }
+            .map { format(of: $0).applied(to: $0, fileVerdict: $0.verdict, on: capabilities) }
         problems += foundProblems.map(Note.unreadable)
             + fresh.filter(\.isHopeless).map { .cannotPlay(title: $0.draft.title, reason: $0.verdict.reason) }
     }
@@ -96,20 +98,40 @@ public struct ImportSession: Sendable {
         matches = found
     }
 
-    /// Chooses the format of every file in the sheet.
+    /// Chooses the format of every file in the sheet, including files given another one before.
     public mutating func setFormat(_ format: ImportFormat) {
         self.format = format
-        for index in candidates.indices {
-            let candidate = candidates[index]
-            candidates[index] = format.applied(to: candidate, fileVerdict: fileVerdicts[candidate.id] ?? candidate.verdict,
-                                               on: capabilities)
-        }
+        ownFormats = [:]
+        for index in candidates.indices { applyFormat(at: index) }
+    }
+
+    /// The format this file goes onto the iPod in.
+    public func format(of candidate: AudioImport.Candidate) -> ImportFormat { ownFormats[candidate.id] ?? format }
+
+    /// Chooses the format of one file.
+    public mutating func setFormat(_ format: ImportFormat, for id: UUID) {
+        ownFormats[id] = format == self.format ? nil : format
+        guard let index = candidates.firstIndex(where: { $0.id == id }) else { return }
+        applyFormat(at: index)
+    }
+
+    /// The format all files share, or `nil` when they differ - the sheet shows "Mixed" then.
+    public var commonFormat: ImportFormat? {
+        let formats = Set(candidates.map(format(of:)))
+        return formats.count > 1 ? nil : formats.first ?? format
+    }
+
+    private mutating func applyFormat(at index: Int) {
+        let candidate = candidates[index]
+        candidates[index] = format(of: candidate).applied(
+            to: candidate, fileVerdict: fileVerdicts[candidate.id] ?? candidate.verdict, on: capabilities)
     }
 
     /// A file left out of adding ("Leave this file out").
     public mutating func remove(_ id: UUID) {
         candidates.removeAll { $0.id == id }
         addAnyway.remove(id)
+        ownFormats[id] = nil
     }
 
     /// A notice from outside loading, e.g. an artwork image that cannot be read.
