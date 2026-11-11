@@ -2,18 +2,27 @@ import Foundation
 import ITDBKit
 import ClickwillModel
 
-/// `add FILE|FOLDER ... [--title T] [--artist A] [--album B] [--track N] [--apply]`
+/// `add FILE|FOLDER ... [--title T] [--artist A] [--album B] [--track N] [--format F] [--apply]`
 /// - adding tracks to the library; without `--apply` only a preview.
 enum AddCommand {
     static func run(_ call: Invocation) async throws {
         let device = try openDevice(call)
-        let sources = call.positional(valueFlags: ["--title", "--artist", "--album", "--track"])
+        let sources = call.positional(valueFlags: ["--title", "--artist", "--album", "--track", "--format"])
             .map { URL(fileURLWithPath: ($0 as NSString).expandingTildeInPath) }
         guard !sources.isEmpty else { throw CommandError("give files or folders to add") }
+        var format = ImportFormat.automatic
+        if let name = call.value(for: "--format") {
+            guard let chosen = ImportFormat(rawValue: name) else {
+                throw CommandError("unknown format '\(name)': use " + ImportFormat.allCases.map(\.rawValue).joined(separator: ", "))
+            }
+            format = chosen
+        }
 
         var (candidates, problems) = await AudioImport.candidates(at: sources)
         for problem in problems { print("  SKIPPED: \(problem)") }
         guard !candidates.isEmpty else { throw CommandError("no audio files found") }
+        let capabilities = IPodCapabilities.resolve(for: device)
+        candidates = candidates.map { format.applied(to: $0, fileVerdict: $0.verdict, on: capabilities) }
 
         // Field overrides - for files without tags.
         // --artist and --album describe the whole album, so they work for a batch too.
@@ -40,7 +49,8 @@ enum AddCommand {
             let mark = candidate.verdict.isSupported ? " " : "!"
             print("  \(mark) \(candidate.draft.trackNumber > 0 ? String(format: "%02u ", candidate.draft.trackNumber) : "   ")\(candidate.draft.title)")
             print("      \(candidate.draft.artist ?? "?") / \(candidate.draft.album ?? "?")  \(candidate.formatLabel)  \(formatted(bytes: Int64(candidate.draft.sizeBytes)))")
-            if let reason = candidate.verdict.reason { print("      the iPod will not play this: \(reason)") }
+            if candidate.mayBeSkipped { print("      kept as it is: the iPod's firmware may skip it") }
+            if let reason = candidate.verdict.reason { print("      \(format == .automatic ? "the iPod will not play this: " : "")\(reason)") }
             if candidate.verdict.isSupported { playable.append(candidate) } else { needConversion.append(candidate) }
         }
         if !needConversion.isEmpty {

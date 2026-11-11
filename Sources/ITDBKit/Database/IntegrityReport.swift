@@ -45,8 +45,9 @@ public struct IntegrityReport: Sendable {
             && sizeMismatches.isEmpty && danglingReferences.isEmpty
     }
 
-    /// Extensions the iPod Classic can play.
-    public static let audioExtensions: Set<String> = ["mp3", "m4a", "m4b", "m4p", "aa", "aif", "aiff", "wav"]
+    /// Extensions of the audio files that can lie in the Music folder. FLAC is not played by
+    /// Apple's firmware, but the user can choose to keep it, so it must not go unnoticed.
+    public static let audioExtensions: Set<String> = ["mp3", "m4a", "m4b", "m4p", "aa", "aif", "aiff", "wav", "flac"]
 
     public static func build(library: ITLibrary, paths: IPodPaths) throws -> IntegrityReport {
         let manager = FileManager.default

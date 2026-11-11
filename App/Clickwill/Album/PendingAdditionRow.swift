@@ -33,6 +33,7 @@ struct PendingAdditionRow: View {
         var parts = ["Added on Write to iPod"]
         if let index = addition.placement?.index { parts.append("Goes in as song \(index + 1)") }
         if addition.needsConversion, let target = addition.target { parts.append("Converted to \(target.label)") }
+        if addition.mayBeSkipped { parts.append("Your iPod may skip it") }
         return parts.joined(separator: " · ")
     }
 }

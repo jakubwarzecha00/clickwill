@@ -121,11 +121,10 @@ struct PreviewButton: View {
         } label: {
             Image(systemName: preview.isPlaying(id) ? "pause.fill" : "play.fill")
         }
-        // A system circular button instead of our own circle (native UI).
-        .buttonStyle(.bordered)
-        .buttonBorderShape(.circle)
-        .controlSize(.small)
-        .tint(preview.isLoaded(id) ? .accentColor : nil)
+        // The same quiet style as the row's other button; a filled circle on every row
+        // outweighed the song titles.
+        .buttonStyle(.borderless)
+        .foregroundStyle(preview.isLoaded(id) ? AnyShapeStyle(.tint) : AnyShapeStyle(.secondary))
         .help(preview.isPlaying(id) ? "Stop the preview" : "Listen to this file")
     }
 }
@@ -137,19 +136,10 @@ struct PreviewScrubber: View {
     @Bindable var preview: PreviewPlayer
 
     var body: some View {
-        let total = max(preview.duration, 0.01)
-        GeometryReader { geometry in
-            ZStack(alignment: .leading) {
-                Capsule().fill(Theme.sep).frame(height: 3)
-                Capsule().fill(Theme.accent)
-                    .frame(width: geometry.size.width * min(preview.currentTime / total, 1), height: 3)
-            }
-            .frame(height: 3)
-            .contentShape(Rectangle().size(width: geometry.size.width, height: 14))
-            .onTapGesture { location in
-                preview.seek(id, to: total * (location.x / max(geometry.size.width, 1)))
-            }
-        }
-        .frame(height: 14)
+        Slider(value: Binding(get: { min(preview.currentTime, max(preview.duration, 0.01)) },
+                              set: { preview.seek(id, to: $0) }),
+               in: 0...max(preview.duration, 0.01))
+            .controlSize(.small)
+            .accessibilityLabel("Position in the preview")
     }
 }
