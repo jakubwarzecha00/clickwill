@@ -37,7 +37,7 @@ All numbers are little-endian. Offsets are counted from the start of the record.
 | 0x0C | 4 | number of `mhod` children | measured | |
 | 0x10 | 4 | `uniqueID` - the browse tables hold it, **never change it** | measured | changing it scrambles the menu |
 | 0x14 | 4 | visible (1) | from the format | |
-| 0x18 | 4 | file type, a four-character code (`MP3 `) | measured | |
+| 0x18 | 4 | file type, a four-character code (`MP3 `) | measured | `FLAC` on a Classic with firmware 2.0.4: listed in the menu, skipped on playback, the database stays as written |
 | 0x1C | 1 | type 1 | from the format | |
 | 0x1D | 1 | type 2 | from the format | |
 | **0x1E** | 1 | **compilation flag** - moves the album to the "Compilations" group at the end of Cover Flow | measured | the iPod reads it on the fly, without rebuilding the tables |

@@ -20,21 +20,24 @@ public struct PendingAddition: Identifiable, Sendable {
     /// A place in a specific album (adding from the album view). Without it the track
     /// goes where its tags point.
     public var placement: AlbumPlacement?
+    /// Kept as it is at the user's request, although the iPod's firmware may skip it.
+    public let mayBeSkipped: Bool
 
     public init(id: UUID, draft: TrackDraft, source: URL, verdict: AudioCompatibility.Verdict,
-                formatLabel: String, cover: AudioImport.CoverSource?) {
+                formatLabel: String, cover: AudioImport.CoverSource?, mayBeSkipped: Bool = false) {
         self.id = id
         self.draft = draft
         self.source = source
         self.verdict = verdict
         self.formatLabel = formatLabel
         self.cover = cover
+        self.mayBeSkipped = mayBeSkipped
     }
 
     public init(_ candidate: AudioImport.Candidate) {
         self.init(id: candidate.id, draft: candidate.draft, source: candidate.url,
                   verdict: candidate.verdict, formatLabel: candidate.formatLabel,
-                  cover: candidate.coverSource)
+                  cover: candidate.coverSource, mayBeSkipped: candidate.mayBeSkipped)
     }
 
     public var needsConversion: Bool { !verdict.isSupported }

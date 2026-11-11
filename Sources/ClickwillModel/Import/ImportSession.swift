@@ -50,9 +50,15 @@ public struct ImportSession: Sendable {
     /// Tracks that already exist, but the user wants to add them anyway.
     private var addAnyway: Set<UUID> = []
     private var choices: [UUID: AlbumChoice] = [:]
+    /// The format chosen for the whole sheet.
+    public private(set) var format: ImportFormat = .automatic
+    /// Each file's own verdict, so that any format can be chosen and taken back.
+    private var fileVerdicts: [UUID: AudioCompatibility.Verdict] = [:]
+    private let capabilities: IPodCapabilities
 
-    public init(existing: SongIndex) {
+    public init(existing: SongIndex, capabilities: IPodCapabilities = .classic) {
         self.existing = existing
+        self.capabilities = capabilities
     }
 
     // MARK: - Loading
@@ -73,7 +79,9 @@ public struct ImportSession: Sendable {
             byKey[key] = group
             groupOf[candidate.id] = group
         }
+        for candidate in fresh { fileVerdicts[candidate.id] = candidate.verdict }
         candidates += fresh.filter { !$0.isHopeless }
+            .map { format.applied(to: $0, fileVerdict: $0.verdict, on: capabilities) }
         problems += foundProblems.map(Note.unreadable)
             + fresh.filter(\.isHopeless).map { .cannotPlay(title: $0.draft.title, reason: $0.verdict.reason) }
     }
@@ -86,6 +94,16 @@ public struct ImportSession: Sendable {
             if let match = model.matchingAlbum(for: album.songs) { found[album.id] = match }
         }
         matches = found
+    }
+
+    /// Chooses the format of every file in the sheet.
+    public mutating func setFormat(_ format: ImportFormat) {
+        self.format = format
+        for index in candidates.indices {
+            let candidate = candidates[index]
+            candidates[index] = format.applied(to: candidate, fileVerdict: fileVerdicts[candidate.id] ?? candidate.verdict,
+                                               on: capabilities)
+        }
     }
 
     /// A file left out of adding ("Leave this file out").
@@ -218,6 +236,16 @@ public struct ImportSession: Sendable {
 
     /// Files that must be transcoded before the write.
     public var converting: Int { candidates.filter { !$0.verdict.isSupported }.count }
+
+    /// Files going to the iPod that its firmware may skip - the sheet asks before adding them.
+    /// Left-out files do not count, so nobody is warned about a file that is not going anywhere.
+    @MainActor public func mayBeSkippedCount(in model: LibraryModel) -> Int {
+        let added = toAdd(in: model).filter(\.mayBeSkipped).count
+        let replacing = replacements.reduce(0) { total, replacement in
+            total + replacement.album.songs.filter { $0.mayBeSkipped && replacement.match.pairs[$0.id] != nil }.count
+        }
+        return added + replacing
+    }
 
     /// An album that is not on the iPod yet.
     @MainActor public func isNewAlbum(_ key: AlbumKey?, in model: LibraryModel) -> Bool {

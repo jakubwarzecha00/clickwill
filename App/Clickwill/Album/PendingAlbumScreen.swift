@@ -124,6 +124,9 @@ struct PendingAlbumScreen: View {
                     if let target = song.target {
                         Text("Converted to \(target.label)").foregroundStyle(.orange)
                     }
+                    if song.mayBeSkipped {
+                        Text("Your iPod may skip it").foregroundStyle(.orange)
+                    }
                 }
                 .font(.theme(.footnote)).lineLimit(1)
             }

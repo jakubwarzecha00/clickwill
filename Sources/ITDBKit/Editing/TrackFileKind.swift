@@ -8,6 +8,10 @@ import Foundation
 /// for lossless formats) and the text description in an `mhod` of type 6, which the iPod
 /// shows in the track info.
 ///
+/// `flac` is here for people who run other firmware. Apple's firmware lists such an entry and
+/// skips it on playback (measured on a Classic with firmware 2.0.4), so it is only ever
+/// written at the user's explicit request.
+///
 /// Values measured on a real device across 1603 tracks: within
 /// one text description all three numeric fields are constant, and between
 /// descriptions they differ. That is why a new record must be created
@@ -17,6 +21,7 @@ public enum TrackFileKind: String, Sendable, CaseIterable, Codable {
     case aac
     case appleLossless
     case wav
+    case flac
 
     /// The container code (`MhitLayout.fileTypeCode`). It lies reversed in the file (little endian).
     public var fourCharacterCode: String {
@@ -24,6 +29,7 @@ public enum TrackFileKind: String, Sendable, CaseIterable, Codable {
         case .mp3: return "MP3 "
         case .aac, .appleLossless: return "M4A "
         case .wav: return "WAV "
+        case .flac: return "FLAC"
         }
     }
 
@@ -36,12 +42,13 @@ public enum TrackFileKind: String, Sendable, CaseIterable, Codable {
         case .aac: return "AAC audio file"
         case .appleLossless: return "Apple Lossless audio file"
         case .wav: return "WAV audio file"
+        case .flac: return "FLAC audio file"
         }
     }
 
     public var isLossless: Bool {
         switch self {
-        case .appleLossless, .wav: return true
+        case .appleLossless, .wav, .flac: return true
         case .mp3, .aac: return false
         }
     }
@@ -51,16 +58,18 @@ public enum TrackFileKind: String, Sendable, CaseIterable, Codable {
         case .mp3: return "mp3"
         case .aac, .appleLossless: return "m4a"
         case .wav: return "wav"
+        case .flac: return "flac"
         }
     }
 
     /// The kind derived from the CoreAudio identifier and the extension.
-    /// `nil` for anything the iPod does not know - such files go through
-    /// conversion, not straight into the database.
+    /// `nil` for anything the database has no description for - such files always go
+    /// through conversion.
     public static func from(formatID: String, fileExtension: String) -> TrackFileKind? {
         switch formatID {
         case ".mp3": return .mp3
         case "alac": return .appleLossless
+        case "flac": return .flac
         case "lpcm": return fileExtension.lowercased() == "wav" ? .wav : nil
         default: return formatID.hasPrefix("aac") ? .aac : nil
         }
@@ -131,6 +140,13 @@ public struct TrackKindProfile: Sendable {
         return TrackKindProfile(kind: .appleLossless, bytes: bytes)
     }()
 
+    /// The Apple Lossless bytes under the FLAC kind. Written and read back on a Classic
+    /// with firmware 2.0.4; no FLAC record written by Apple exists to measure against.
+    public static let flac = TrackKindProfile(kind: .flac, bytes: appleLossless.bytes)
+
     /// Kinds with a measured profile.
-    public static let measured: [TrackFileKind: TrackKindProfile] = [.appleLossless: appleLossless]
+    public static let measured: [TrackFileKind: TrackKindProfile] = [
+        .appleLossless: appleLossless,
+        .flac: flac,
+    ]
 }

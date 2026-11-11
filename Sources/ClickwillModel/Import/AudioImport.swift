@@ -15,9 +15,9 @@ public enum AudioImport {
         public let id = UUID()
         public let url: URL
         public var draft: TrackDraft
-        /// The format compatibility verdict. A file the iPod will not play does not go
-        /// into the database in this form - it goes through conversion or drops out.
-        public let verdict: AudioCompatibility.Verdict
+        /// What happens to the file on its way to the iPod: as it is, converted, or not at all.
+        /// Starts as the file's own compatibility verdict; `ImportFormat` can change it.
+        public var verdict: AudioCompatibility.Verdict
         public let formatLabel: String
         /// Artwork embedded in the file, if any.
         public let artwork: Data?
@@ -29,6 +29,12 @@ public enum AudioImport {
         /// everything else: it is the only source that comes directly from
         /// the user, and the other two are guesses - good ones, but guesses.
         public var chosenCover: URL?
+        /// The kind the file really is, when the database has a description for it.
+        /// `draft.kind` falls back to Apple Lossless for the rest, because that is what
+        /// they are converted to.
+        public var sourceKind: TrackFileKind?
+        /// Kept as it is at the user's request, although the iPod's firmware may skip it.
+        public var mayBeSkipped = false
 
         /// Where to get artwork for this album, if at all.
         public var coverSource: CoverSource? {
@@ -109,7 +115,8 @@ public enum AudioImport {
 
         // The kind is needed for choosing the `mhit` template; for a file the iPod
         // will not play, the conversion target format decides anyway.
-        let kind = TrackFileKind.from(formatID: stream.formatID, fileExtension: url.pathExtension) ?? .appleLossless
+        let sourceKind = TrackFileKind.from(formatID: stream.formatID, fileExtension: url.pathExtension)
+        let kind = sourceKind ?? .appleLossless
 
         // A file without a title tag: we take the name, but without the leading number -
         // "01 - Song.mp3" is the title "Song" and track number 1, not a title
@@ -129,13 +136,21 @@ public enum AudioImport {
             isCompilation: isCompilation,
             durationMilliseconds: UInt32(clamping: Int(duration.isFinite ? duration * 1000 : 0)),
             sizeBytes: UInt32(clamping: size),
-            bitRate: UInt32(clamping: stream.bitRate / 1000),
+            bitRate: bitRateInKilobits(stream, sizeBytes: size, duration: duration),
             sampleRate: UInt32(clamping: stream.sampleRate),
             kind: kind, relativePath: "")
 
         return Candidate(url: url, draft: draft, verdict: verdict,
                          formatLabel: AudioCompatibility.label(for: stream),
-                         artwork: await artwork(all))
+                         artwork: await artwork(all), sourceKind: sourceKind)
+    }
+
+    /// AVFoundation reports no data rate for some formats, FLAC among them. The average from
+    /// the file's size and length is then the honest number.
+    static func bitRateInKilobits(_ stream: AudioStream, sizeBytes: Int, duration: Double) -> UInt32 {
+        if stream.bitRate > 0 { return UInt32(clamping: stream.bitRate / 1000) }
+        guard duration.isFinite, duration > 0 else { return 0 }
+        return UInt32(clamping: Int((Double(sizeBytes) * 8 / duration / 1000).rounded()))
     }
 
     /// Reads a folder or a list of files; folders are walked recursively.

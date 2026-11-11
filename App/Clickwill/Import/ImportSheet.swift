@@ -25,10 +25,14 @@ struct ImportSheet: View {
     /// What could not be queued after "Add" - shown before the sheet
     /// closes, not lost together with it.
     @State private var refused: ImportSession.Commit?
+    /// "Add" was clicked with files the iPod's firmware may skip - the sheet asks first.
+    @State private var confirmingSkippable = false
 
     var body: some View {
-        // A native macOS 27 sheet: the system background (Liquid Glass), Form sections
-        // in the grouped style, the Cancel and Add buttons in their standard places.
+        // Standard parts only, per the Human Interface Guidelines for macOS: a sheet with its
+        // buttons in their system places, a pop-up button with its explanation under it, and
+        // a list of songs grouped by album. Controls stay at the top, away from the window's
+        // bottom edge (Layout).
         NavigationStack {
             Group {
                 if reading {
@@ -47,14 +51,13 @@ struct ImportSheet: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(confirmTitle) {
-                        let commit = session.commit(to: model)
-                        if commit.refused.isEmpty { dismiss() } else { refused = commit }
+                        if session.mayBeSkippedCount(in: model) > 0 { confirmingSkippable = true } else { addToLibrary() }
                     }
                     .disabled((session.toAdd(in: model).isEmpty && session.replaceCount == 0) || reading)
                 }
             }
         }
-        .frame(minWidth: 860, idealWidth: 980, minHeight: 620, idealHeight: 820)
+        .frame(minWidth: 760, idealWidth: 860, minHeight: 440, idealHeight: 600)
         // More files from Finder straight onto the open dialog, like "Choose More Files…".
         .dropDestination(for: URL.self) { urls, _ in
             let files = urls.filter(\.isFileURL)
@@ -64,7 +67,7 @@ struct ImportSheet: View {
         }
         .task {
             guard session.candidates.isEmpty else { return }
-            session = ImportSession(existing: model.songIndex())
+            session = ImportSession(existing: model.songIndex(), capabilities: model.capabilities)
             if !initialURLs.isEmpty { await read(initialURLs) }
         }
         // The sheet is modal: closing it without stopping the preview
@@ -81,6 +84,12 @@ struct ImportSheet: View {
             Button("OK") { refused = nil; dismiss() }
         } message: {
             Text(refusalMessage)
+        }
+        .alert(skippableTitle, isPresented: $confirmingSkippable) {
+            Button("Add Anyway") { addToLibrary() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text(skippableMessage)
         }
     }
 
@@ -102,33 +111,50 @@ struct ImportSheet: View {
     }
 
     private var list: some View {
-        Form {
-            Section {
-                LabeledContent("To add") {
-                    HStack(spacing: 12) {
-                        Text(summary).monospacedDigit()
-                        Button("Choose More Files…") { choose() }
-                            .controlSize(.small)
-                            .disabled(reading)
+        VStack(spacing: 0) {
+            controls
+            Divider()
+            List {
+                if !session.problems.isEmpty { problemSection }
+                ForEach(session.albums, id: \.id) { group in
+                    Section {
+                        if let match = session.matches[group.id] { matchRow(group, match) }
+                        ForEach(group.songs) { candidate in row(candidate) }
+                    } header: {
+                        albumHeader(group)
                     }
                 }
-                footerNotes
             }
-            if !session.problems.isEmpty { problemSection }
-            ForEach(session.albums, id: \.id) { group in
-                Section {
-                    if let match = session.matches[group.id] { matchRow(group, match) }
-                    ForEach(group.songs) { candidate in row(candidate) }
-                } header: {
-                    albumHeader(group)
-                }
-            }
+            .listStyle(.inset)
+            .alternatingRowBackgrounds()
         }
-        .formStyle(.grouped)
     }
 
-    /// The album section header: artwork, the album name and album artist (correctable
-    /// in place), the new album badge and the track count.
+    /// What applies to the whole sheet, above the songs it applies to.
+    private var controls: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 12) {
+                Picker("Format", selection: Binding(get: { session.format }, set: { session.setFormat($0) })) {
+                    ForEach(ImportFormat.allCases) { Text($0.label).tag($0) }
+                }
+                .pickerStyle(.menu)
+                .fixedSize()
+                Spacer(minLength: 12)
+                Text(summary).foregroundStyle(.secondary).monospacedDigit()
+                Button("Choose More Files…") { choose() }
+                    .disabled(reading)
+            }
+            Text(session.format.detail)
+                .font(.caption).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            notes
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 12)
+    }
+
+    /// The section header of an album: artwork, the album name and album artist (correctable
+    /// in place), and what is being added.
     private func albumHeader(_ group: ImportAlbum) -> some View {
         HStack(alignment: .center, spacing: 12) {
             cover(for: group)
@@ -141,30 +167,25 @@ struct ImportSheet: View {
                     // this it had to be typed in every row separately.
                     if let artist = session.albumArtist(of: group.id), session.songsDiffer(in: group.id, from: artist) {
                         Button("Apply to All \(group.songs.count) Songs") { session.editGroup(group.id) { $0.artist = artist } }
-                            .buttonStyle(.bordered)
                             .controlSize(.small)
                             .fixedSize()
                             .help("Sets \u{201C}\(artist)\u{201D} as the artist of every song in this album.")
                     }
                 }
-            }
-            Spacer(minLength: 8)
-            VStack(alignment: .trailing, spacing: 4) {
-                if isNewAlbum(group.songs.first?.draft.albumKey),
-                   session.matches[group.id] == nil || session.choice(for: group.id) == .separate {
-                    Text("New Album")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.tint)
-                        .padding(.horizontal, 8).padding(.vertical, 2)
-                        .background(.tint.opacity(0.15), in: .capsule)
-                }
-                Text("\(group.songs.count) \(group.songs.count == 1 ? "song" : "songs")")
+                Text(albumDetail(group))
                     .font(.caption).foregroundStyle(.secondary).monospacedDigit()
             }
-            .fixedSize()
+            Spacer(minLength: 8)
         }
         .textCase(nil)
-        .padding(.vertical, 4)
+        .padding(.vertical, 6)
+    }
+
+    private func albumDetail(_ group: ImportAlbum) -> String {
+        let songs = "\(group.songs.count) \(group.songs.count == 1 ? "song" : "songs")"
+        let isNew = isNewAlbum(group.songs.first?.draft.albumKey)
+            && (session.matches[group.id] == nil || session.choice(for: group.id) == .separate)
+        return isNew ? "New album · \(songs)" : songs
     }
 
     private func row(_ candidate: AudioImport.Candidate) -> some View {
@@ -176,24 +197,12 @@ struct ImportSheet: View {
                             width: 28, alignment: .trailing)
                 VStack(alignment: .leading, spacing: 2) {
                     ImportField(text: titleBinding(candidate.id), placeholder: "Add title", font: .body)
-                    HStack(spacing: 6) {
-                        // When replacing files the iPod keeps its own data, so an empty
-                        // artist field would only invite typing in vain.
-                        if session.replacedRow(candidate) == nil || !artistBinding(candidate.id).wrappedValue.isEmpty {
-                            ImportField(text: artistBinding(candidate.id), placeholder: "Add artist", font: .subheadline, width: 220)
-                                .foregroundStyle(.secondary)
-                        }
-                        // One line: a wrapping format description stretched the row in height.
-                        Text(candidate.formatLabel).font(.caption).foregroundStyle(.secondary)
-                            .lineLimit(1).fixedSize()
-                        if candidate.verdict.isSupported == false, let target = conversionTarget(candidate) {
-                            Text("Converted to \(target)")
-                                .font(.caption.weight(.medium)).foregroundStyle(.orange)
-                                .lineLimit(1).fixedSize()
-                        }
+                    // When replacing files the iPod keeps its own data, so an empty
+                    // artist field would only invite typing in vain.
+                    if session.replacedRow(candidate) == nil || !artistBinding(candidate.id).wrappedValue.isEmpty {
+                        ImportField(text: artistBinding(candidate.id), placeholder: "Add artist", font: .subheadline)
+                            .foregroundStyle(.secondary)
                     }
-                    // A separate line under the artist: in one row with the title,
-                    // format and size there was no room for it.
                     if let replaced = session.replacedRow(candidate) {
                         Label("Replaces \u{201C}\(replaced.displayTitle)\u{201D} on the iPod", systemImage: "arrow.triangle.2.circlepath")
                             .font(.caption).foregroundStyle(.secondary)
@@ -201,10 +210,13 @@ struct ImportSheet: View {
                         duplicateControl(candidate, place: place).padding(.top, 2)
                     }
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .opacity(session.isLeftOut(candidate) ? 0.5 : 1)
-                Spacer(minLength: 8)
+                formatColumn(candidate)
+                    .frame(width: 220, alignment: .leading)
                 Text(ByteCountFormatter.string(fromByteCount: Int64(draft.sizeBytes), countStyle: .file))
-                    .font(.caption.monospacedDigit()).foregroundStyle(.secondary).fixedSize()
+                    .font(.subheadline.monospacedDigit()).foregroundStyle(.secondary)
+                    .frame(width: 64, alignment: .trailing)
                 Button {
                     if preview.isLoaded(candidate.id) { preview.stop() }
                     session.remove(candidate.id)
@@ -221,6 +233,31 @@ struct ImportSheet: View {
                     .padding(.leading, 32).padding(.trailing, 4)
             }
         }
+        .padding(.vertical, 2)
+    }
+
+    /// The file's format, and what happens to it on the way to the iPod.
+    private func formatColumn(_ candidate: AudioImport.Candidate) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(candidate.formatLabel).foregroundStyle(.secondary)
+            if candidate.verdict.isSupported == false, let target = conversionTarget(candidate) {
+                Label(target, systemImage: "arrow.triangle.2.circlepath")
+                    .foregroundStyle(.secondary)
+                    .help("Converted to \(target)")
+            }
+            if candidate.mayBeSkipped { warning("Your iPod may skip it") }
+        }
+        .font(.subheadline)
+        .lineLimit(1)
+    }
+
+    /// A warning: the system's multicolor triangle next to plain text.
+    private func warning(_ text: String) -> some View {
+        Label {
+            Text(text).foregroundStyle(.secondary)
+        } icon: {
+            Image(systemName: "exclamationmark.triangle.fill").symbolRenderingMode(.multicolor)
+        }
     }
 
     /// A track that already exists is skipped by default - the same file a second time
@@ -229,21 +266,35 @@ struct ImportSheet: View {
     private func duplicateControl(_ candidate: AudioImport.Candidate, place: SongIndex.Place) -> some View {
         let forced = session.isAddedAnyway(candidate)
         return HStack(spacing: 8) {
-            Label(place == .onIPod ? "Already on the iPod" : "Already in the list of changes",
-                  systemImage: "exclamationmark.triangle.fill")
-                .font(.caption.weight(.medium))
-                .foregroundStyle(forced ? AnyShapeStyle(.secondary) : AnyShapeStyle(.orange))
+            warning(place == .onIPod ? "Already on the iPod" : "Already in the list of changes")
+                .font(.caption)
                 .fixedSize()
             Button(forced ? "Skip" : "Add Anyway") {
                 session.toggleAddAnyway(candidate)
             }
-            .buttonStyle(.bordered)
             .controlSize(.mini)
             .fixedSize()
         }
         .help(place == .onIPod
               ? "A song with this title, artist, album and length is already on the iPod. It is skipped unless you add it anyway."
               : "This song is already waiting in the list of changes. It is skipped unless you add it anyway.")
+    }
+
+    private func addToLibrary() {
+        let commit = session.commit(to: model)
+        if commit.refused.isEmpty { dismiss() } else { refused = commit }
+    }
+
+    private var skippableTitle: String {
+        let count = session.mayBeSkippedCount(in: model)
+        return count == 1 ? "Add 1 Song Your iPod May Skip?" : "Add \(count) Songs Your iPod May Skip?"
+    }
+
+    private var skippableMessage: String {
+        if session.mayBeSkippedCount(in: model) == 1 {
+            return "The iPod's original firmware may not support this format and will skip this song when it comes up. It still shows in your library. If you want it to play, choose Automatic to convert it."
+        }
+        return "The iPod's original firmware may not support this format and will skip these songs when they come up. They still show in your library. If you want them to play, choose Automatic to convert them."
     }
 
     private var refusalTitle: String {
@@ -276,9 +327,8 @@ struct ImportSheet: View {
                 Text("This looks like \u{201C}\(match.album.displayTitle)\u{201D} by \(match.album.displayArtist), already on your iPod. \(match.pairs.count) of \(total) songs match.")
                     .fixedSize(horizontal: false, vertical: true)
             } icon: {
-                Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+                Image(systemName: "exclamationmark.triangle.fill").symbolRenderingMode(.multicolor)
             }
-            .font(.callout.weight(.medium))
             Picker("What to do with this album", selection: binding) {
                 Text("Replace Files").tag(ImportSession.AlbumChoice.replace)
                 Text("Skip").tag(ImportSession.AlbumChoice.skip)
@@ -319,47 +369,48 @@ struct ImportSheet: View {
     private var problemSection: some View {
         Section {
             ForEach(Array(session.problems.enumerated()), id: \.offset) { _, problem in
-                Label(ErrorPresenter.line(problem), systemImage: "exclamationmark.triangle.fill")
-                    .foregroundStyle(.orange)
+                warning(ErrorPresenter.line(problem))
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
     }
 
-    /// Notes before adding: skipped duplicates, albums without artwork, conversions
-    /// and the model we check the files against.
-    @ViewBuilder private var footerNotes: some View {
+    /// Notes before adding, only when there is something to say: skipped duplicates, albums
+    /// without artwork, conversions, and an iPod whose model was not recognized.
+    @ViewBuilder private var notes: some View {
         let skippedCount = session.skippedCount, replaceCount = session.replaceCount
         let coverless = session.coverless(in: model), converting = session.converting
-        if skippedCount > 0 {
-            Label(skippedCount == 1
-                  ? "1 song is already there and will be skipped."
-                  : "\(skippedCount) songs are already there and will be skipped.",
-                  systemImage: "arrow.uturn.right")
-                .foregroundStyle(.orange)
+        Group {
+            if skippedCount > 0 {
+                Label(skippedCount == 1
+                      ? "1 song is already there and will be skipped."
+                      : "\(skippedCount) songs are already there and will be skipped.",
+                      systemImage: "arrow.uturn.right")
+            }
+            if replaceCount > 0 {
+                Label(replaceCount == 1
+                      ? "1 file replaces a song already on the iPod."
+                      : "\(replaceCount) files replace songs already on the iPod.",
+                      systemImage: "arrow.triangle.2.circlepath")
+            }
+            if coverless > 0 {
+                Label(coverless == 1
+                      ? "1 new album has no cover. Click its thumbnail to choose one."
+                      : "\(coverless) new albums have no cover. Click a thumbnail to choose one.",
+                      systemImage: "photo.badge.plus")
+            }
+            if converting > 0 {
+                Label("\(converting) \(converting == 1 ? "file needs" : "files need") converting first. Your own copies stay where they are.",
+                      systemImage: "arrow.triangle.2.circlepath")
+            }
+            // The limits by which we judge files depend on the model.
+            if model.capabilities.isAssumed {
+                Label("I couldn't recognize this iPod's exact model, so I checked these files against \(model.capabilities.name).",
+                      systemImage: "questionmark.circle")
+            }
         }
-        if replaceCount > 0 {
-            Label(replaceCount == 1
-                  ? "1 file replaces a song already on the iPod."
-                  : "\(replaceCount) files replace songs already on the iPod.",
-                  systemImage: "arrow.triangle.2.circlepath")
-        }
-        if coverless > 0 {
-            Label(coverless == 1
-                  ? "1 new album has no cover. Click its thumbnail to choose one."
-                  : "\(coverless) new albums have no cover. Click a thumbnail to choose one.",
-                  systemImage: "photo.badge.plus")
-                .foregroundStyle(.orange)
-        }
-        if converting > 0 {
-            Label("\(converting) \(converting == 1 ? "file needs" : "files need") converting first. Your own copies stay where they are.",
-                  systemImage: "arrow.triangle.2.circlepath")
-        }
-        // The limits by which we judge files depend on the model.
-        // When the model was not recognized, we say so plainly.
-        LabeledContent("Checked against", value: model.capabilities.isAssumed
-                       ? "\(model.capabilities.name) (exact model unknown)"
-                       : model.capabilities.name)
+        .font(.subheadline)
+        .foregroundStyle(.secondary)
     }
 
     // MARK: - Data
@@ -395,14 +446,14 @@ struct ImportSheet: View {
                     Image(decorative: image, scale: 1).resizable().aspectRatio(contentMode: .fill)
                 } else {
                     Rectangle().fill(.fill.tertiary)
-                    Image(systemName: "photo.badge.plus").font(.symbol(.medium))
-                        .foregroundStyle(.orange)
+                    Image(systemName: "photo.badge.plus").font(.title2)
+                        .symbolRenderingMode(.hierarchical)
+                        .foregroundStyle(.secondary)
                 }
             }
-            .frame(width: 44, height: 44)
+            .frame(width: 64, height: 64)
             .clipShape(RoundedRectangle(cornerRadius: 6))
-            .overlay(RoundedRectangle(cornerRadius: 6)
-                .strokeBorder(image == nil ? AnyShapeStyle(.orange.opacity(0.6)) : AnyShapeStyle(.separator), lineWidth: image == nil ? 1 : 0.5))
+            .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(.separator, lineWidth: 0.5))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
