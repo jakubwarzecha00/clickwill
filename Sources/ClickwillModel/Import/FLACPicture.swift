@@ -22,7 +22,7 @@ enum FLACPicture {
     static func cover(at url: URL) -> Data? {
         guard let handle = try? FileHandle(forReadingFrom: url) else { return nil }
         defer { try? handle.close() }
-        guard read(handle, count: 4).map(Data.init) == signature else { return nil }
+        guard let magic = read(handle, count: 4), Data(magic) == signature else { return nil }
 
         var firstPicture: Data?
         for _ in 0..<maximumBlocks {
