@@ -84,6 +84,7 @@ struct BackupsScreen: View {
         }
         .listStyle(.inset)
         .scrollContentBackground(.hidden)
+        .accessibilityIdentifier("backups.list")
         .disabled(phase == .restoring)
         .onChange(of: selectedID) { phase = .browsing }
         .frame(width: 300)

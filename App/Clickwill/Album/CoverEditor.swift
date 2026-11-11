@@ -43,6 +43,7 @@ struct CoverEditor: View {
         // For VoiceOver (and demo recordings): the artwork as a single button.
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Album Cover")
+        .accessibilityIdentifier("album.cover")
         .accessibilityAddTraits(.isButton)
         .accessibilityAction { if locked == nil { choose() } }
         .accessibilityAction(named: "Change Cover…") { if locked == nil { choose() } }

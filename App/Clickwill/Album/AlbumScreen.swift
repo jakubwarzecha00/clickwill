@@ -82,6 +82,7 @@ struct AlbumScreen: View {
                     withAnimation(Self.editorAnimation) { editorShown.toggle() }
                 }
                 .help(editorShown ? "Hide the album editor" : "Edit the album's details and cover")
+                .accessibilityIdentifier("album.editorToggle")
             }
         }
         .task(id: current.artworkTrackID) { await model.ensureArtwork(for: current.artworkTrackID) }
@@ -183,6 +184,7 @@ struct AlbumScreen: View {
                                  set: { value in withAnimation(Self.editorAnimation) { editorShown = value } })) {
                 Label("Edit", systemImage: "slider.horizontal.3")
             }
+            .accessibilityIdentifier("album.menu.edit")
             Button("Add Songs to This Album…", systemImage: "plus", action: chooseSongs)
                 .disabled(!model.isWritable)
             if current.isCompilation {
@@ -205,6 +207,7 @@ struct AlbumScreen: View {
         .menuIndicator(.hidden)
         .fixedSize()
         .help("More actions for this album")
+        .accessibilityIdentifier("album.menu")
     }
 
     private var meta: String {

@@ -108,6 +108,7 @@ struct AudioCDScreen: View {
         ToolbarItemGroup(placement: .primaryAction) {
             Button { perform(.lookUp) } label: { Label("Look Up Online", systemImage: "text.magnifyingglass") }
                 .help("Look Up Online: finds the song names in MusicBrainz. Sends only this CD's ID.")
+                .accessibilityIdentifier("cd.lookUp")
                 .disabled(session.isRipping || session.lookup == .looking)
             Button { perform(.eject) } label: { Label("Eject Disc", systemImage: "eject") }
                 .help("Eject Disc")
@@ -122,11 +123,13 @@ struct AudioCDScreen: View {
                     Button("Import CD") { perform(.importCD) }
                         .disabled(session.draft.missing != nil)
                         .help(session.draft.missing ?? "Import the checked songs to this Mac, then add them to your iPod.")
+                        .accessibilityIdentifier("cd.import")
                 } else {
                     Button("Import CD") { perform(.importCD) }
                         .prominentGlassButtonStyle()
                         .disabled(session.draft.missing != nil)
                         .help(session.draft.missing ?? "Import the checked songs to this Mac, then add them to your iPod.")
+                        .accessibilityIdentifier("cd.import")
                 }
             }
         }
@@ -166,6 +169,7 @@ struct AudioCDScreen: View {
                         }
                         .buttonStyle(.borderedProminent)
                         .controlSize(.large)
+                        .accessibilityIdentifier("cd.lookUpFirstStep")
                         Text("Fills in the song names, year, genre and cover.")
                             .font(.callout).foregroundStyle(.secondary)
                     }

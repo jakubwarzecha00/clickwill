@@ -54,6 +54,7 @@ struct ImportSheet: View {
                         if session.mayBeSkippedCount(in: model) > 0 { confirmingSkippable = true } else { addToLibrary() }
                     }
                     .disabled((session.toAdd(in: model).isEmpty && session.replaceCount == 0) || reading)
+                    .accessibilityIdentifier("addSongs.confirm")
                 }
             }
         }
@@ -375,10 +376,14 @@ struct ImportSheet: View {
             }
             Picker("What to do with this album", selection: binding) {
                 Text("Replace Files").tag(ImportSession.AlbumChoice.replace)
+                    .accessibilityIdentifier("addSongs.albumChoice.replace")
                 Text("Skip").tag(ImportSession.AlbumChoice.skip)
+                    .accessibilityIdentifier("addSongs.albumChoice.skip")
                 Text("Add as a Separate Album").tag(ImportSession.AlbumChoice.separate)
+                    .accessibilityIdentifier("addSongs.albumChoice.separate")
             }
             .pickerStyle(.segmented)
+            .accessibilityIdentifier("addSongs.albumChoice")
             .labelsHidden()
             .fixedSize()
             Group {

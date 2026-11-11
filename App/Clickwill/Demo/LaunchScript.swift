@@ -117,9 +117,12 @@ struct LaunchScript: Sendable {
         let forward = Array(stride(from: from + direction, through: to, by: direction))
         let backward = Array(stride(from: to - direction, through: from, by: -direction))
         let slots = [from] + forward + [to] + backward
-        FileHandle.standardError.write(Data("coverflow-loop \(slots.count) beats of 1.2 s\n".utf8))
         let clock = ContinuousClock()
         let start = clock.now
+        // The wall-clock start lets a recorder cut whole periods without looking at the frames;
+        // each period starts halfway through the pause on `from`.
+        let startedAt = String(format: "%.3f", Date().timeIntervalSince1970)
+        FileHandle.standardError.write(Data("coverflow-loop \(slots.count) beats of 1.2 s, started at \(startedAt)\n".utf8))
         for tick in 0... {
             try? await clock.sleep(until: start + beat * tick)
             let target = slots[tick % slots.count]

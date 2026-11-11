@@ -69,6 +69,7 @@ struct SongsScreen: View {
                 Spacer()
                 Button("Review Duplicates…") { duplicates = model.duplicateGroups() }
                     .controlSize(.small)
+                    .accessibilityIdentifier("songs.reviewDuplicates")
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 8)
@@ -94,6 +95,7 @@ struct SongsScreen: View {
             play(ids.first, in: shown)
         }
         .onDeleteCommand { delete(selection, in: shown) }
+        .accessibilityIdentifier("songs.table")
         .searchable(text: $query, placement: .toolbar, prompt: "Search Songs")
         .scrollContentBackground(.hidden)
         .background(Theme.stage)

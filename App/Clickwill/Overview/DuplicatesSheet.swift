@@ -45,6 +45,7 @@ struct DuplicatesSheet: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button(extraCopies == 1 ? "Remove 1 Copy" : "Remove \(extraCopies) Copies") { merge() }
                         .disabled(chosen.isEmpty)
+                        .accessibilityIdentifier("duplicates.remove")
                 }
             }
         }
