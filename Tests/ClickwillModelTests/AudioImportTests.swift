@@ -119,6 +119,69 @@ struct AudioImportTests {
         let missing = await AudioImport.vorbisPair([Self.vorbis("DISCNUMBER", "1")], "TRACKNUMBER", totals: "TRACKTOTAL")
         #expect(missing.0 == 0 && missing.1 == 0)
     }
+
+    // MARK: - FLAC pictures
+
+    static func bigEndian(_ value: Int, bytes: Int = 4) -> [UInt8] {
+        (0..<bytes).reversed().map { UInt8(truncatingIfNeeded: value >> ($0 * 8)) }
+    }
+
+    static func pictureBody(type: Int, mime: String = "image/jpeg", image: [UInt8]) -> [UInt8] {
+        bigEndian(type) + bigEndian(mime.utf8.count) + Array(mime.utf8)
+            + bigEndian(5) + Array("Cover".utf8)
+            + bigEndian(600) + bigEndian(600) + bigEndian(24) + bigEndian(0)
+            + bigEndian(image.count) + image
+    }
+
+    static func block(_ type: UInt8, _ body: [UInt8], last: Bool = false, claimedLength: Int? = nil) -> [UInt8] {
+        [type | (last ? 0x80 : 0)] + bigEndian(claimedLength ?? body.count, bytes: 3) + body
+    }
+
+    /// A FLAC file with only the metadata blocks: enough for the picture reader.
+    static func flacFile(_ blocks: [[UInt8]], signature: String = "fLaC") throws -> URL {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("clickwill-picture-\(UUID().uuidString.prefix(8)).flac")
+        try Data(Array(signature.utf8) + blocks.joined()).write(to: url)
+        return url
+    }
+
+    @Test("FLAC: the front cover from a PICTURE block, after other blocks and other pictures")
+    func flacFrontCover() throws {
+        let url = try Self.flacFile([
+            Self.block(0, Array(repeating: 0, count: 34)),
+            Self.block(4, Array(repeating: 7, count: 40)),
+            Self.block(6, Self.pictureBody(type: 4, image: [9, 9])),
+            Self.block(6, Self.pictureBody(type: 3, image: [1, 2, 3]), last: true),
+        ])
+        defer { try? FileManager.default.removeItem(at: url) }
+        #expect(FLACPicture.cover(at: url) == Data([1, 2, 3]))
+    }
+
+    @Test("FLAC: without a front cover, the first picture is used")
+    func flacFirstPicture() throws {
+        let url = try Self.flacFile([
+            Self.block(0, Array(repeating: 0, count: 34)),
+            Self.block(6, Self.pictureBody(type: 0, image: [4, 5])),
+            Self.block(6, Self.pictureBody(type: 4, image: [6]), last: true),
+        ])
+        defer { try? FileManager.default.removeItem(at: url) }
+        #expect(FLACPicture.cover(at: url) == Data([4, 5]))
+    }
+
+    @Test("FLAC: no picture from a linked image, a damaged block, a cut-off file or a file that isn't FLAC")
+    func flacNoPicture() throws {
+        let link = try Self.flacFile([Self.block(6, Self.pictureBody(type: 3, mime: "-->", image: Array("http://x".utf8)), last: true)])
+        var damaged = Self.pictureBody(type: 3, image: [1, 2, 3])
+        damaged.replaceSubrange(damaged.count - 7..<damaged.count - 3, with: Self.bigEndian(1_000))
+        let wrongLength = try Self.flacFile([Self.block(6, damaged, last: true)])
+        let cutOff = try Self.flacFile([Self.block(6, Self.pictureBody(type: 3, image: [1, 2, 3]), last: true, claimedLength: 5_000)])
+        let pastEnd = try Self.flacFile([Self.block(1, [0, 0], claimedLength: 1 << 20)])
+        let notFLAC = try Self.flacFile([Self.block(6, Self.pictureBody(type: 3, image: [1, 2, 3]), last: true)], signature: "ID3\u{3}")
+        defer { for url in [link, wrongLength, cutOff, pastEnd, notFLAC] { try? FileManager.default.removeItem(at: url) } }
+        for url in [link, wrongLength, cutOff, pastEnd, notFLAC] {
+            #expect(FLACPicture.cover(at: url) == nil)
+        }
+    }
 }
 
 @Suite("Expanding folders when adding")

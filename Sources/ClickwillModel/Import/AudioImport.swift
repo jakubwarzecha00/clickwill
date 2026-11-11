@@ -140,9 +140,13 @@ public enum AudioImport {
             sampleRate: UInt32(clamping: stream.sampleRate),
             kind: kind, relativePath: "")
 
+        // AVFoundation does not report FLAC's PICTURE block, so a FLAC cover is read directly.
+        var artwork = await artwork(all)
+        if artwork == nil, sourceKind == .flac { artwork = FLACPicture.cover(at: url) }
+
         return Candidate(url: url, draft: draft, verdict: verdict,
                          formatLabel: AudioCompatibility.label(for: stream),
-                         artwork: await artwork(all), sourceKind: sourceKind)
+                         artwork: artwork, sourceKind: sourceKind)
     }
 
     /// AVFoundation reports no data rate for some formats, FLAC among them. The average from
