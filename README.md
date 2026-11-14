@@ -10,10 +10,10 @@ what you see is what is on the iPod.
 
 ![Clickwill showing an iPod classic library in Cover Flow](docs/clickwill.png)
 
-With Clickwill you can browse the library in Cover Flow, add songs and albums,
-change artwork, reorder tracks, fix album metadata, merge duplicates, convert
-files the iPod cannot play, rip audio CDs, and restore earlier states of the
-library from backups.
+With Clickwill you can browse the library in Cover Flow or by artist, add songs
+and albums in the format you choose, change artwork, reorder tracks, fix album
+metadata, merge duplicates, convert files the iPod cannot play, rip audio CDs,
+and restore earlier states of the library from backups.
 
 **[Download the free beta](https://clickwilldev.com/#download)** &middot;
 [clickwilldev.com](https://clickwilldev.com)
