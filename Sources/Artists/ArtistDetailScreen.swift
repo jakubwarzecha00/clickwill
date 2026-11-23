@@ -2,11 +2,11 @@ import SwiftUI
 import ClickwillModel
 import ClickwillShared
 
-/// Albums for a specific artist.
+/// The albums of one artist.
 struct ArtistDetailScreen: View {
     @Environment(LibraryModel.self) private var model
+    @Environment(\.artistsActions) private var actions
     let artist: String
-    let openAlbum: (AlbumCard) -> Void
     @State private var selection = Set<UInt32>()
     @State private var error: String?
 
@@ -31,7 +31,7 @@ struct ArtistDetailScreen: View {
                 ScrollView {
                     LazyVGrid(columns: [GridItem(.adaptive(minimum: 180, maximum: 220))], spacing: 20) {
                         ForEach(albums) { album in
-                            AlbumCardView(album: album, open: openAlbum)
+                            AlbumCardView(album: album, open: actions.openAlbum)
                         }
                     }
                     .padding(20)
@@ -46,11 +46,10 @@ struct ArtistDetailScreen: View {
     }
 }
 
-/// A card showing an album with its cover.
 private struct AlbumCardView: View {
     @Environment(LibraryModel.self) private var model
     let album: AlbumCard
-    let open: (AlbumCard) -> Void
+    let open: @MainActor (AlbumCard) -> Void
     @State private var hovered = false
 
     var body: some View {

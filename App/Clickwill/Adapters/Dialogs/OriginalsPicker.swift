@@ -1,6 +1,7 @@
 import SwiftUI
 import AppKit
 import ClickwillModel
+import ClickwillShared
 
 /// Choosing a place for the originals before a conversion. A conversion to 16 bits cannot
 /// be undone, so we ask **every time** - the last folder serves only

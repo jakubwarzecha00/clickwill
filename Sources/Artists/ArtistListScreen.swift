@@ -2,20 +2,17 @@ import SwiftUI
 import ClickwillModel
 import ClickwillShared
 
-/// All artists in one table: sorting by column, searching,
-/// opening artist's albums.
-struct ArtistsScreen: View {
+/// Every artist of the library in one sortable, searchable table.
+struct ArtistListScreen: View {
     @Environment(LibraryModel.self) private var model
-    @Environment(WindowState.self) private var window
-    /// Opens the artist's album.
-    var openAlbum: (AlbumCard) -> Void = { _ in }
+    @Environment(\.artistsActions) private var actions
     @State private var sortOrder: [KeyPathComparator<Row>] = [KeyPathComparator(\Row.artist, comparator: .localizedStandard)]
     @State private var query = ""
     @State private var selection = Set<String>()
     @State private var error: String?
 
     @State private var rows = TableRows<Row>()
-    /// Column widths: kept here, because a search or a sort puts a new table in place (`TableRows.arrangement`).
+    /// Kept outside the table: a search or a sort replaces the table (`TableRows.arrangement`).
     @State private var columns = TableColumnCustomization<Row>()
 
     struct Row: Identifiable, Sendable {
@@ -58,7 +55,7 @@ struct ArtistsScreen: View {
             menu(for: artists)
         } primaryAction: { artists in
             if let artist = artists.first {
-                window.openArtist(artist)
+                actions.show(.artist(artist))
             }
         }
         .onDeleteCommand {
@@ -76,7 +73,7 @@ struct ArtistsScreen: View {
 
     @ViewBuilder private func menu(for artists: Set<String>) -> some View {
         if artists.count == 1, let artist = artists.first {
-            Button("Show Albums") { window.openArtist(artist) }
+            Button("Show Albums") { actions.show(.artist(artist)) }
             Divider()
             Button("Delete Artist from iPod", role: .destructive) {
                 delete(artist)

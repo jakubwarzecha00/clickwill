@@ -7,9 +7,9 @@ import ClickwillModel
 /// Deleting is the only thing a backup does **not** undo: a snapshot
 /// holds the database and artwork, not the audio files. That is why the dialog says so plainly and offers
 /// a middle way - save copies on the Mac, and only then delete.
-enum DeleteAlbumConfirmation {
+public enum DeleteAlbumConfirmation {
 
-    enum Choice {
+    public enum Choice {
         /// Delete, and save copies of the files in this folder.
         case deleteKeepingCopies(URL)
         case delete
@@ -17,7 +17,7 @@ enum DeleteAlbumConfirmation {
     }
 
     @MainActor
-    static func ask(album: String, artist: String, trackCount: Int, fileCount: Int,
+    public static func ask(album: String, artist: String, trackCount: Int, fileCount: Int,
                     folder: RememberedFolder = .deletedCopies) -> Choice {
         let alert = NSAlert()
         alert.messageText = "Delete “\(album)”?"

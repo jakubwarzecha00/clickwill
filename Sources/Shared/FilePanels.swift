@@ -4,12 +4,12 @@ import UniformTypeIdentifiers
 /// File choose panels - the only place with `NSOpenPanel`. Views say what they
 /// are looking for and what to tell the user; the panel settings are here.
 @MainActor
-enum FilePanels {
+public enum FilePanels {
     /// Audio files that can be added (other formats go through conversion).
-    static let audioTypes: [UTType] = [.audio, .mp3, .mpeg4Audio, .wav, .aiff]
+    public static let audioTypes: [UTType] = [.audio, .mp3, .mpeg4Audio, .wav, .aiff]
 
     /// One image. We read through ImageIO, so we take everything macOS opens.
-    static func chooseImage(message: String, prompt: String? = nil) -> URL? {
+    public static func chooseImage(message: String, prompt: String? = nil) -> URL? {
         let panel = NSOpenPanel()
         panel.allowedContentTypes = [.image]
         panel.allowsMultipleSelection = false
@@ -19,7 +19,7 @@ enum FilePanels {
     }
 
     /// One audio file.
-    static func chooseAudioFile(message: String, prompt: String) -> URL? {
+    public static func chooseAudioFile(message: String, prompt: String) -> URL? {
         let panel = NSOpenPanel()
         panel.canChooseFiles = true
         panel.canChooseDirectories = false
@@ -31,7 +31,7 @@ enum FilePanels {
     }
 
     /// Audio files and album folders.
-    static func chooseAudio(message: String, prompt: String) -> [URL] {
+    public static func chooseAudio(message: String, prompt: String) -> [URL] {
         let panel = NSOpenPanel()
         panel.canChooseFiles = true
         panel.canChooseDirectories = true
@@ -43,7 +43,7 @@ enum FilePanels {
     }
 
     /// One folder. `canCreate`: with a new folder button (for copies).
-    static func chooseFolder(message: String, prompt: String, startingIn directory: URL? = nil,
+    public static func chooseFolder(message: String, prompt: String, startingIn directory: URL? = nil,
                              canCreate: Bool = false) -> URL? {
         let panel = NSOpenPanel()
         panel.canChooseFiles = false

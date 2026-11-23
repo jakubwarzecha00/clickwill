@@ -124,8 +124,8 @@ struct ContentView: View {
             case .album:
                 window.closeAlbum()
                 return .handled
-            case .artist:
-                window.closeArtist()
+            case .module(let page) where page.parent != nil:
+                window.goBack()
                 return .handled
             default:
                 return .ignored
@@ -185,8 +185,6 @@ struct ContentView: View {
         // the window bar kept showing the old one.
         case .album(let album): return (model.current(album) ?? album).displayTitle
         case .reorder: return "Reorder Albums"
-        case .artists: return "Artists"
-        case .artist(let artist): return artist
         case .module(let page): return page.title
         case .audioCD: return ""
         }
@@ -204,11 +202,6 @@ struct ContentView: View {
         case .coverFlow, .albums: return "\(Self.count(model.coverFlowAlbums.count, "album")) · \(Self.count(model.trackCount, "song"))"
         case .album(let album): return (model.current(album) ?? album).displayArtist
         case .reorder: return "The order the iPod shows"
-        case .artists: return Self.count(model.artistCount, "artist")
-        case .artist(let artist):
-            let artistAlbums = model.albums.filter { $0.displayArtist == artist }
-            let songCount = artistAlbums.reduce(0) { $0 + model.tracks(of: $1).count }
-            return "\(Self.count(artistAlbums.count, "album")) · \(Self.count(songCount, "song"))"
         case .module(let page): return page.subtitle(in: model)
         case .audioCD: return ""
         }
@@ -242,10 +235,10 @@ struct ContentView: View {
                     .help("Back to \(window.albumOriginTitle)")
             }
         }
-        if case .artist = window.screen {
+        if case .module(let page) = window.screen, let parent = page.parent {
             ToolbarItem(placement: .navigation) {
-                Button { window.closeArtist() } label: { Label("Artists", systemImage: "chevron.left") }
-                    .help("Back to Artists")
+                Button { window.goBack() } label: { Label(parent.title, systemImage: "chevron.left") }
+                    .help("Back to \(parent.title)")
             }
         }
         if AppFeatures.reorderAlbums, model.state == .loaded, case .coverFlow = window.screen {
@@ -363,10 +356,6 @@ struct ContentView: View {
                 }
             case .reorder:
                 ReorderScreen()
-            case .artists:
-                ArtistsScreen(openAlbum: window.open)
-            case .artist(let artist):
-                ArtistDetailScreen(artist: artist, openAlbum: window.open)
             case .module(let page):
                 page.screen
             case .audioCD:

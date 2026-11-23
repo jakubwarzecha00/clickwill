@@ -81,24 +81,19 @@ final class WindowState {
 
     func open(_ album: AlbumCard) {
         switch screen {
-        case .coverFlow, .albums, .artists: albumOrigin = screen
-        case .artist(let artist):
-            albumOrigin = .artist(artist)
+        case .coverFlow, .albums: albumOrigin = screen
+        case .module(let page) where page.keepsAlbumOrigin: albumOrigin = screen
         // From Songs and from the change list we go back to the first library screen.
         default: albumOrigin = home
         }
         show(.album(album), animated: true)
     }
 
-    func openArtist(_ artist: String) {
-        show(.artist(artist), animated: true)
-    }
-
     /// The name of the tab Back returns to.
     var albumOriginTitle: String {
         switch albumOrigin {
         case .albums: return "Albums"
-        case .artists, .artist: return "Artists"
+        case .module(let page): return page.root.title
         default: return "Cover Flow"
         }
     }
@@ -114,10 +109,10 @@ final class WindowState {
         show(albumOrigin, animated: animated)
     }
 
-    /// Going back from artist detail to the artists tab.
-    func closeArtist(animated: Bool = true) {
-        guard case .artist = screen else { return }
-        show(.artists, animated: animated)
+    /// Going back from a module page to its parent, e.g. from an artist to Artists.
+    func goBack(animated: Bool = true) {
+        guard case .module(let page) = screen, let parent = page.parent else { return }
+        show(.module(parent), animated: animated)
     }
 
     /// From the toolbar and the View menu (HIG: every toolbar item has its counterpart in the menu).
@@ -137,11 +132,9 @@ final class WindowState {
         case .albums, .reorder: return .albums
         case .album:
             if case .albums = albumOrigin { return .albums }
-            if case .artists = albumOrigin { return .artists }
-            if case .artist = albumOrigin { return .artists }
+            if case .module(let page) = albumOrigin { return .module(page.root) }
             return .coverFlow
-        case .artists, .artist: return .artists
-        case .module(let page): return .module(page)
+        case .module(let page): return .module(page.root)
         case .audioCD: return nil
         }
     }
@@ -153,9 +146,8 @@ final class WindowState {
             if sidebarSelection != .coverFlow { show(.coverFlow) }
         case .albums:
             if sidebarSelection != .albums { show(.albums) }
-        case .artists:
-            if sidebarSelection != .artists { show(.artists) }
-        case .module(let page): show(.module(page))
+        case .module(let page):
+            if sidebarSelection != item { show(.module(page)) }
         case .disc(let volume): show(.audioCD(volume))
         }
     }

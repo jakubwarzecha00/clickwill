@@ -47,10 +47,6 @@ struct SidebarView: View {
                     .badge(loaded ? model.albumsDisplay.count : 0)
                     .tag(SidebarItem.albums)
                     .disabled(!loaded)
-                Label("Artists", systemImage: "person.2")
-                    .badge(loaded ? model.artistCount : 0)
-                    .tag(SidebarItem.artists)
-                    .disabled(!loaded)
                 ModuleLibraryItems()
                 // The file panel is opened here, not in the sheet: a modal window
                 // started from inside a presented sheet does not show at all.

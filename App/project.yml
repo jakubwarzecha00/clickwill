@@ -38,6 +38,8 @@ targets:
         product: ClickwillDevice
       - package: ITDBKit
         product: ClickwillSongs
+      - package: ITDBKit
+        product: ClickwillArtists
       - package: Sparkle
     info:
       path: Clickwill/Info.plist
