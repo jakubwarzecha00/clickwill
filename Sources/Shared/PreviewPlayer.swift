@@ -10,24 +10,26 @@ import SwiftUI
 /// file". No queue, no moving on, one file at a time.
 @MainActor
 @Observable
-final class PreviewPlayer {
+public final class PreviewPlayer {
     /// The identifier of the row playing now. `nil` means silence.
-    private(set) var playingID: UUID?
-    private(set) var isPlaying = false
-    private(set) var currentTime: TimeInterval = 0
-    private(set) var duration: TimeInterval = 0
-    var errorMessage: String?
+    public private(set) var playingID: UUID?
+    public private(set) var isPlaying = false
+    public private(set) var currentTime: TimeInterval = 0
+    public private(set) var duration: TimeInterval = 0
+    public var errorMessage: String?
 
     @ObservationIgnored private var player: AVAudioPlayer?
     @ObservationIgnored private var timer: Timer?
 
+    public init() {}
+
     isolated deinit { timer?.invalidate() }
 
-    func isPlaying(_ id: UUID) -> Bool { playingID == id && isPlaying }
-    func isLoaded(_ id: UUID) -> Bool { playingID == id }
+    public func isPlaying(_ id: UUID) -> Bool { playingID == id && isPlaying }
+    public func isLoaded(_ id: UUID) -> Bool { playingID == id }
 
     /// A click on a row: the same file toggles pause, another one starts over.
-    func toggle(_ id: UUID, url: URL) {
+    public func toggle(_ id: UUID, url: URL) {
         if playingID == id {
             guard let player else { return stop() }
             if player.isPlaying {
@@ -43,13 +45,13 @@ final class PreviewPlayer {
         start(id, url: url)
     }
 
-    func seek(_ id: UUID, to seconds: TimeInterval) {
+    public func seek(_ id: UUID, to seconds: TimeInterval) {
         guard playingID == id, let player, seconds.isFinite else { return }
         player.currentTime = min(max(seconds, 0), player.duration)
         currentTime = player.currentTime
     }
 
-    func stop() {
+    public func stop() {
         player?.stop()
         player = nil
         stopTimer()
@@ -110,12 +112,18 @@ final class PreviewPlayer {
 }
 
 /// The preview button in a row of the import sheet.
-struct PreviewButton: View {
+public struct PreviewButton: View {
     let id: UUID
     let url: URL
     @Bindable var preview: PreviewPlayer
 
-    var body: some View {
+    public init(id: UUID, url: URL, preview: PreviewPlayer) {
+        self.id = id
+        self.url = url
+        self.preview = preview
+    }
+
+    public var body: some View {
         Button {
             preview.toggle(id, url: url)
         } label: {
@@ -131,11 +139,16 @@ struct PreviewButton: View {
 
 /// The preview progress bar - it appears only under the playing row.
 /// Clickable, because the middle says more about recognizing a track than the first seconds.
-struct PreviewScrubber: View {
+public struct PreviewScrubber: View {
     let id: UUID
     @Bindable var preview: PreviewPlayer
 
-    var body: some View {
+    public init(id: UUID, preview: PreviewPlayer) {
+        self.id = id
+        self.preview = preview
+    }
+
+    public var body: some View {
         Slider(value: Binding(get: { min(preview.currentTime, max(preview.duration, 0.01)) },
                               set: { preview.seek(id, to: $0) }),
                in: 0...max(preview.duration, 0.01))

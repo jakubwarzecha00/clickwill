@@ -50,8 +50,9 @@ struct LaunchScript: Sendable {
     /// `--cd-release` and `--cd-cover` (without `--demo`): the state after a lookup
     /// from a saved response, without the network.
     @MainActor func windowAppeared(window: WindowState, cds: AudioCDStore) {
-        guard let fixture = options.audioCDFixture, let disc = cds.add(fixture: fixture) else { return }
-        window.show(.audioCD(disc.volume))
+        guard let fixture = options.audioCDFixture, let disc = cds.add(fixture: fixture),
+              let page = ModulePage.disc(disc.volume) else { return }
+        window.show(.module(page))
         if !options.isDemo, let session = cds.session(disc.volume), let release = options.cdRelease,
            let data = try? Data(contentsOf: release),
            let releases = try? MusicBrainz.releases(fromJSON: data, discID: disc.discID, trackCount: disc.tracks.count),

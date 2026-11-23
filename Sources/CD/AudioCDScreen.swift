@@ -28,7 +28,7 @@ extension FocusedValues {
 struct AudioCDScreen: View {
     @Bindable var session: CDSession
     @Environment(LibraryModel.self) private var model
-    @Environment(WindowState.self) private var window
+    @Environment(\.cdActions) private var actions
     @State private var preview = PreviewPlayer()
     @State private var pasteProblem: String?
 
@@ -97,7 +97,7 @@ struct AudioCDScreen: View {
         session.rip { files in
             // Without an iPod the files stay on the Mac; they are added later through Add Songs.
             guard model.isWritable else { return }
-            window.showImport(files)
+            actions.importFiles(files)
         }
     }
 
@@ -344,10 +344,12 @@ struct AudioCDScreen: View {
 }
 
 /// Disc commands in the File menu - active when its screen is on top.
-struct AudioCDMenu: View {
+public struct AudioCDMenu: View {
     @FocusedValue(\.audioCD) private var commands
 
-    var body: some View {
+    public init() {}
+
+    public var body: some View {
         Divider()
         Button("Look Up CD Online") { commands?.perform(.lookUp) }.disabled(commands == nil)
         Button("Paste Track List") { commands?.perform(.pasteTrackList) }.disabled(commands == nil)

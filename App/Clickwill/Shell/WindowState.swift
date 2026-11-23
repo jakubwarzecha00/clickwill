@@ -124,8 +124,7 @@ final class WindowState {
     /// The sidebar selection. An album belongs to the tab it was
     /// opened from, Reorder to Albums.
     var sidebarSelection: SidebarItem? {
-        // A disc has its screen even without a loaded iPod.
-        if case .audioCD(let volume) = screen { return .disc(volume) }
+        if case .module(let page) = screen, !page.needsLibrary { return .module(page.root) }
         guard model.state == .loaded else { return nil }
         switch screen {
         case .coverFlow: return .coverFlow
@@ -135,7 +134,6 @@ final class WindowState {
             if case .module(let page) = albumOrigin { return .module(page.root) }
             return .coverFlow
         case .module(let page): return .module(page.root)
-        case .audioCD: return nil
         }
     }
 
@@ -148,7 +146,6 @@ final class WindowState {
             if sidebarSelection != .albums { show(.albums) }
         case .module(let page):
             if sidebarSelection != item { show(.module(page)) }
-        case .disc(let volume): show(.audioCD(volume))
         }
     }
 

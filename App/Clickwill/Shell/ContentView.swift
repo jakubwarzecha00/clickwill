@@ -11,8 +11,7 @@ struct ContentView: View {
     @Environment(PlaybackController.self) private var playback
     /// The screen, the album in the middle of Cover Flow and this window's sheets.
     @State private var window: WindowState
-    /// Audio CDs in the drive - ripping without Music.
-    @State private var cds: AudioCDStore
+    @State private var modules: ModuleStores
     @State private var demoHover: DemoHover
     /// A launch for screenshots and recordings: the screen, the album in the middle, the add sheet.
     private let launch: LaunchScript
@@ -33,7 +32,7 @@ struct ContentView: View {
     init(model: LibraryModel, launch: LaunchScript) {
         _window = State(initialValue: WindowState(model: model))
         _demoHover = State(initialValue: DemoHover(listening: launch.listensForDemoHover))
-        _cds = State(initialValue: AudioCDStore(services: launch.cdServices))
+        _modules = State(initialValue: ModuleStores(cdServices: launch.cdServices))
         self.launch = launch
     }
 
@@ -85,15 +84,14 @@ struct ContentView: View {
             .focusEffectDisabled()
             .focused($sceneFocused)
         }
-        .environment(cds)
         .focusedSceneValue(\.window, window)
         .environment(window)
-        .moduleActions(window: window, playback: playback)
+        .modules(modules, window: window, playback: playback)
         .environment(\.demoHover, demoHover.target)
         .onAppear {
             sceneFocused = true
-            cds.refresh()
-            launch.windowAppeared(window: window, cds: cds)
+            modules.cds.refresh()
+            launch.windowAppeared(window: window, cds: modules.cds)
         }
         .onChange(of: window.screen) { sceneFocused = true }
         .foregroundStyle(Theme.fg)
@@ -144,15 +142,8 @@ struct ContentView: View {
             if !has, case .coverFlow = window.screen { window.show(.albums) }
         }
         .onChange(of: monitor.volumes) { before, now in
-            // An inserted disc: its screen right away, as in Music - unless a sheet
-            // hangs over the window or another disc is in progress.
-            if !now.subtracting(before).isEmpty, let disc = cds.refresh().first, !sheetIsOpen, cdSession?.isRipping != true {
-                window.show(.audioCD(disc.volume), animated: true)
-            }
-            if !before.subtracting(now).isEmpty {
-                cds.refresh()
-                if case .audioCD = window.screen, cdSession == nil { window.showHome(animated: true) }
-            }
+            modules.volumesChanged(inserted: !now.subtracting(before).isEmpty, removed: !before.subtracting(now).isEmpty,
+                                   window: window, sheetIsOpen: sheetIsOpen)
         }
         .sheet(item: Binding(get: { window.modal?.isSheet == true ? window.modal : nil },
                              set: { if $0 == nil { window.closeModal() } }),
@@ -168,14 +159,14 @@ struct ContentView: View {
 
     // MARK: - Toolbar (native)
 
-    /// The disc session, when its screen is on top.
-    private var cdSession: CDSession? {
-        if case .audioCD(let volume) = window.screen { return cds.session(volume) }
+    /// A module page that does not need the library, e.g. a disc in a drive.
+    private var standalonePage: ModulePage? {
+        if case .module(let page) = window.screen, !page.needsLibrary { return page }
         return nil
     }
 
     private var title: String {
-        if let cdSession { return cdSession.title }
+        if let standalonePage { return standalonePage.windowTitle(in: modules) }
         // HIG: we do not title the window with the app name - without a library the title is empty.
         guard model.state == .loaded else { return "" }
         switch window.screen {
@@ -185,25 +176,19 @@ struct ContentView: View {
         // the window bar kept showing the old one.
         case .album(let album): return (model.current(album) ?? album).displayTitle
         case .reorder: return "Reorder Albums"
-        case .module(let page): return page.title
-        case .audioCD: return ""
+        case .module(let page): return page.windowTitle(in: modules)
         }
     }
 
     private var subtitle: String {
-        if let cdSession {
-            return cdSession.draft.albumArtist.isEmpty
-                ? "\(Self.count(cdSession.draft.songs.count, "song")) · \(AudioCDScreen.time(UInt64(cdSession.disc.duration * 1000)))"
-                : cdSession.draft.albumArtist
-        }
+        if let standalonePage { return standalonePage.subtitle(in: model, modules: modules) }
         guard model.state == .loaded else { return "" }
         switch window.screen {
         // As many albums as the iPod shows - an album scattered across the table is one.
         case .coverFlow, .albums: return "\(Self.count(model.coverFlowAlbums.count, "album")) · \(Self.count(model.trackCount, "song"))"
         case .album(let album): return (model.current(album) ?? album).displayArtist
         case .reorder: return "The order the iPod shows"
-        case .module(let page): return page.subtitle(in: model)
-        case .audioCD: return ""
+        case .module(let page): return page.subtitle(in: model, modules: modules)
         }
     }
 
@@ -219,7 +204,7 @@ struct ContentView: View {
         playback.currentTrack != nil || playback.errorMessage != nil || model.hasPendingChanges
     }
 
-    /// The disc buttons are added by its screen (`AudioCDScreen`) - they call its commands directly.
+    /// Module screens add their own toolbar items (the disc screen its commands).
     @ToolbarContentBuilder private var toolbarContent: some ToolbarContent {
         // Without the sidebar button Cover Flow had no item in the
         // toolbar and the system created no bar - the title and subtitle fell into one
@@ -323,8 +308,8 @@ struct ContentView: View {
     @ViewBuilder private var content: some View {
         // A disc can be ripped without an iPod - that is even a better order, because a drive
         // and an iPod on one hub can bring down the whole USB tree.
-        if let cdSession {
-            AudioCDScreen(session: cdSession).id(cdSession.disc.volume)
+        if let standalonePage {
+            standalonePage.screen
         } else {
             libraryContent
         }
@@ -358,8 +343,6 @@ struct ContentView: View {
                 ReorderScreen()
             case .module(let page):
                 page.screen
-            case .audioCD:
-                EmptyStateView(text: "The CD Was Ejected", detail: "Insert it again to import its songs.")
             }
         }
     }

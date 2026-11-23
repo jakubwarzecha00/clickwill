@@ -4,14 +4,23 @@ import SwiftUI
 /// The same idea as in the album track list - editing should be available, but must not
 /// turn browsing into a form. A native field without a frame; the system
 /// focus ring appears while editing.
-struct ImportField: View {
+public struct ImportField: View {
     @Binding var text: String
     let placeholder: String
     var font: Font = .body
     var width: CGFloat? = nil
     var alignment: TextAlignment = .leading
 
-    var body: some View {
+    public init(text: Binding<String>, placeholder: String, font: Font = .body, width: CGFloat? = nil,
+                alignment: TextAlignment = .leading) {
+        _text = text
+        self.placeholder = placeholder
+        self.font = font
+        self.width = width
+        self.alignment = alignment
+    }
+
+    public var body: some View {
         // In a Form the field shows its own label on the left and the value on the right -
         // here the label is unnecessary, the placeholder in an empty field is enough. The placeholder
         // in italics and lighter: a gray "Artist" looked like an entered artist

@@ -6,7 +6,6 @@ import ClickwillShared
 /// and at the bottom feedback and About.
 struct SidebarView: View {
     @Environment(LibraryModel.self) private var model
-    @Environment(AudioCDStore.self) private var cds
     @Environment(WindowState.self) private var window
 
     var body: some View {
@@ -59,17 +58,6 @@ struct SidebarView: View {
                 .buttonStyle(.plain)
                 .disabled(!model.isWritable)
                 .help(model.isWritable ? "" : model.writeUnavailable.map(ErrorPresenter.message(for:)) ?? "Connect an iPod to add songs.")
-            }
-            if !cds.discs.isEmpty {
-                Section("Audio CD") {
-                    ForEach(cds.discs) { disc in
-                        Label(cds.session(disc.volume)?.title ?? disc.volumeName, systemImage: "opticaldisc")
-                            .tag(SidebarItem.disc(disc.volume))
-                            .contextMenu {
-                                Button("Eject Disc") { cds.session(disc.volume)?.eject() }
-                            }
-                    }
-                }
             }
             ModuleSidebarSections()
         }

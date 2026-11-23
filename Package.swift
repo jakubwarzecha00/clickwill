@@ -15,6 +15,7 @@ let package = Package(
         .library(name: "ClickwillDevice", targets: ["ClickwillDevice"]),
         .library(name: "ClickwillSongs", targets: ["ClickwillSongs"]),
         .library(name: "ClickwillArtists", targets: ["ClickwillArtists"]),
+        .library(name: "ClickwillCD", targets: ["ClickwillCD"]),
         .executable(name: "ipodctl", targets: ["ipodctl"]),
     ],
     targets: [
@@ -33,6 +34,8 @@ let package = Package(
                 path: "Sources/Songs"),
         .target(name: "ClickwillArtists", dependencies: ["ITDBKit", "ClickwillModel", "ClickwillShared"],
                 path: "Sources/Artists"),
+        .target(name: "ClickwillCD", dependencies: ["ITDBKit", "ClickwillModel", "ClickwillShared"],
+                path: "Sources/CD"),
         .executableTarget(name: "ipodctl", dependencies: ["ITDBKit", "ClickwillModel"]),
         .testTarget(name: "ITDBKitTests", dependencies: ["ITDBKit"]),
         // The `ipodctl` command tests use the fake iPod from the write tests.
@@ -41,5 +44,6 @@ let package = Package(
         .testTarget(name: "ClickwillDeviceTests", dependencies: ["ClickwillDevice", "ITDBKit"]),
         .testTarget(name: "ClickwillSongsTests", dependencies: ["ClickwillSongs"]),
         .testTarget(name: "ClickwillArtistsTests", dependencies: ["ClickwillArtists"]),
+        .testTarget(name: "ClickwillCDTests", dependencies: ["ClickwillCD"]),
     ]
 )
