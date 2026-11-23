@@ -1,6 +1,6 @@
 import Foundation
 
-extension NSItemProvider {
+public extension NSItemProvider {
     /// File URLs from the dragged items, in drag order.
     /// Items that are not files are skipped.
     static func fileURLs(from providers: [NSItemProvider], isolation: isolated (any Actor)? = #isolation) async -> [URL] {

@@ -6,7 +6,6 @@ enum Screen: Hashable {
     case coverFlow
     /// The iPod's Albums menu on a wheel (`AlbumWheelScreen`).
     case albums
-    case album(AlbumCard)
     case reorder
     /// A screen of a module (`Modules.swift`).
     case module(ModulePage)

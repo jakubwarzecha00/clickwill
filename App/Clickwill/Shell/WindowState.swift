@@ -54,8 +54,8 @@ final class WindowState {
     var centered = 0
     /// The album in the middle of the Albums wheel (an index into `albumsDisplay`) - likewise.
     var albumsCentered = 0
-    /// The tab the album was opened from - Back returns to it.
-    private(set) var albumOrigin: Screen = .coverFlow
+    /// The screen a page that opens over (an album) was opened from; Back returns to it.
+    private(set) var origin: Screen = .coverFlow
     private(set) var modal: Modal?
     /// A request that came while something else hung over the window - e.g. files
     /// from a disc ripped while the change list was open. Shown after it closes.
@@ -80,39 +80,49 @@ final class WindowState {
     func showHome(animated: Bool = false) { show(home, animated: animated) }
 
     func open(_ album: AlbumCard) {
+        guard let page = ModulePage.album(album) else { return }
         switch screen {
-        case .coverFlow, .albums: albumOrigin = screen
-        case .module(let page) where page.keepsAlbumOrigin: albumOrigin = screen
+        case .coverFlow, .albums: origin = screen
+        case .module(let current) where current.staysAsOrigin: origin = screen
         // From Songs and from the change list we go back to the first library screen.
-        default: albumOrigin = home
+        default: origin = home
         }
-        show(.album(album), animated: true)
+        show(.module(page), animated: true)
     }
 
-    /// The name of the tab Back returns to.
-    var albumOriginTitle: String {
-        switch albumOrigin {
+    /// The name on the Back button, or nil when the screen has nowhere to go back to.
+    var backTitle: String? {
+        guard case .module(let page) = screen else { return nil }
+        if let parent = page.parent { return parent.title }
+        guard page.opensOver else { return nil }
+        switch origin {
         case .albums: return "Albums"
         case .module(let page): return page.root.title
         default: return "Cover Flow"
         }
     }
 
-    /// Going back from an album to the tab it was opened from - with that album in the middle.
-    func closeAlbum(animated: Bool = true) {
-        guard case .album(let album) = screen else { return }
-        if case .albums = albumOrigin {
-            if let index = model.albumsDisplay.firstIndex(where: { $0.id == album.id }) { albumsCentered = index }
-        } else if let index = model.coverFlowDisplay.firstIndex(where: { $0.id == album.id }) {
-            centered = index
+    /// Back from a page opened over another screen, with the album it showed in the middle there.
+    func closeOver(animated: Bool = true) {
+        guard case .module(let page) = screen, page.opensOver else { return }
+        if let album = page.shownAlbum {
+            if case .albums = origin {
+                if let index = model.albumsDisplay.firstIndex(where: { $0.id == album.id }) { albumsCentered = index }
+            } else if let index = model.coverFlowDisplay.firstIndex(where: { $0.id == album.id }) {
+                centered = index
+            }
         }
-        show(albumOrigin, animated: animated)
+        show(origin, animated: animated)
     }
 
-    /// Going back from a module page to its parent, e.g. from an artist to Artists.
+    /// Back from a module page: to its parent (an artist to Artists), or to the screen it opened over.
     func goBack(animated: Bool = true) {
-        guard case .module(let page) = screen, let parent = page.parent else { return }
-        show(.module(parent), animated: animated)
+        guard case .module(let page) = screen else { return }
+        if let parent = page.parent {
+            show(.module(parent), animated: animated)
+        } else {
+            closeOver(animated: animated)
+        }
     }
 
     /// From the toolbar and the View menu (HIG: every toolbar item has its counterpart in the menu).
@@ -121,17 +131,17 @@ final class WindowState {
         show(.reorder, animated: true)
     }
 
-    /// The sidebar selection. An album belongs to the tab it was
-    /// opened from, Reorder to Albums.
+    /// The sidebar selection. A page opened over another screen (an album) belongs to that
+    /// screen's tab, Reorder to Albums.
     var sidebarSelection: SidebarItem? {
         if case .module(let page) = screen, !page.needsLibrary { return .module(page.root) }
         guard model.state == .loaded else { return nil }
         switch screen {
         case .coverFlow: return .coverFlow
         case .albums, .reorder: return .albums
-        case .album:
-            if case .albums = albumOrigin { return .albums }
-            if case .module(let page) = albumOrigin { return .module(page.root) }
+        case .module(let page) where page.opensOver:
+            if case .albums = origin { return .albums }
+            if case .module(let page) = origin { return .module(page.root) }
             return .coverFlow
         case .module(let page): return .module(page.root)
         }

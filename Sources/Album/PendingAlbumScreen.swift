@@ -7,8 +7,8 @@ import ClickwillShared
 /// only what will reach the device on "Write to iPod", and a way to withdraw it.
 struct PendingAlbumScreen: View {
     @Environment(LibraryModel.self) private var model
+    @Environment(\.albumActions) private var actions
     let album: AlbumCard
-    let onClose: () -> Void
 
     private var pending: PendingAlbum? { model.pendingAlbum(id: album.id) }
     private var card: AlbumCard { pending?.card ?? album }
@@ -35,7 +35,7 @@ struct PendingAlbumScreen: View {
         .padding(EdgeInsets(top: 0, leading: 10, bottom: 4, trailing: 10))
         .background(Theme.stage)
         // The last song withdrawn or the album written - there is nothing to show.
-        .onChange(of: pending == nil) { _, gone in if gone { onClose() } }
+        .onChange(of: pending == nil) { _, gone in if gone { actions.close(true) } }
     }
 
     private var header: some View {

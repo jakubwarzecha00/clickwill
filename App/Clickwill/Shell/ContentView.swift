@@ -32,7 +32,7 @@ struct ContentView: View {
     init(model: LibraryModel, launch: LaunchScript) {
         _window = State(initialValue: WindowState(model: model))
         _demoHover = State(initialValue: DemoHover(listening: launch.listensForDemoHover))
-        _modules = State(initialValue: ModuleStores(cdServices: launch.cdServices))
+        _modules = State(initialValue: ModuleStores(launch: launch))
         self.launch = launch
     }
 
@@ -97,7 +97,7 @@ struct ContentView: View {
         .foregroundStyle(Theme.fg)
         // The window handles the arrows and Return, only on the Cover Flow screen or the Albums
         // wheel. The scene would move the artwork even when the album view
-        // is on top. Escape in an album goes back to the tab it was opened from.
+        // is on top. Escape goes back where the Back button leads.
         .onKeyPress(.leftArrow) { stepCoverFlow(-1) }
         .onKeyPress(.rightArrow) { stepCoverFlow(1) }
         .onKeyPress(.upArrow) { stepAlbums(-1) }
@@ -118,16 +118,9 @@ struct ContentView: View {
         }
         .onKeyPress(.escape) {
             guard !sheetIsOpen else { return .ignored }
-            switch window.screen {
-            case .album:
-                window.closeAlbum()
-                return .handled
-            case .module(let page) where page.parent != nil:
-                window.goBack()
-                return .handled
-            default:
-                return .ignored
-            }
+            guard window.backTitle != nil else { return .ignored }
+            window.goBack()
+            return .handled
         }
         // The start screen only once the library is really loaded.
         .onChange(of: model.state) { _, state in
@@ -166,17 +159,14 @@ struct ContentView: View {
     }
 
     private var title: String {
-        if let standalonePage { return standalonePage.windowTitle(in: modules) }
+        if let standalonePage { return standalonePage.windowTitle(in: model, modules: modules) }
         // HIG: we do not title the window with the app name - without a library the title is empty.
         guard model.state == .loaded else { return "" }
         switch window.screen {
         case .coverFlow: return "Cover Flow"
         case .albums: return "Albums"
-        // The current card, not the one from the moment of opening - otherwise after a rename
-        // the window bar kept showing the old one.
-        case .album(let album): return (model.current(album) ?? album).displayTitle
         case .reorder: return "Reorder Albums"
-        case .module(let page): return page.windowTitle(in: modules)
+        case .module(let page): return page.windowTitle(in: model, modules: modules)
         }
     }
 
@@ -186,7 +176,6 @@ struct ContentView: View {
         switch window.screen {
         // As many albums as the iPod shows - an album scattered across the table is one.
         case .coverFlow, .albums: return "\(Self.count(model.coverFlowAlbums.count, "album")) · \(Self.count(model.trackCount, "song"))"
-        case .album(let album): return (model.current(album) ?? album).displayArtist
         case .reorder: return "The order the iPod shows"
         case .module(let page): return page.subtitle(in: model, modules: modules)
         }
@@ -214,16 +203,10 @@ struct ContentView: View {
         } else {
             ToolbarItem { Spacer() }
         }
-        if case .album = window.screen {
+        if let backTitle = window.backTitle {
             ToolbarItem(placement: .navigation) {
-                Button { window.closeAlbum() } label: { Label(window.albumOriginTitle, systemImage: "chevron.left") }
-                    .help("Back to \(window.albumOriginTitle)")
-            }
-        }
-        if case .module(let page) = window.screen, let parent = page.parent {
-            ToolbarItem(placement: .navigation) {
-                Button { window.goBack() } label: { Label(parent.title, systemImage: "chevron.left") }
-                    .help("Back to \(parent.title)")
+                Button { window.goBack() } label: { Label(backTitle, systemImage: "chevron.left") }
+                    .help("Back to \(backTitle)")
             }
         }
         if AppFeatures.reorderAlbums, model.state == .loaded, case .coverFlow = window.screen {
@@ -332,13 +315,6 @@ struct ContentView: View {
                 CoverFlowScreen(centered: $window.centered, open: window.open)
             case .albums:
                 AlbumWheelScreen(centered: $window.albumsCentered, open: window.open)
-            case .album(let album):
-                if album.isPending {
-                    PendingAlbumScreen(album: album, onClose: { window.closeAlbum() })
-                } else {
-                    AlbumScreen(album: album, editorShown: launch.opensAlbumEditor, coverFile: launch.coverFile,
-                                onDeleted: { window.closeAlbum(animated: false) })
-                }
             case .reorder:
                 ReorderScreen()
             case .module(let page):

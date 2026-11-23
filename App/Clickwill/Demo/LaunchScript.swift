@@ -76,7 +76,7 @@ struct LaunchScript: Sendable {
             Task { await Self.runCoverFlowLoop(window: window, from: from, to: to) }
         }
         switch options.screen {
-        case .album: if albums.indices.contains(window.centered) { window.show(.album(albums[window.centered])) }
+        case .album: if albums.indices.contains(window.centered), let page = ModulePage.album(albums[window.centered]) { window.show(.module(page)) }
         case .albums:
             // `--centered N` then concerns the wheel: the N-th album of the Albums menu.
             if let index = options.centered, model.albumsDisplay.indices.contains(index) { window.albumsCentered = index }

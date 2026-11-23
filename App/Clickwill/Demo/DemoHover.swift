@@ -20,13 +20,3 @@ final class DemoHover {
         }
     }
 }
-
-struct DemoHoverKey: EnvironmentKey { static let defaultValue: String? = nil }
-
-extension EnvironmentValues {
-    /// The element over which a recording fakes the cursor (`DemoHover`); outside a recording `nil`.
-    var demoHover: String? {
-        get { self[DemoHoverKey.self] }
-        set { self[DemoHoverKey.self] = newValue }
-    }
-}

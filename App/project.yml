@@ -42,6 +42,8 @@ targets:
         product: ClickwillArtists
       - package: ITDBKit
         product: ClickwillCD
+      - package: ITDBKit
+        product: ClickwillAlbum
       - package: Sparkle
     info:
       path: Clickwill/Info.plist

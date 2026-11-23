@@ -8,31 +8,25 @@ import ClickwillShared
 /// The album screen: a header with the artwork, a track list with dragging and removal, an inspector.
 struct AlbumScreen: View {
     @Environment(LibraryModel.self) private var model
-    @Environment(PlaybackController.self) private var playback
+    @Environment(\.albumActions) private var actions
     let album: AlbumCard
-    /// The image "Change Cover…" takes instead of the file choose panel -
-    /// in a demo recording the panel would be unreadable (`LaunchScript.coverFile`).
+    /// The image "Change Cover…" takes instead of the file panel, which a demo recording could not show.
     let coverFile: URL?
-    /// The album disappears together with the screen - after a deletion there is nothing to go back to.
-    let onDeleted: () -> Void
     @State private var selection: Set<UInt32> = []
     @FocusState private var listFocused: Bool
     @State private var error: String?
     /// In-place editing: which row and which field.
     @State private var editing: RowEdit?
-    /// The edit panel is hidden until the user opens it -
-    /// most of the time one looks at the tracks, not at fields to correct.
-    /// Open right away only in screenshots (`LaunchScript.opensAlbumEditor`).
+    /// Hidden until opened: most of the time one looks at the tracks, not at fields to correct.
     @State private var editorShown: Bool
     /// The dialog for restoring files for entries that have no file.
     @State private var missingFilesShown = false
 
     enum RowEdit: Equatable { case title(UInt32), number(UInt32) }
 
-    init(album: AlbumCard, editorShown: Bool = false, coverFile: URL? = nil, onDeleted: @escaping () -> Void = {}) {
+    init(album: AlbumCard, editorShown: Bool = false, coverFile: URL? = nil) {
         self.album = album
         self.coverFile = coverFile
-        self.onDeleted = onDeleted
         _editorShown = State(initialValue: editorShown)
     }
 
@@ -117,7 +111,7 @@ struct AlbumScreen: View {
                     // (blue by default) - a dimmed pill did not look
                     // clickable.
                     Button {
-                        playback.play(rows, startingAt: nil, in: current)
+                        actions.play(rows, nil, current)
                     } label: {
                         Label("Play", systemImage: "play.fill")
                             .font(.theme(.row, weight: .semibold))
@@ -290,11 +284,11 @@ struct AlbumScreen: View {
             ForEach(rows) { row in
                 TrackRowView(row: row,
                              selected: selection.contains(row.id),
-                             playing: playback.currentTrack?.id == row.id,
+                             playing: actions.playingTrackID() == row.id,
                              editing: editingField(for: row),
                              restoring: model.changes.fileImports[row.id].flatMap { $0.isReplacement ? nil : $0.source.lastPathComponent },
                              replacing: model.changes.fileImports[row.id].flatMap { $0.isReplacement ? $0.source.lastPathComponent : nil },
-                             play: { playback.play(rows, startingAt: row, in: current) },
+                             play: { actions.play(rows, row, current) },
                              select: {
                                  if NSEvent.modifierFlags.contains(.command) {
                                      if selection.contains(row.id) { selection.remove(row.id) } else { selection.insert(row.id) }
@@ -457,7 +451,8 @@ struct AlbumScreen: View {
         }
         attempt {
             try model.deleteAlbum(current, keepCopiesIn: archive)
-            onDeleted()
+            // After a deletion there is nothing to go back to, so no animation.
+            actions.close(false)
         }
     }
 
@@ -469,7 +464,7 @@ struct AlbumScreen: View {
     }
 
     @ViewBuilder private func rowMenu(_ row: TrackRow, in rows: [TrackRow]) -> some View {
-        Button("Play") { playback.play(rows, startingAt: row, in: current) }
+        Button("Play") { actions.play(rows, row, current) }
         Divider()
         Button("Edit Title") { selection = [row.id]; editing = .title(row.id) }
         Button("Edit Track Number") { selection = [row.id]; editing = .number(row.id) }

@@ -3,6 +3,7 @@ import ClickwillModel
 import ClickwillArtists
 import ClickwillSongs
 import ClickwillCD
+import ClickwillAlbum
 import ClickwillDevice
 
 /// The screen modules the window shows, and the only file in the app that names them.
@@ -15,6 +16,7 @@ enum ModulePage: Hashable {
     case artists(ArtistsPage)
     case songs(SongsPage)
     case cd(CDPage)
+    case album(AlbumPage)
     case device(DevicePage)
 
     /// `--screen <name>`.
@@ -31,19 +33,29 @@ enum ModulePage: Hashable {
     /// The page of a disc in a drive (`--audio-cd` in a launch for screenshots).
     static func disc(_ volume: URL) -> ModulePage? { .cd(.disc(volume)) }
 
+    /// The page an album opens on, from Cover Flow, the Albums wheel or a module.
+    static func album(_ card: AlbumCard) -> ModulePage? { .album(.album(card)) }
+
+    /// The album this page shows; Back centers it on the screen it returns to.
+    var shownAlbum: AlbumCard? {
+        if case .album(let page) = self { page.album } else { nil }
+    }
+
     /// The page's name for the Back button.
     var title: String {
         switch self {
         case .artists(let page): page.title
         case .songs(let page): page.title
         case .cd: "Audio CD"
+        case .album(let page): page.album.displayTitle
         case .device(let page): page.title
         }
     }
 
-    @MainActor func windowTitle(in modules: ModuleStores) -> String {
+    @MainActor func windowTitle(in model: LibraryModel, modules: ModuleStores) -> String {
         switch self {
         case .cd(let page): page.title(in: modules.cds)
+        case .album(let page): page.title(in: model)
         default: title
         }
     }
@@ -53,6 +65,7 @@ enum ModulePage: Hashable {
         case .artists(let page): page.subtitle(in: model)
         case .songs(let page): page.subtitle(in: model)
         case .cd(let page): page.subtitle(in: modules.cds)
+        case .album(let page): page.subtitle(in: model)
         case .device(let page): page.subtitle(in: model)
         }
     }
@@ -62,6 +75,7 @@ enum ModulePage: Hashable {
         case .artists(let page): ArtistsScreen(page: page)
         case .songs: SongsScreen()
         case .cd(let page): CDScreen(page: page)
+        case .album(let page): AlbumModuleScreen(page: page)
         case .device(let page): DeviceScreen(page: page)
         }
     }
@@ -70,7 +84,7 @@ enum ModulePage: Hashable {
     var needsLibrary: Bool {
         switch self {
         case .cd: false
-        case .artists, .songs, .device: true
+        case .artists, .songs, .album, .device: true
         }
     }
 
@@ -78,7 +92,7 @@ enum ModulePage: Hashable {
     var parent: ModulePage? {
         switch self {
         case .artists(let page): page.parent.map(ModulePage.artists)
-        case .songs, .cd, .device: nil
+        case .songs, .cd, .album, .device: nil
         }
     }
 
@@ -89,11 +103,19 @@ enum ModulePage: Hashable {
         return page
     }
 
-    /// Back from an album opened here returns here. Otherwise it returns to the first library screen.
-    var keepsAlbumOrigin: Bool {
+    /// Shown over the screen it was opened from, which keeps its sidebar row; Back returns there.
+    var opensOver: Bool {
+        switch self {
+        case .album: true
+        case .artists, .songs, .cd, .device: false
+        }
+    }
+
+    /// Back from a page opened over this one returns here. Otherwise it returns to the first library screen.
+    var staysAsOrigin: Bool {
         switch self {
         case .artists: true
-        case .songs, .cd, .device: false
+        case .songs, .cd, .album, .device: false
         }
     }
 }
@@ -126,8 +148,11 @@ struct ModuleFileMenuItems: View {
 final class ModuleStores {
     let cds: AudioCDStore
 
-    init(cdServices: CDServices) {
-        cds = AudioCDStore(services: cdServices)
+    let albumOptions: AlbumOptions
+
+    init(launch: LaunchScript) {
+        cds = AudioCDStore(services: launch.cdServices)
+        albumOptions = AlbumOptions(editorShown: launch.opensAlbumEditor, coverFile: launch.coverFile)
     }
 
     /// An inserted disc opens its page, as in Music, unless a sheet is open or another disc is
@@ -156,6 +181,11 @@ extension View {
             .environment(\.songsActions, SongsActions(
                 play: { playback.play($0, startingAt: $1, in: $2) },
                 openAlbum: { window.open($0) }))
+            .environment(\.albumOptions, stores.albumOptions)
+            .environment(\.albumActions, AlbumActions(
+                play: { playback.play($0, startingAt: $1, in: $2) },
+                playingTrackID: { playback.currentTrack?.id },
+                close: { window.closeOver(animated: $0) }))
             .environment(\.deviceActions, DeviceActions(
                 runDiagnostics: { window.showDiagnostics() },
                 sendReport: { window.showSendReport(comment: $0) },
