@@ -28,12 +28,6 @@ struct LaunchScript: Sendable {
     /// a file choose panel in a demo recording would be unreadable.
     var coverFile: URL? { options.demoCover }
 
-    /// `--demo --screen write-report`: a sample post-write report. Only
-    /// when writing is blocked - a real report takes precedence.
-    func sampleWriteReport(writesBlocked: Bool) -> WriteReport? {
-        writesBlocked && options.screen == .writeReport ? .demo : nil
-    }
-
     /// `--demo --screen diagnostics|rockbox`: a sample iPod Video, because a demo library is
     /// a backup on disk with nothing to measure.
     var sampleDiagnostics: SampleDiagnostics? {
@@ -77,13 +71,13 @@ struct LaunchScript: Sendable {
         switch options.screen {
         case .album:
             if let album = modules.coverFlowAlbum(in: model), let page = ModulePage.album(album) { window.show(page) }
-        case .pending, .writeReport: window.showPending()
         case .diagnostics: showDiagnosticsBackdrop(window); window.showDiagnostics()
         case .rockbox: showDiagnosticsBackdrop(window); window.showRockboxReport()
         case .sendReport: showDiagnosticsBackdrop(window); window.showSendReport()
         case .developerMode: _ = ExperimentalConsent.askDeveloperMode()
         case nil: break
         }
+        if let sheet = options.moduleSheet(writesBlocked: model.writesBlocked) { window.show(sheet) }
         if let page = options.modulePage {
             if let index = options.centered { modules.center(at: index, on: page, in: model) }
             window.show(page)

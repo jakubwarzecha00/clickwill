@@ -16,8 +16,6 @@ final class WindowState {
 
     /// What hangs over the window - at most one thing at a time.
     enum Modal: Identifiable, Equatable {
-        /// The change list (after a write - the report).
-        case pending
         /// A module's sheet, e.g. Add Songs (`ModuleSheet`).
         case module(ModuleSheet)
         case feedback
@@ -32,7 +30,6 @@ final class WindowState {
 
         var id: String {
             switch self {
-            case .pending: "pending"
             case .module(let sheet): sheet.id
             case .feedback: "feedback"
             case .about: "about"
@@ -132,7 +129,7 @@ final class WindowState {
 
     // MARK: - Over the window
 
-    func showPending() { present(.pending) }
+    func show(_ sheet: ModuleSheet) { present(.module(sheet)) }
 
     /// Add Songs with these files, when a module adds songs.
     func addFiles(_ urls: [URL]) {

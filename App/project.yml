@@ -50,6 +50,8 @@ targets:
         product: ClickwillAlbums
       - package: ITDBKit
         product: ClickwillImport
+      - package: ITDBKit
+        product: ClickwillChanges
       - package: Sparkle
     info:
       path: Clickwill/Info.plist

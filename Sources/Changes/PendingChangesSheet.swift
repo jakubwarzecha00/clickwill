@@ -3,7 +3,7 @@ import ClickwillModel
 import ClickwillShared
 
 /// The list of pending changes, with removals highlighted, and the write button.
-struct PendingChangesSheet: View {
+public struct PendingChangesSheet: View {
     @Environment(LibraryModel.self) private var model
     @Environment(\.dismiss) private var dismiss
     @State private var applying = false
@@ -12,12 +12,14 @@ struct PendingChangesSheet: View {
     /// the backup identifier with the description of repairs in one paragraph.
     @State private var report: WriteReport?
 
-    init(report: WriteReport? = nil) {
-        _report = State(initialValue: report)
-    }
     @State private var failure: String?
 
-    var body: some View {
+    /// `report` opens the sheet on a finished write, e.g. the sample report for screenshots.
+    public init(report: WriteReport? = nil) {
+        _report = State(initialValue: report)
+    }
+
+    public var body: some View {
         // A native macOS 27 sheet, like Add Songs: the system background, Form sections
         // in the grouped style, buttons in the standard places of the bar.
         NavigationStack {
@@ -33,6 +35,7 @@ struct PendingChangesSheet: View {
         }
         .frame(minWidth: 520, idealWidth: 580, minHeight: 360, idealHeight: 440)
         .sheetKeyFocus()
+        .onAppear { model.refreshPreflight() }
     }
 
     @ToolbarContentBuilder private var toolbar: some ToolbarContent {

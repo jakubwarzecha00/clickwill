@@ -8,8 +8,8 @@ import ClickwillShared
 /// the backup identifier, the number of database bytes and the description of the 0x160 field repair.
 /// Here each thing has its own place and weight - first what needs
 /// attention, then what you asked for, and finally what the app fixed by itself.
-struct WriteReport: Identifiable {
-    let id = UUID()
+public struct WriteReport: Identifiable {
+    public let id = UUID()
     /// Changes from the queue, in the same words in which they were queued.
     let changes: [String]
     /// Fixes the app made by itself while writing.
@@ -20,7 +20,7 @@ struct WriteReport: Identifiable {
     let backupBytes: Int64
 
     /// A sample report for screenshots (`--demo --screen write-report`) - writing in demo mode is blocked.
-    static var demo: WriteReport {
+    public static var demo: WriteReport {
         WriteReport(changes: ["Add 6 songs (1 album, 568.1 MB, 6 to be converted first)", "Change the cover of Low Tide Radio"],
                     repairs: ["Converted 6 files to a format the iPod plays", "Kept the plays from the iPod for 12 songs"],
                     problems: [], backupDate: Date(), backupBytes: 4_812_000)

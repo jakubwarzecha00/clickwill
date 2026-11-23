@@ -250,11 +250,8 @@ struct ContentView: View {
     /// reviewing the screens. The change list stays in the system colors.
     @ViewBuilder private func sheet(for modal: WindowState.Modal) -> some View {
         switch modal {
-        case .pending:
-            PendingChangesSheet(report: launch.sampleWriteReport(writesBlocked: model.writesBlocked))
-                .onAppear { model.refreshPreflight() }
         case .module(let sheet):
-            sheet.view.environment(model).foregroundStyle(Theme.fg)
+            sheet.view(model: model)
         case .feedback:
             FeedbackSheet().environment(model).foregroundStyle(Theme.fg)
         case .about:

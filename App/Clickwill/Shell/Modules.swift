@@ -1,5 +1,6 @@
 import SwiftUI
 import ClickwillModel
+import ClickwillShared
 import ClickwillCoverFlow
 import ClickwillAlbums
 import ClickwillArtists
@@ -8,6 +9,7 @@ import ClickwillCD
 import ClickwillAlbum
 import ClickwillDevice
 import ClickwillImport
+import ClickwillChanges
 
 /// The screen modules the window shows, and the only file in the app that names them.
 ///
@@ -188,6 +190,21 @@ struct ModuleSidebarSections: View {
 /// Sheets the modules put over the window (`WindowState.Modal.module`).
 enum ModuleSheet: Hashable, Sendable {
     case importFiles([URL])
+    /// The change list; with `sampleReport`, the report after a write, for screenshots.
+    case pendingChanges(sampleReport: Bool)
+
+    /// `--screen pending|write-report`. The sample report shows only while writes are blocked
+    /// (demo mode), so it can never stand in for a real one.
+    init?(launchName: String, writesBlocked: Bool) {
+        switch launchName {
+        case "pending": self = .pendingChanges(sampleReport: false)
+        case "write-report": self = .pendingChanges(sampleReport: writesBlocked)
+        default: return nil
+        }
+    }
+
+    /// The change list, from the playback bar and `--screen pending`.
+    static let changeList: ModuleSheet? = .pendingChanges(sampleReport: false)
 
     /// Add Songs with these files: chosen in the sidebar, ripped from a disc, dropped on the
     /// window or given with `--import`. Nil when no module adds songs; the window then takes no drops.
@@ -196,13 +213,26 @@ enum ModuleSheet: Hashable, Sendable {
     var id: String {
         switch self {
         case .importFiles(let urls): "import:" + urls.map(\.path).joined(separator: "|")
+        case .pendingChanges: "pending"
         }
     }
 
-    @MainActor @ViewBuilder var view: some View {
+    /// A sheet does not inherit the window's text color; Add Songs sets it, the change list
+    /// stays in the system colors.
+    @MainActor @ViewBuilder func view(model: LibraryModel) -> some View {
         switch self {
-        case .importFiles(let urls): ImportSheet(initialURLs: urls)
+        case .importFiles(let urls):
+            ImportSheet(initialURLs: urls).environment(model).foregroundStyle(Theme.fg)
+        case .pendingChanges(let sampleReport):
+            PendingChangesSheet(report: sampleReport ? .demo : nil)
         }
+    }
+}
+
+/// The modules' items in the playback bar, after the playback controls.
+struct ModuleStatusItems: View {
+    var body: some View {
+        ChangesStatusItems()
     }
 }
 
@@ -284,6 +314,9 @@ extension View {
             .environment(\.coverFlowActions, CoverFlowActions(openAlbum: { window.open($0) }, reorder: reorder))
             .environment(\.cdActions, CDActions(importFiles: { window.addFiles($0) }))
             .environment(\.importActions, ImportActions(addFiles: { window.addFiles($0) }))
+            .environment(\.changesActions, ChangesActions(showChanges: {
+                if let sheet = ModuleSheet.changeList { window.show(sheet) }
+            }))
             .environment(\.artistsActions, ArtistsActions(
                 show: { window.show(.artists($0), animated: true) },
                 openAlbum: { window.open($0) }))

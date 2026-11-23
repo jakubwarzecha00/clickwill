@@ -56,9 +56,7 @@ struct LaunchOptions: Sendable {
 
     /// The screen after the library loads (`--screen …`).
     enum Screen: String, Sendable {
-        case album, pending
-        /// The change list with a sample post-write report.
-        case writeReport = "write-report"
+        case album
         /// Diagnostics and the Rockbox report with a sample iPod Video (`SampleDiagnostics`).
         case diagnostics, rockbox
         /// Send Diagnostic Report over the sample Diagnostics.
@@ -67,11 +65,15 @@ struct LaunchOptions: Sendable {
         case developerMode = "developer-mode"
     }
 
-    /// `--screen album|pending|write-report|diagnostics|rockbox|send-report|developer-mode`.
+    /// `--screen album|diagnostics|rockbox|send-report|developer-mode`.
     /// An unknown name is `nil` - a normal launch.
     var screen: Screen? { value("--screen").flatMap(Screen.init(rawValue:)) }
     /// `--screen <page of a module>`, e.g. `coverflow`, `albums`, `songs` or `backups` (`ModulePage`).
     var modulePage: ModulePage? { value("--screen").flatMap(ModulePage.init(launchName:)) }
+    /// `--screen <sheet of a module>`, e.g. `pending` or `write-report` (`ModuleSheet`).
+    func moduleSheet(writesBlocked: Bool) -> ModuleSheet? {
+        value("--screen").flatMap { ModuleSheet(launchName: $0, writesBlocked: writesBlocked) }
+    }
     /// `--centered N`: the album in the middle of the strip (with `--screen albums` - of the wheel).
     var centered: Int? { value("--centered").flatMap(Int.init) }
     /// `--center <title or artist>`.
