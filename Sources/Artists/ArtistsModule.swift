@@ -1,5 +1,6 @@
 import SwiftUI
 import ClickwillModel
+import ClickwillShared
 
 /// A screen of the Artists module.
 public enum ArtistsPage: Hashable, Sendable {
@@ -22,21 +23,17 @@ public enum ArtistsPage: Hashable, Sendable {
     @MainActor public func subtitle(in model: LibraryModel) -> String {
         switch self {
         case .list:
-            return Self.count(model.artistCount, "artist")
+            return pluralized(model.artistCount, "artist")
         case .artist(let artist):
             let albums = model.albums.filter { $0.displayArtist == artist }
             let songs = albums.reduce(0) { $0 + model.tracks(of: $1).count }
-            return "\(Self.count(albums.count, "album")) · \(Self.count(songs, "song"))"
+            return "\(pluralized(albums.count, "album")) · \(pluralized(songs, "song"))"
         }
     }
 
     /// Where Back and Escape lead.
     public var parent: ArtistsPage? {
         if case .artist = self { .list } else { nil }
-    }
-
-    private static func count(_ number: Int, _ noun: String) -> String {
-        "\(number) \(number == 1 ? noun : noun + "s")"
     }
 }
 

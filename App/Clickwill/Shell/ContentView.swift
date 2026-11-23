@@ -96,27 +96,11 @@ struct ContentView: View {
         }
         .onChange(of: window.screen) { sceneFocused = true }
         .foregroundStyle(Theme.fg)
-        // The scene holds the focus, so the window takes the keys and hands them to the screen
-        // on top: the arrows and Return to the Albums wheel or to a module page such as Cover Flow.
-        // A stage handling them itself would move the artwork even under the album view.
-        // Escape goes back where the Back button leads.
-        .onKeyPress(keys: [.leftArrow, .rightArrow]) { press in passToModule(press.key) }
-        .onKeyPress(.upArrow) { stepAlbums(-1) }
-        .onKeyPress(.downArrow) { stepAlbums(1) }
-        // A letter from the keyboard - the first album under that letter, like the jump bar on the iPod.
-        .onKeyPress(characters: .alphanumerics) { press in jumpAlbums(to: press.characters) }
-        .onKeyPress(.return) {
-            guard !sheetIsOpen else { return .ignored }
-            switch window.screen {
-            case .albums where model.albumsDisplay.indices.contains(window.albumsCentered):
-                window.open(model.albumsDisplay[window.albumsCentered])
-                return .handled
-            case .module(let page):
-                return page.handle(.return, model: model, modules: modules, window: window)
-            default:
-                return .ignored
-            }
-        }
+        // The scene holds the focus, so the window takes the keys and hands them to the page
+        // on top (Cover Flow, the Albums wheel). A stage handling them itself would move the
+        // artwork even under the album view. Escape goes back where the Back button leads.
+        .onKeyPress(keys: [.leftArrow, .rightArrow, .upArrow, .downArrow, .return]) { press in passToModule(press) }
+        .onKeyPress(characters: .alphanumerics) { press in passToModule(press) }
         .onKeyPress(.escape) {
             guard !sheetIsOpen else { return .ignored }
             guard window.backTitle != nil else { return .ignored }
@@ -164,8 +148,6 @@ struct ContentView: View {
         // HIG: we do not title the window with the app name - without a library the title is empty.
         guard model.state == .loaded else { return "" }
         switch window.screen {
-        case .albums: return "Albums"
-        case .reorder: return "Reorder Albums"
         case .module(let page): return page.windowTitle(in: model, modules: modules)
         }
     }
@@ -174,16 +156,8 @@ struct ContentView: View {
         if let standalonePage { return standalonePage.subtitle(in: model, modules: modules) }
         guard model.state == .loaded else { return "" }
         switch window.screen {
-        // As many albums as the iPod shows - an album scattered across the table is one.
-        case .albums: return "\(Self.count(model.coverFlowAlbums.count, "album")) · \(Self.count(model.trackCount, "song"))"
-        case .reorder: return "The order the iPod shows"
         case .module(let page): return page.subtitle(in: model, modules: modules)
         }
-    }
-
-    /// "1 album", "18 albums".
-    static func count(_ number: Int, _ noun: String) -> String {
-        "\(number) \(number == 1 ? noun : noun + "s")"
     }
 
     /// The playback bar at the bottom of the window: when a track was chosen, when playback reported
@@ -207,12 +181,6 @@ struct ContentView: View {
             ToolbarItem(placement: .navigation) {
                 Button { window.goBack() } label: { Label(backTitle, systemImage: "chevron.left") }
                     .help("Back to \(backTitle)")
-            }
-        }
-        if case .reorder = window.screen {
-            ToolbarItem(placement: .confirmationAction) {
-                Button("Done") { window.showHome(animated: true) }
-                    .prominentGlassButtonStyle()
             }
         }
     }
@@ -251,28 +219,9 @@ struct ContentView: View {
         NSApp.windows.contains { $0.isSheet && $0.isVisible }
     }
 
-    private func passToModule(_ key: KeyEquivalent) -> KeyPress.Result {
+    private func passToModule(_ press: KeyPress) -> KeyPress.Result {
         guard !sheetIsOpen, case .module(let page) = window.screen else { return .ignored }
-        return page.handle(key, model: model, modules: modules, window: window)
-    }
-
-    private func stepAlbums(_ delta: Int) -> KeyPress.Result {
-        guard !sheetIsOpen else { return .ignored }
-        guard case .albums = window.screen, !model.albumsDisplay.isEmpty else { return .ignored }
-        let target = min(model.albumsDisplay.count - 1, max(0, window.albumsCentered + delta))
-        if target != window.albumsCentered {
-            withAnimation(.spring(duration: 0.32, bounce: 0.12)) { window.albumsCentered = target }
-        }
-        return .handled
-    }
-
-    /// A digit and any other script stand under `#` on the iPod.
-    private func jumpAlbums(to characters: String) -> KeyPress.Result {
-        guard !sheetIsOpen, case .albums = window.screen, let typed = characters.first else { return .ignored }
-        let letter = typed.isASCII && typed.isLetter ? typed.uppercased() : "#"
-        guard let index = model.albumsDisplay.firstIndex(where: { model.menuLetter(of: $0) == letter }) else { return .ignored }
-        withAnimation(.spring(duration: 0.32, bounce: 0.12)) { window.albumsCentered = index }
-        return .handled
+        return page.handle(press, model: model, modules: modules, window: window)
     }
 
     @ViewBuilder private var content: some View {
@@ -298,10 +247,6 @@ struct ContentView: View {
             EmptyStateView(text: "Clickwill Couldn't Read This iPod's Library", detail: ErrorPresenter.message(for: failure))
         case .loaded:
             switch window.screen {
-            case .albums:
-                AlbumWheelScreen(centered: $window.albumsCentered, open: window.open)
-            case .reorder:
-                ReorderScreen()
             case .module(let page):
                 page.screen
             }

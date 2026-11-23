@@ -35,12 +35,7 @@ struct SidebarView: View {
                     .selectionDisabled()
             }
             Section("Library") {
-                ModuleLibraryItems(placement: .beforeAlbums)
-                Label("Albums", systemImage: "square.stack")
-                    .badge(loaded ? model.albumsDisplay.count : 0)
-                    .tag(SidebarItem.albums)
-                    .disabled(!loaded)
-                ModuleLibraryItems(placement: .afterAlbums)
+                ModuleLibraryItems()
                 // The file panel is opened here, not in the sheet: a modal window
                 // started from inside a presented sheet does not show at all.
                 Button {
@@ -73,6 +68,4 @@ struct SidebarView: View {
         }
     }
 
-    /// Without a loaded library the panel has nothing to show and nowhere to lead.
-    private var loaded: Bool { model.state == .loaded }
 }

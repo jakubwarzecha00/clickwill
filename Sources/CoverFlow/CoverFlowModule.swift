@@ -10,15 +10,11 @@ public enum CoverFlowPage: String, CaseIterable, Hashable, Sendable {
 
     /// As many albums as the iPod shows: an album scattered across the database is one.
     @MainActor public func subtitle(in model: LibraryModel) -> String {
-        "\(Self.count(model.coverFlowAlbums.count, "album")) · \(Self.count(model.trackCount, "song"))"
+        "\(pluralized(model.coverFlowAlbums.count, "album")) · \(pluralized(model.trackCount, "song"))"
     }
 
     /// Only an iPod that has Cover Flow itself shows it.
     @MainActor public func isAvailable(in model: LibraryModel) -> Bool { model.hasCoverFlow }
-
-    static func count(_ number: Int, _ noun: String) -> String {
-        "\(number) \(number == 1 ? noun : noun + "s")"
-    }
 }
 
 /// One window's Cover Flow position. It outlives the screen, so an album opened from Cover Flow

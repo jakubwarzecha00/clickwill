@@ -8,7 +8,7 @@ import ClickwillShared
 struct AlbumInfoColumn: View {
     @Environment(LibraryModel.self) private var model
     let album: AlbumCard
-    let open: (AlbumCard) -> Void
+    let open: @MainActor (AlbumCard) -> Void
 
     static let width: CGFloat = 270
 

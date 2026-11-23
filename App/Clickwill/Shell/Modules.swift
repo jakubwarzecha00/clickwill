@@ -1,6 +1,7 @@
 import SwiftUI
 import ClickwillModel
 import ClickwillCoverFlow
+import ClickwillAlbums
 import ClickwillArtists
 import ClickwillSongs
 import ClickwillCD
@@ -15,6 +16,7 @@ import ClickwillDevice
 /// lines here.
 enum ModulePage: Hashable {
     case coverFlow(CoverFlowPage)
+    case albums(AlbumsPage)
     case artists(ArtistsPage)
     case songs(SongsPage)
     case cd(CDPage)
@@ -24,6 +26,7 @@ enum ModulePage: Hashable {
     /// `--screen <name>`.
     init?(launchName: String) {
         if let page = CoverFlowPage(rawValue: launchName) { self = .coverFlow(page); return }
+        if let page = AlbumsPage(rawValue: launchName) { self = .albums(page); return }
         if let page = ArtistsPage(launchName: launchName) { self = .artists(page); return }
         if let page = SongsPage(rawValue: launchName) { self = .songs(page); return }
         if let page = DevicePage(rawValue: launchName) { self = .device(page); return }
@@ -31,12 +34,15 @@ enum ModulePage: Hashable {
     }
 
     /// The screen a new window starts on, before the library says what the iPod has (`isAvailable`).
-    static let start: ModulePage? = .coverFlow(.coverFlow)
+    static let start: ModulePage = .coverFlow(.coverFlow)
 
-    /// The first library screen, or nil to let the app fall back to Albums.
-    @MainActor static func home(in model: LibraryModel) -> ModulePage? {
-        CoverFlowPage.coverFlow.isAvailable(in: model) ? .coverFlow(.coverFlow) : nil
+    /// The first library screen: Cover Flow, and on an iPod without it, Albums.
+    @MainActor static func home(in model: LibraryModel) -> ModulePage {
+        CoverFlowPage.coverFlow.isAvailable(in: model) ? .coverFlow(.coverFlow) : .albums(.albums)
     }
+
+    /// Reorder Albums, from Cover Flow's toolbar and the View menu.
+    static let reorder: ModulePage? = .albums(.reorder)
 
     /// The page shown under Diagnostics and Send Diagnostic Report opened from the command line.
     static let diagnosticsBackdrop: ModulePage? = .device(.overview)
@@ -56,6 +62,7 @@ enum ModulePage: Hashable {
     var title: String {
         switch self {
         case .coverFlow(let page): page.title
+        case .albums(let page): page.title
         case .artists(let page): page.title
         case .songs(let page): page.title
         case .cd: "Audio CD"
@@ -75,6 +82,7 @@ enum ModulePage: Hashable {
     @MainActor func subtitle(in model: LibraryModel, modules: ModuleStores) -> String {
         switch self {
         case .coverFlow(let page): page.subtitle(in: model)
+        case .albums(let page): page.subtitle(in: model)
         case .artists(let page): page.subtitle(in: model)
         case .songs(let page): page.subtitle(in: model)
         case .cd(let page): page.subtitle(in: modules.cds)
@@ -86,6 +94,7 @@ enum ModulePage: Hashable {
     @MainActor @ViewBuilder var screen: some View {
         switch self {
         case .coverFlow(let page): CoverFlowModuleScreen(page: page)
+        case .albums(let page): AlbumsScreen(page: page)
         case .artists(let page): ArtistsScreen(page: page)
         case .songs: SongsScreen()
         case .cd(let page): CDScreen(page: page)
@@ -98,7 +107,7 @@ enum ModulePage: Hashable {
     var needsLibrary: Bool {
         switch self {
         case .cd: false
-        case .coverFlow, .artists, .songs, .album, .device: true
+        case .coverFlow, .albums, .artists, .songs, .album, .device: true
         }
     }
 
@@ -106,15 +115,20 @@ enum ModulePage: Hashable {
     @MainActor func isAvailable(in model: LibraryModel) -> Bool {
         switch self {
         case .coverFlow(let page): page.isAvailable(in: model)
-        case .artists, .songs, .cd, .album, .device: true
+        case .albums, .artists, .songs, .cd, .album, .device: true
         }
     }
 
     /// A key the window passes on while this page is shown; the scene holds the focus, not the page.
-    @MainActor func handle(_ key: KeyEquivalent, model: LibraryModel, modules: ModuleStores, window: WindowState) -> KeyPress.Result {
+    @MainActor func handle(_ press: KeyPress, model: LibraryModel, modules: ModuleStores, window: WindowState) -> KeyPress.Result {
         switch self {
-        case .coverFlow: modules.coverFlow.handle(key, albums: model.coverFlowDisplay, open: window.open)
-        case .artists, .songs, .cd, .album, .device: .ignored
+        case .coverFlow:
+            modules.coverFlow.handle(press.key, albums: model.coverFlowDisplay, open: window.open)
+        case .albums(.albums):
+            modules.albums.handle(press.key, characters: press.characters, albums: model.albumsDisplay,
+                                  letter: model.menuLetter(of:), open: window.open)
+        case .albums(.reorder), .artists, .songs, .cd, .album, .device:
+            .ignored
         }
     }
 
@@ -122,12 +136,13 @@ enum ModulePage: Hashable {
     var parent: ModulePage? {
         switch self {
         case .artists(let page): page.parent.map(ModulePage.artists)
-        case .coverFlow, .songs, .cd, .album, .device: nil
+        case .coverFlow, .albums, .songs, .cd, .album, .device: nil
         }
     }
 
     /// The page whose sidebar row is selected while this one is shown.
     var root: ModulePage {
+        if case .albums(let page) = self { return .albums(page.sidebarPage) }
         var page = self
         while let parent = page.parent { page = parent }
         return page
@@ -137,33 +152,26 @@ enum ModulePage: Hashable {
     var opensOver: Bool {
         switch self {
         case .album: true
-        case .coverFlow, .artists, .songs, .cd, .device: false
+        case .coverFlow, .albums, .artists, .songs, .cd, .device: false
         }
     }
 
     /// Back from a page opened over this one returns here. Otherwise it returns to the first library screen.
     var staysAsOrigin: Bool {
         switch self {
-        case .coverFlow, .artists: true
-        case .songs, .cd, .album, .device: false
+        case .coverFlow, .albums(.albums), .artists: true
+        case .albums(.reorder), .songs, .cd, .album, .device: false
         }
     }
 }
 
-/// The modules' rows in the sidebar's Library section. Albums is still the app's own row,
-/// so each row says on which side of it it goes.
+/// The modules' rows in the sidebar's Library section.
 struct ModuleLibraryItems: View {
-    enum Placement { case beforeAlbums, afterAlbums }
-    let placement: Placement
-
     var body: some View {
-        switch placement {
-        case .beforeAlbums:
-            CoverFlowSidebarItem { SidebarItem.module(.coverFlow($0)) }
-        case .afterAlbums:
-            ArtistsSidebarItem { SidebarItem.module(.artists($0)) }
-            SongsSidebarItem { SidebarItem.module(.songs($0)) }
-        }
+        CoverFlowSidebarItem { SidebarItem.module(.coverFlow($0)) }
+        AlbumsSidebarItem { SidebarItem.module(.albums($0)) }
+        ArtistsSidebarItem { SidebarItem.module(.artists($0)) }
+        SongsSidebarItem { SidebarItem.module(.songs($0)) }
     }
 }
 
@@ -188,15 +196,26 @@ final class ModuleStores {
     let cds: AudioCDStore
     let albumOptions: AlbumOptions
     let coverFlow = CoverFlowState()
+    let albums = AlbumsState()
 
     init(launch: LaunchScript) {
         cds = AudioCDStore(services: launch.cdServices)
         albumOptions = AlbumOptions(editorShown: launch.opensAlbumEditor, coverFile: launch.coverFile)
     }
 
-    /// An album that was open stays in the middle of Cover Flow once the window goes back.
-    func center(_ album: AlbumCard, in model: LibraryModel) {
-        coverFlow.center(album, in: model.coverFlowDisplay)
+    /// An album that was open stays in the middle of the screen the window goes back to: the wheel
+    /// when it was opened there, otherwise Cover Flow.
+    func center(_ album: AlbumCard, returningTo origin: ModulePage, in model: LibraryModel) {
+        if case .albums = origin {
+            albums.center(album, in: model.albumsDisplay)
+        } else {
+            coverFlow.center(album, in: model.coverFlowDisplay)
+        }
+    }
+
+    /// `--screen <page> --centered N` for a page with its own position: the N-th album on the wheel.
+    func center(at index: Int, on page: ModulePage, in model: LibraryModel) {
+        if case .albums(.albums) = page, model.albumsDisplay.indices.contains(index) { albums.centered = index }
     }
 
     /// `--centered`, `--center` and `--screen album` in a launch for screenshots.
@@ -235,6 +254,10 @@ extension View {
         return self
             .environment(stores.cds)
             .environment(stores.coverFlow)
+            .environment(stores.albums)
+            .environment(\.albumsActions, AlbumsActions(
+                openAlbum: { window.open($0) },
+                done: { window.showHome(animated: true) }))
             .environment(\.coverFlowActions, CoverFlowActions(openAlbum: { window.open($0) }, reorder: reorder))
             .environment(\.cdActions, CDActions(importFiles: { window.showImport($0) }))
             .environment(\.artistsActions, ArtistsActions(

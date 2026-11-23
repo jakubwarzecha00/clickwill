@@ -50,8 +50,6 @@ final class WindowState {
     }
 
     private(set) var screen: Screen
-    /// The album in the middle of the Albums wheel (an index into `albumsDisplay`) - likewise.
-    var albumsCentered = 0
     /// The screen a page that opens over (an album) was opened from; Back returns to it.
     private(set) var origin: Screen
     private(set) var modal: Modal?
@@ -65,9 +63,8 @@ final class WindowState {
     init(model: LibraryModel, modules: ModuleStores) {
         self.model = model
         self.modules = modules
-        let start = ModulePage.start.map(Screen.module) ?? .albums
-        screen = start
-        origin = start
+        screen = .module(ModulePage.start)
+        origin = .module(ModulePage.start)
     }
 
     // MARK: - Screens
@@ -78,7 +75,7 @@ final class WindowState {
     }
 
     /// The first library screen: Cover Flow, and on an iPod without Cover Flow, Albums.
-    var home: Screen { ModulePage.home(in: model).map(Screen.module) ?? .albums }
+    var home: Screen { .module(ModulePage.home(in: model)) }
 
     /// False once the shown page stops fitting the loaded iPod; the window then goes home.
     var screenIsAvailable: Bool {
@@ -90,7 +87,6 @@ final class WindowState {
     func open(_ album: AlbumCard) {
         guard let page = ModulePage.album(album) else { return }
         switch screen {
-        case .albums: origin = screen
         case .module(let current) where current.staysAsOrigin: origin = screen
         // From Songs and from the change list we go back to the first library screen.
         default: origin = home
@@ -102,20 +98,15 @@ final class WindowState {
     var backTitle: String? {
         guard case .module(let page) = screen else { return nil }
         if let parent = page.parent { return parent.title }
-        guard page.opensOver else { return nil }
-        if case .module(let page) = origin { return page.root.title }
-        return "Albums"
+        guard page.opensOver, case .module(let origin) = origin else { return nil }
+        return origin.root.title
     }
 
     /// Back from a page opened over another screen, with the album it showed in the middle there.
     func closeOver(animated: Bool = true) {
         guard case .module(let page) = screen, page.opensOver else { return }
-        if let album = page.shownAlbum {
-            if case .albums = origin {
-                if let index = model.albumsDisplay.firstIndex(where: { $0.id == album.id }) { albumsCentered = index }
-            } else {
-                modules.center(album, in: model)
-            }
+        if let album = page.shownAlbum, case .module(let origin) = origin {
+            modules.center(album, returningTo: origin, in: model)
         }
         show(origin, animated: animated)
     }
@@ -132,8 +123,8 @@ final class WindowState {
 
     /// From the toolbar and the View menu (HIG: every toolbar item has its counterpart in the menu).
     func showReorder() {
-        guard AppFeatures.reorderAlbums, model.state == .loaded else { return }
-        show(.reorder, animated: true)
+        guard AppFeatures.reorderAlbums, model.state == .loaded, let page = ModulePage.reorder else { return }
+        show(.module(page), animated: true)
     }
 
     /// The sidebar selection. A page opened over another screen (an album) belongs to that
@@ -142,10 +133,8 @@ final class WindowState {
         if case .module(let page) = screen, !page.needsLibrary { return .module(page.root) }
         guard model.state == .loaded else { return nil }
         switch screen {
-        case .albums, .reorder: return .albums
         case .module(let page) where page.opensOver:
-            if case .albums = origin { return .albums }
-            if case .module(let page) = origin { return .module(page.root) }
+            if case .module(let origin) = origin { return .module(origin.root) }
             return nil
         case .module(let page): return .module(page.root)
         }
@@ -154,8 +143,6 @@ final class WindowState {
     func select(_ item: SidebarItem) {
         switch item {
         // Clicking the tab that the open album belongs to keeps the album open.
-        case .albums:
-            if sidebarSelection != .albums { show(.albums) }
         case .module(let page):
             if sidebarSelection != item { show(.module(page)) }
         }

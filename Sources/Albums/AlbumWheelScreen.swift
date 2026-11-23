@@ -8,12 +8,12 @@ import ClickwillShared
 /// tilted. The design follows an approved mockup.
 ///
 /// The middle of the wheel is the selection, not a cursor: the mouse wheel, the trackpad, the arrows
-/// (handled by `ContentView`) and the slider at the side turn it. Clicking an album turns it
+/// (`AlbumsState.handle`) and the slider at the side turn it. Clicking an album turns it
 /// to the middle, double-clicking the middle one - as in Cover Flow - opens the album.
 struct AlbumWheelScreen: View {
     @Environment(LibraryModel.self) private var model
     @Binding var centered: Int
-    let open: (AlbumCard) -> Void
+    let open: @MainActor (AlbumCard) -> Void
     /// The letter brighter for a moment after each jump.
     @State private var letterLit = false
     /// The album the column on the right talks about - only once the wheel stops.

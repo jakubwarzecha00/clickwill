@@ -77,11 +77,6 @@ struct LaunchScript: Sendable {
         switch options.screen {
         case .album:
             if let album = modules.coverFlowAlbum(in: model), let page = ModulePage.album(album) { window.show(.module(page)) }
-        case .albums:
-            // `--centered N` then concerns the wheel: the N-th album of the Albums menu.
-            if let index = options.centered, model.albumsDisplay.indices.contains(index) { window.albumsCentered = index }
-            window.show(.albums)
-        case .reorder: window.show(.reorder)
         case .pending, .writeReport: window.showPending()
         case .diagnostics: showDiagnosticsBackdrop(window); window.showDiagnostics()
         case .rockbox: showDiagnosticsBackdrop(window); window.showRockboxReport()
@@ -89,7 +84,10 @@ struct LaunchScript: Sendable {
         case .developerMode: _ = ExperimentalConsent.askDeveloperMode()
         case nil: break
         }
-        if let page = options.modulePage { window.show(.module(page)) }
+        if let page = options.modulePage {
+            if let index = options.centered { modules.center(at: index, on: page, in: model) }
+            window.show(.module(page))
+        }
         if let url = options.importURL {
             let delay = options.importDelay
             Task {
