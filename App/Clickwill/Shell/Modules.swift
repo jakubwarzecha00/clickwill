@@ -7,6 +7,7 @@ import ClickwillSongs
 import ClickwillCD
 import ClickwillAlbum
 import ClickwillDevice
+import ClickwillImport
 
 /// The screen modules the window shows, and the only file in the app that names them.
 ///
@@ -172,6 +173,7 @@ struct ModuleLibraryItems: View {
         AlbumsSidebarItem { ModulePage.albums($0) }
         ArtistsSidebarItem { ModulePage.artists($0) }
         SongsSidebarItem { ModulePage.songs($0) }
+        ImportSidebarItem()
     }
 }
 
@@ -180,6 +182,27 @@ struct ModuleSidebarSections: View {
     var body: some View {
         CDSidebarSection { ModulePage.cd($0) }
         DeviceSidebarSection { ModulePage.device($0) }
+    }
+}
+
+/// Sheets the modules put over the window (`WindowState.Modal.module`).
+enum ModuleSheet: Hashable, Sendable {
+    case importFiles([URL])
+
+    /// Add Songs with these files: chosen in the sidebar, ripped from a disc, dropped on the
+    /// window or given with `--import`. Nil when no module adds songs; the window then takes no drops.
+    static let addFiles: (@Sendable ([URL]) -> ModuleSheet)? = { .importFiles($0) }
+
+    var id: String {
+        switch self {
+        case .importFiles(let urls): "import:" + urls.map(\.path).joined(separator: "|")
+        }
+    }
+
+    @MainActor @ViewBuilder var view: some View {
+        switch self {
+        case .importFiles(let urls): ImportSheet(initialURLs: urls)
+        }
     }
 }
 
@@ -259,7 +282,8 @@ extension View {
                 openAlbum: { window.open($0) },
                 done: { window.showHome(animated: true) }))
             .environment(\.coverFlowActions, CoverFlowActions(openAlbum: { window.open($0) }, reorder: reorder))
-            .environment(\.cdActions, CDActions(importFiles: { window.showImport($0) }))
+            .environment(\.cdActions, CDActions(importFiles: { window.addFiles($0) }))
+            .environment(\.importActions, ImportActions(addFiles: { window.addFiles($0) }))
             .environment(\.artistsActions, ArtistsActions(
                 show: { window.show(.artists($0), animated: true) },
                 openAlbum: { window.open($0) }))

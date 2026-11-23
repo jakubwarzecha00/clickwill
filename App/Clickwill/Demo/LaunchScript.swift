@@ -92,7 +92,7 @@ struct LaunchScript: Sendable {
             let delay = options.importDelay
             Task {
                 if delay > 0 { try? await Task.sleep(for: .seconds(delay)) }
-                window.showImport([url])
+                window.addFiles([url])
             }
         }
     }

@@ -73,7 +73,7 @@ struct ContentView: View {
             // Files and folders from Finder dropped anywhere on the window open
             // Add Songs with them loaded. The album's track list and the artwork
             // in the Edit panel have their own targets - they lie deeper, so they win.
-            .onDrop(of: model.isWritable ? [.fileURL] : [], isTargeted: $dropTargeted) { providers in
+            .onDrop(of: model.isWritable && ModuleSheet.addFiles != nil ? [.fileURL] : [], isTargeted: $dropTargeted) { providers in
                 receiveDrop(providers)
             }
             .overlay { if dropTargeted { dropHint } }
@@ -192,13 +192,13 @@ struct ContentView: View {
     }
 
     /// The same dialog and duplicate check as "Add Songs or Albums" - the files
-    /// go there the same way (`WindowState.showImport`) as a ripped disc.
+    /// go there the same way (`WindowState.addFiles`) as a ripped disc.
     private func receiveDrop(_ providers: [NSItemProvider]) -> Bool {
         guard !sheetIsOpen, model.state == .loaded else { return false }
         Task {
             let urls = await NSItemProvider.fileURLs(from: providers)
             guard !urls.isEmpty else { return }
-            window.showImport(urls)
+            window.addFiles(urls)
         }
         return true
     }
@@ -253,8 +253,8 @@ struct ContentView: View {
         case .pending:
             PendingChangesSheet(report: launch.sampleWriteReport(writesBlocked: model.writesBlocked))
                 .onAppear { model.refreshPreflight() }
-        case .importFiles(let urls):
-            ImportSheet(initialURLs: urls).environment(model).foregroundStyle(Theme.fg)
+        case .module(let sheet):
+            sheet.view.environment(model).foregroundStyle(Theme.fg)
         case .feedback:
             FeedbackSheet().environment(model).foregroundStyle(Theme.fg)
         case .about:

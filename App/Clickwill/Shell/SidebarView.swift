@@ -5,7 +5,6 @@ import ClickwillShared
 /// The sidebar: the iPod card, the library, discs in the drive, the device,
 /// and at the bottom feedback and About.
 struct SidebarView: View {
-    @Environment(LibraryModel.self) private var model
     @Environment(WindowState.self) private var window
 
     var body: some View {
@@ -36,17 +35,6 @@ struct SidebarView: View {
             }
             Section("Library") {
                 ModuleLibraryItems()
-                // The file panel is opened here, not in the sheet: a modal window
-                // started from inside a presented sheet does not show at all.
-                Button {
-                    window.showImport(ImportSheet.chooseFiles())
-                } label: {
-                    Label("Add Songs or Albums", systemImage: "plus")
-                        .badge(model.changes.additions.count)
-                }
-                .buttonStyle(.plain)
-                .disabled(!model.isWritable)
-                .help(model.isWritable ? "" : model.writeUnavailable.map(ErrorPresenter.message(for:)) ?? "Connect an iPod to add songs.")
             }
             ModuleSidebarSections()
         }

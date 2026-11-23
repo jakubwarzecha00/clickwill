@@ -48,6 +48,8 @@ targets:
         product: ClickwillCoverFlow
       - package: ITDBKit
         product: ClickwillAlbums
+      - package: ITDBKit
+        product: ClickwillImport
       - package: Sparkle
     info:
       path: Clickwill/Info.plist

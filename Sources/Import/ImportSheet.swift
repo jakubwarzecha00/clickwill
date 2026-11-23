@@ -8,11 +8,15 @@ import ClickwillShared
 /// Importing tracks: choosing files, reviewing what came out of the tags, corrections
 /// before the write. Nothing reaches the iPod from this dialog - confirming adds
 /// an item to the list of pending changes, like any other edit.
-struct ImportSheet: View {
+public struct ImportSheet: View {
     /// Files chosen in a panel that opened **before** the sheet.
     /// A modal panel started from inside a presented sheet does not show
     /// at all - both fight over the same window.
     let initialURLs: [URL]
+
+    public init(initialURLs: [URL]) {
+        self.initialURLs = initialURLs
+    }
 
     @Environment(LibraryModel.self) private var model
     @Environment(\.dismiss) private var dismiss
@@ -29,7 +33,7 @@ struct ImportSheet: View {
     /// "Add" was clicked with files the iPod's firmware may skip - the sheet asks first.
     @State private var confirmingSkippable = false
 
-    var body: some View {
+    public var body: some View {
         // Standard parts only, per the Human Interface Guidelines for macOS: a sheet with its
         // buttons in their system places, a pop-up button with its explanation under it, and
         // a list of songs grouped by album. Controls stay at the top, away from the window's
@@ -331,9 +335,10 @@ struct ImportSheet: View {
         if commit.refused.isEmpty { dismiss() } else { refused = commit }
     }
 
-    private var skippableTitle: String {
-        let count = session.mayBeSkippedCount(in: model)
-        return count == 1 ? "Add 1 Song Your iPod May Skip?" : "Add \(count) Songs Your iPod May Skip?"
+    private var skippableTitle: String { Self.skippableTitle(count: session.mayBeSkippedCount(in: model)) }
+
+    static func skippableTitle(count: Int) -> String {
+        count == 1 ? "Add 1 Song Your iPod May Skip?" : "Add \(count) Songs Your iPod May Skip?"
     }
 
     private var skippableMessage: String {
@@ -343,9 +348,10 @@ struct ImportSheet: View {
         return "The iPod's original firmware may not support this format and will skip these songs when they come up. They still show in your library. If you want them to play, choose Automatic to convert them."
     }
 
-    private var refusalTitle: String {
-        let count = refused?.refused.count ?? 0
-        return count == 1 ? "1 Song Wasn't Added" : "\(count) Songs Weren't Added"
+    private var refusalTitle: String { Self.refusalTitle(count: refused?.refused.count ?? 0) }
+
+    static func refusalTitle(count: Int) -> String {
+        count == 1 ? "1 Song Wasn't Added" : "\(count) Songs Weren't Added"
     }
 
     /// "The rest" only when something from the same "Add" went onto the list.
@@ -356,11 +362,16 @@ struct ImportSheet: View {
     }
 
     private var confirmTitle: String {
-        let add = session.toAdd(in: model).count, replace = session.replaceCount, skippedCount = session.skippedCount
+        Self.confirmTitle(add: session.toAdd(in: model).count, replace: session.replaceCount, skipped: session.skippedCount)
+    }
+
+    /// The count shows only when it differs from what the list suggests: some songs replace
+    /// or are skipped.
+    static func confirmTitle(add: Int, replace: Int, skipped: Int) -> String {
         switch (add, replace) {
         case (0, let r) where r > 0: return "Replace \(r) \(r == 1 ? "File" : "Files")"
         case (let a, let r) where r > 0: return "Add \(a), Replace \(r)"
-        default: return skippedCount > 0 && add > 0 ? "Add \(add) to Library" : "Add to Library"
+        default: return skipped > 0 && add > 0 ? "Add \(add) to Library" : "Add to Library"
         }
     }
 
@@ -592,10 +603,9 @@ struct ImportSheet: View {
         Task { await read(urls) }
     }
 
-    /// The file choose panel. Static, because we also open it from the sidebar,
-    /// before the sheet even exists.
+    /// The file choose panel. Static, because the sidebar opens it before the sheet exists.
     @MainActor
-    static func chooseFiles() -> [URL] {
+    public static func chooseFiles() -> [URL] {
         FilePanels.chooseAudio(message: "Choose audio files, or a folder holding an album.", prompt: "Choose")
     }
 

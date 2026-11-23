@@ -18,9 +18,8 @@ final class WindowState {
     enum Modal: Identifiable, Equatable {
         /// The change list (after a write - the report).
         case pending
-        /// The add sheet with these files: chosen in a panel, dropped
-        /// on the window or ripped from a disc.
-        case importFiles([URL])
+        /// A module's sheet, e.g. Add Songs (`ModuleSheet`).
+        case module(ModuleSheet)
         case feedback
         case about
         /// Diagnostics of the loaded iPod (`DiagnosticsSheet`); with a comment, Send Diagnostic
@@ -34,7 +33,7 @@ final class WindowState {
         var id: String {
             switch self {
             case .pending: "pending"
-            case .importFiles(let urls): "import:" + urls.map(\.path).joined(separator: "|")
+            case .module(let sheet): sheet.id
             case .feedback: "feedback"
             case .about: "about"
             case .diagnostics: "diagnostics"
@@ -135,9 +134,10 @@ final class WindowState {
 
     func showPending() { present(.pending) }
 
-    func showImport(_ urls: [URL]) {
-        guard !urls.isEmpty else { return }
-        present(.importFiles(urls))
+    /// Add Songs with these files, when a module adds songs.
+    func addFiles(_ urls: [URL]) {
+        guard !urls.isEmpty, let sheet = ModuleSheet.addFiles?(urls) else { return }
+        present(.module(sheet))
     }
 
     func showFeedback() { present(.feedback) }
