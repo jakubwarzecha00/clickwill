@@ -1,6 +1,7 @@
 import SwiftUI
 import AppKit
 import ClickwillModel
+import ClickwillShared
 
 /// The library window: the sidebar, the scene with the current screen, the playback bar
 /// and what hangs over the window (`WindowState`).
@@ -87,6 +88,7 @@ struct ContentView: View {
         .environment(cds)
         .focusedSceneValue(\.window, window)
         .environment(window)
+        .moduleActions(window: window, playback: playback)
         .environment(\.demoHover, demoHover.target)
         .onAppear {
             sceneFocused = true
@@ -186,8 +188,7 @@ struct ContentView: View {
         case .songs: return "Songs"
         case .artists: return "Artists"
         case .artist(let artist): return artist
-        case .overview: return "Overview"
-        case .backups: return "Backups"
+        case .module(let page): return page.title
         case .audioCD: return ""
         }
     }
@@ -210,8 +211,7 @@ struct ContentView: View {
             let artistAlbums = model.albums.filter { $0.displayArtist == artist }
             let songCount = artistAlbums.reduce(0) { $0 + model.tracks(of: $1).count }
             return "\(Self.count(artistAlbums.count, "album")) · \(Self.count(songCount, "song"))"
-        case .overview: return model.deviceName ?? model.source?.displayName ?? ""
-        case .backups: return "Restore the iPod to an earlier state"
+        case .module(let page): return page.subtitle(in: model)
         case .audioCD: return ""
         }
     }
@@ -371,10 +371,8 @@ struct ContentView: View {
                 ArtistsScreen(openAlbum: window.open)
             case .artist(let artist):
                 ArtistDetailScreen(artist: artist, openAlbum: window.open)
-            case .overview:
-                OverviewScreen()
-            case .backups:
-                BackupsScreen()
+            case .module(let page):
+                page.screen
             case .audioCD:
                 EmptyStateView(text: "The CD Was Ejected", detail: "Insert it again to import its songs.")
             }

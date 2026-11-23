@@ -1,5 +1,6 @@
 import SwiftUI
 import ClickwillModel
+import ClickwillShared
 
 /// The sidebar: the iPod card, the library, discs in the drive, the device,
 /// and at the bottom feedback and About.
@@ -77,17 +78,7 @@ struct SidebarView: View {
                     }
                 }
             }
-            Section("Device") {
-                Label("Overview", systemImage: "info.circle")
-                    .tag(SidebarItem.overview)
-                    .disabled(!loaded)
-                // Backups were made on every write, and there was no way to use them
-                // outside the command line.
-                Label("Backups", systemImage: "clock.arrow.circlepath")
-                    .tag(SidebarItem.backups)
-                    .disabled(!loaded || model.device == nil)
-                    .help(model.device == nil ? "Backups belong to a connected iPod." : "")
-            }
+            ModuleSidebarSections()
         }
         .listStyle(.sidebar)
         // Feedback on top, not in Overview: a tester should have it at hand

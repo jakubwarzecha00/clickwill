@@ -2,6 +2,7 @@ import SwiftUI
 import AppKit
 import ClickwillModel
 import ITDBKit
+import ClickwillShared
 
 /// Albums that look different in Rockbox (`RockboxReport`). Reads every song file, so it
 /// runs on demand with a progress bar. Read-only; technical wording.

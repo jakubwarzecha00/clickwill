@@ -1,6 +1,7 @@
 import SwiftUI
 import AppKit
 import ClickwillModel
+import ClickwillShared
 
 /// A report from a tester, sent straight to the Clickwill server with the Send button
 /// - without Mail and without the user's e-mail. Only the

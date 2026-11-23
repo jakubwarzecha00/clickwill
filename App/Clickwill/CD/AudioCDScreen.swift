@@ -2,6 +2,7 @@ import SwiftUI
 import AppKit
 import UniformTypeIdentifiers
 import ClickwillModel
+import ClickwillShared
 
 /// Disc commands from the toolbar and the File menu.
 enum AudioCDCommand: String { case lookUp, pasteTrackList, importCD, eject }

@@ -6,21 +6,27 @@ import Observation
 /// so they run away from the main thread: the table keeps its rows until the new ones are ready.
 @MainActor
 @Observable
-final class TableRows<Row: Sendable> {
+public final class TableRows<Row: Sendable> {
 
     /// Everything the rows depend on. The screen passes it to `.onChange`.
-    struct Request: Equatable {
+    public struct Request: Equatable, Sendable {
         /// `LibraryModel.catalogRevision`
-        let revision: Int
-        let query: String
-        let sortOrder: [KeyPathComparator<Row>]
+        public let revision: Int
+        public let query: String
+        public let sortOrder: [KeyPathComparator<Row>]
+
+        public init(revision: Int, query: String, sortOrder: [KeyPathComparator<Row>]) {
+            self.revision = revision
+            self.query = query
+            self.sortOrder = sortOrder
+        }
     }
 
-    private(set) var shown: [Row] = []
+    public private(set) var shown: [Row] = []
     /// Grows when a search or a sort rearranges the list; the screen gives it to the table as `.id`.
     /// A table that stays moves its rows one by one, and AppKit makes a view for every moved or
     /// inserted row to measure it: tens of seconds at 40,000 rows. A new table makes only the visible ones.
-    private(set) var arrangement = 0
+    public private(set) var arrangement = 0
     /// Every row of the library, before searching and sorting.
     @ObservationIgnored private var all: [Row] = []
     @ObservationIgnored private var builtRevision: Int?
@@ -30,7 +36,9 @@ final class TableRows<Row: Sendable> {
     /// The newest search or sort. A newer one replaces it, and its result no longer counts.
     @ObservationIgnored private var work: Task<Void, Never>?
 
-    func update(for request: Request, build: () -> [Row], matches: @escaping @Sendable (Row, String) -> Bool) {
+    public init() {}
+
+    public func update(for request: Request, build: () -> [Row], matches: @escaping @Sendable (Row, String) -> Bool) {
         // The first fill happens right here: a table opened empty would flash before filling up.
         let first = builtRevision == nil
         if request.revision != builtRevision {

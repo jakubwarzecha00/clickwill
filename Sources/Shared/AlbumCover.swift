@@ -4,13 +4,18 @@ import ClickwillModel
 /// Album artwork, and without it a placeholder with a note and the title - the same in Cover
 /// Flow and on the Albums wheel. Decoding is requested by the view that shows it
 /// (`LibraryModel.ensureArtwork`) - once, not on every redraw.
-struct AlbumCoverFace: View {
+public struct AlbumCoverFace: View {
     @Environment(LibraryModel.self) private var model
-    let album: AlbumCard
-    let size: CGFloat
+    public let album: AlbumCard
+    public let size: CGFloat
+
+    public init(album: AlbumCard, size: CGFloat) {
+        self.album = album
+        self.size = size
+    }
     private var image: CGImage? { model.artwork(for: album.artworkTrackID) }
 
-    var body: some View {
+    public var body: some View {
         if let image {
             Image(decorative: image, scale: 1).resizable().aspectRatio(contentMode: .fill)
         } else {
@@ -27,10 +32,12 @@ struct AlbumCoverFace: View {
 }
 
 /// A badge in the corner of the artwork: the album is waiting to be written or has entries without a file.
-struct AlbumCoverBadge: View {
-    let album: AlbumCard
+public struct AlbumCoverBadge: View {
+    public let album: AlbumCard
 
-    var body: some View {
+    public init(album: AlbumCard) { self.album = album }
+
+    public var body: some View {
         if album.isPending {
             Image(systemName: "clock").font(.symbol(.badge, weight: .bold)).foregroundStyle(.white)
                 .frame(width: 20, height: 20).background(Theme.accent, in: Circle())

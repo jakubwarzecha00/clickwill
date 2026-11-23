@@ -1,7 +1,7 @@
 import SwiftUI
 import AppKit
 
-extension View {
+public extension View {
     /// On macOS 14-25 the `.roundedBorder` style draws a single-line system field
     /// and ignores `axis: .vertical` and the line reserve - the message had one
     /// line (checked on macOS 14). There, a `.plain` field with its own frame and field background.

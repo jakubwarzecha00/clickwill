@@ -1,6 +1,7 @@
 import SwiftUI
 import Observation
 import ClickwillModel
+import ClickwillShared
 
 /// The state of one window: the screen on top, the albums in the middle of Cover Flow and of the Albums
 /// wheel, and what hangs over the window. Views, menus and panels call its
@@ -141,8 +142,7 @@ final class WindowState {
             return .coverFlow
         case .songs: return .songs
         case .artists, .artist: return .artists
-        case .overview: return .overview
-        case .backups: return .backups
+        case .module(let page): return .module(page)
         case .audioCD: return nil
         }
     }
@@ -157,8 +157,7 @@ final class WindowState {
         case .songs: show(.songs)
         case .artists:
             if sidebarSelection != .artists { show(.artists) }
-        case .overview: show(.overview)
-        case .backups: show(.backups)
+        case .module(let page): show(.module(page))
         case .disc(let volume): show(.audioCD(volume))
         }
     }

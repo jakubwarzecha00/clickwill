@@ -1,5 +1,6 @@
 import SwiftUI
 import ClickwillModel
+import ClickwillShared
 
 /// The Albums tab: the iPod's Albums menu in the same order (`albumsDisplay`),
 /// laid out on a wheel. The selected album stands in the middle, pushed out the farthest and bright;

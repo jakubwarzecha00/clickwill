@@ -5,14 +5,20 @@ import SwiftUI
 /// moves at a steady pace until a copy comes back to the starting place, and
 /// starts over. The edges fade softly. Inactive or short - plain text with
 /// an ellipsis. It takes the font and color from the environment.
-struct MarqueeText: View {
-    let text: String
-    var active = true
+public struct MarqueeText: View {
+    public let text: String
+    public var active = true
     /// Points per second.
-    var speed: CGFloat = 32
+    public var speed: CGFloat = 32
     @State private var fullWidth: CGFloat = 0
     @State private var boxWidth: CGFloat = 0
     @State private var start = Date()
+
+    public init(text: String, active: Bool = true, speed: CGFloat = 32) {
+        self.text = text
+        self.active = active
+        self.speed = speed
+    }
 
     private static let pause = 0.8
     private static let gap: CGFloat = 40
@@ -20,7 +26,7 @@ struct MarqueeText: View {
 
     private var scrolls: Bool { active && fullWidth > boxWidth + 0.5 }
 
-    var body: some View {
+    public var body: some View {
         Text(text)
             .lineLimit(1)
             .opacity(scrolls ? 0 : 1)

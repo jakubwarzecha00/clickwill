@@ -1,5 +1,6 @@
 import SwiftUI
 import UniformTypeIdentifiers
+import ClickwillShared
 
 /// Artwork with replacement: hover shows a button, the right mouse button gives a menu,
 /// a dropped image file replaces it right away.

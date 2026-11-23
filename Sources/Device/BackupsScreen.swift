@@ -1,6 +1,7 @@
 import SwiftUI
 import ITDBKit
 import ClickwillModel
+import ClickwillShared
 
 /// The list of the connected iPod's backups, and restoring them.
 ///
@@ -8,7 +9,7 @@ import ClickwillModel
 /// were made on every write and there was no way to use them.
 struct BackupsScreen: View {
     @Environment(LibraryModel.self) private var model
-    @Environment(PlaybackController.self) private var playback
+    @Environment(\.deviceActions) private var actions
     @State private var backups: [Snapshot] = []
     @State private var selectedID: String?
     @State private var preview: BackupPreview?
@@ -249,7 +250,7 @@ struct BackupsScreen: View {
     private func restore(_ snapshot: Snapshot) async {
         phase = .restoring
         // The player holds a file from the iPod - just like when ejecting.
-        playback.stop()
+        actions.stopPlayback()
         do {
             let before = try await model.restoreBackup(snapshot)
             phase = .restored(savedAs: before.createdAt)

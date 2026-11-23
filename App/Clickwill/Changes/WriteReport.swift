@@ -1,5 +1,6 @@
 import SwiftUI
 import ClickwillModel
+import ClickwillShared
 
 /// The result of a write, broken down into what the user may want to read.
 ///

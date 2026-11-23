@@ -8,9 +8,9 @@ import ClickwillModel
 /// description for `ipodctl` and the diagnostic report. The sentence the app user
 /// sees is created here - an exhaustive `switch` over every type,
 /// so a new case cannot get through without its own sentence.
-enum ErrorPresenter {
+public enum ErrorPresenter {
 
-    static func message(for error: any Error) -> String {
+    public static func message(for error: any Error) -> String {
         // System errors (files, network, volumes) arrive as NSError - their
         // text is "Error Domain=... Code=...", and the sentence is in localizedDescription.
         if type(of: error) is NSError.Type { return error.localizedDescription }
@@ -34,7 +34,7 @@ enum ErrorPresenter {
 
     // MARK: - Core errors
 
-    static func message(for error: ITDBError) -> String {
+    public static func message(for error: ITDBError) -> String {
         switch error {
         case .noIPodFound:
             "No iPod found. Check that it's connected and shows up in Finder."
@@ -137,7 +137,7 @@ enum ErrorPresenter {
     }
 
     /// A condition before the write - the bar at the bottom, the change list, Overview, Backups.
-    static func message(for issue: WritePreflight.Issue) -> String {
+    public static func message(for issue: WritePreflight.Issue) -> String {
         switch issue {
         case .volumeUnavailable:
             "The iPod isn't available. Check that it's connected and shows up in Finder."
@@ -185,7 +185,7 @@ enum ErrorPresenter {
 
     // MARK: - Model errors
 
-    static func message(for error: FileImportError) -> String {
+    public static func message(for error: FileImportError) -> String {
         switch error {
         case .unreadable(let url):
             "\(url.lastPathComponent) isn't an audio file Clickwill can read. Choose an MP3, AAC, Apple Lossless, WAV, AIFF or FLAC file."
@@ -197,7 +197,7 @@ enum ErrorPresenter {
         }
     }
 
-    static func message(for error: ArtworkError) -> String {
+    public static func message(for error: ArtworkError) -> String {
         switch error {
         case .noExistingArtwork(let album):
             "Can't add a cover to \u{201C}\(album)\u{201D} yet: this iPod has no covers at all. Add one album with a cover using Music, then try again."
@@ -205,7 +205,7 @@ enum ErrorPresenter {
         }
     }
 
-    static func message(for error: SyncedTracksRefusal) -> String {
+    public static func message(for error: SyncedTracksRefusal) -> String {
         switch error {
         case .removal(let songs):
             "This iPod rebuilds its library from its Music folder every time it starts or leaves a Mac, so \(songs == 1 ? "this song" : "\(songs) of these songs") would come back. Delete \(songs == 1 ? "its file" : "their files") from the Music folder on the iPod instead."
@@ -214,7 +214,7 @@ enum ErrorPresenter {
         }
     }
 
-    static func message(for error: ConversionQueueError) -> String {
+    public static func message(for error: ConversionQueueError) -> String {
         switch error {
         case .fileMissing(let title): "\u{201C}\(title)\u{201D} has no file on the iPod."
         case .notScanned(let title): "\u{201C}\(title)\u{201D} hasn't been checked yet."
@@ -222,13 +222,13 @@ enum ErrorPresenter {
         }
     }
 
-    static func message(for error: MetadataError) -> String {
+    public static func message(for error: MetadataError) -> String {
         switch error {
         case .invalidYear(let text): "\u{201C}\(text)\u{201D} isn't a year. Type four digits, like 1995."
         }
     }
 
-    static func message(for error: AudioConversionError) -> String {
+    public static func message(for error: AudioConversionError) -> String {
         switch error {
         case .noAudioTrack(let url): "\(url.lastPathComponent) has no audio track."
         case .cannotDecode(let what): "Couldn't decode \(what)."
@@ -237,7 +237,7 @@ enum ErrorPresenter {
         }
     }
 
-    static func message(for error: AudioImport.ImportError) -> String {
+    public static func message(for error: AudioImport.ImportError) -> String {
         switch error {
         case .unreadable(let url):
             "Clickwill can't read \(url.lastPathComponent). Choose an MP3, AAC, Apple Lossless, WAV, AIFF or FLAC file."
@@ -245,7 +245,7 @@ enum ErrorPresenter {
         }
     }
 
-    static func message(for error: BackupRestoreError) -> String {
+    public static func message(for error: BackupRestoreError) -> String {
         switch error {
         case .notConnected:
             "Connect the iPod this backup came from to restore it."
@@ -254,7 +254,7 @@ enum ErrorPresenter {
         }
     }
 
-    static func message(for error: WriteBlocked) -> String {
+    public static func message(for error: WriteBlocked) -> String {
         switch error {
         case .demoCopy: "This is a demo copy, so nothing is written to the iPod."
         case .notFromDevice: "The library isn't from a connected iPod, or it hasn't finished loading."
@@ -262,7 +262,7 @@ enum ErrorPresenter {
         }
     }
 
-    static func message(for failure: FeedbackSubmission.Failure) -> String {
+    public static func message(for failure: FeedbackSubmission.Failure) -> String {
         switch failure {
         case .offline:
             "Clickwill couldn't reach clickwilldev.com. Check your internet connection and try again. Your message is still here."
@@ -275,14 +275,14 @@ enum ErrorPresenter {
         }
     }
 
-    static func message(for error: AudioCD.ReadError) -> String {
+    public static func message(for error: AudioCD.ReadError) -> String {
         switch error {
         case .notAnAudioCD(let url): "\(url.lastPathComponent) isn't an audio CD."
         case .noAudioTracks: "This disc has no audio tracks."
         }
     }
 
-    static func message(for error: MusicBrainz.LookupError) -> String {
+    public static func message(for error: MusicBrainz.LookupError) -> String {
         switch error {
         case .busy: "MusicBrainz is busy right now. Try again in a moment."
         case .server(let status): "MusicBrainz answered with an error (\(status))."
@@ -293,7 +293,7 @@ enum ErrorPresenter {
 
     /// A repair during the write that did not happen. Repairs run on
     /// every write, so the next one will try again.
-    static func message(for problem: RepairPipeline.Problem) -> String {
+    public static func message(for problem: RepairPipeline.Problem) -> String {
         switch problem.step {
         case .coverOwners:
             "A merged song's cover couldn't be moved to the copy that stays, so that song may show no cover. The next write tries again."
@@ -308,7 +308,7 @@ enum ErrorPresenter {
 
     /// Files of removed tracks that the deletion rule does not touch (a folder,
     /// a link, something outside the music folder) - they stay on the iPod for good.
-    static func keptFiles(_ urls: [URL]) -> String {
+    public static func keptFiles(_ urls: [URL]) -> String {
         let names = urls.map(\.lastPathComponent).sorted()
         let listed = names.count > 3 ? names.prefix(3).joined(separator: ", ") + " and \(names.count - 3) more" : names.joined(separator: ", ")
         return names.count == 1
@@ -317,12 +317,12 @@ enum ErrorPresenter {
     }
 
     /// One line of the post-write report: what it concerns and why.
-    static func line(_ problem: WriteProblem) -> String {
+    public static func line(_ problem: WriteProblem) -> String {
         "\(problem.subject): \(reason(problem.reason))"
     }
 
     /// A file or track that was not added to the change list.
-    static func line(_ refusal: QueueRefusal) -> String {
+    public static func line(_ refusal: QueueRefusal) -> String {
         let reason = switch refusal.reason {
         case .cannotPlay(let reason): reason ?? "the iPod can't play this file"
         case .alreadyQueued: "already in the list of changes"
@@ -334,7 +334,7 @@ enum ErrorPresenter {
     }
 
     /// The path of a disc track that was not ripped.
-    static func line(_ failure: CDRipper.Failure) -> String {
+    public static func line(_ failure: CDRipper.Failure) -> String {
         switch failure.reason {
         case .folderNotCreated(let error): "Couldn't create \(failure.subject): \(error.localizedDescription)"
         case .trackMissing: "\(failure.subject): the track file isn't on the disc"
@@ -343,7 +343,7 @@ enum ErrorPresenter {
     }
 
     /// A notice above the file list in the add sheet.
-    static func line(_ note: ImportSession.Note) -> String {
+    public static func line(_ note: ImportSession.Note) -> String {
         switch note {
         case .unreadable(let error): message(for: error)
         case .cannotPlay(let title, let reason): "\(title): \(reason ?? "the iPod cannot play this")"
@@ -362,7 +362,7 @@ enum ErrorPresenter {
     }
 
     /// Why this iPod cannot be written to - for the label and the hint.
-    static func readOnlyMessage(_ reason: ReadOnlyReason?) -> String {
+    public static func readOnlyMessage(_ reason: ReadOnlyReason?) -> String {
         switch reason {
         case let reason?:
             return readOnlyFact(reason)
@@ -372,7 +372,7 @@ enum ErrorPresenter {
     }
 
     /// Why there is no library on screen.
-    static func message(for failure: LibraryModel.Failure) -> String {
+    public static func message(for failure: LibraryModel.Failure) -> String {
         switch failure {
         case .loading(let error):
             return message(for: error)
@@ -382,7 +382,7 @@ enum ErrorPresenter {
     }
 
     /// Why the library on screen cannot be written.
-    static func message(for unavailable: LibraryModel.WriteUnavailable) -> String {
+    public static func message(for unavailable: LibraryModel.WriteUnavailable) -> String {
         switch unavailable {
         case .device(let reason): return readOnlyMessage(reason)
         case .snapshot: return "This library came from a snapshot, so writing is turned off."

@@ -1,5 +1,6 @@
 import SwiftUI
 import ClickwillModel
+import ClickwillShared
 
 /// Reordering in the iPod-compatible version: the list cut into Cover Flow groups.
 /// An album is dragged within its group (the album table); an album with the compilation

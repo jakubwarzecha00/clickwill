@@ -32,6 +32,10 @@ targets:
         product: ClickwillModel
       - package: ITDBKit
         product: ITDBKit
+      - package: ITDBKit
+        product: ClickwillShared
+      - package: ITDBKit
+        product: ClickwillDevice
       - package: Sparkle
     info:
       path: Clickwill/Info.plist

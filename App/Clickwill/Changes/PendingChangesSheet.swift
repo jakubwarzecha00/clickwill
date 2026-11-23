@@ -1,5 +1,6 @@
 import SwiftUI
 import ClickwillModel
+import ClickwillShared
 
 /// The list of pending changes, with removals highlighted, and the write button.
 struct PendingChangesSheet: View {

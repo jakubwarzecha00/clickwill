@@ -82,15 +82,14 @@ struct LaunchScript: Sendable {
             window.show(.albums)
         case .reorder: window.show(.reorder)
         case .songs: window.show(.songs)
-        case .overview: window.show(.overview)
-        case .backups: window.show(.backups)
         case .pending, .writeReport: window.showPending()
-        case .diagnostics: window.show(.overview); window.showDiagnostics()
-        case .rockbox: window.show(.overview); window.showRockboxReport()
-        case .sendReport: window.show(.overview); window.showSendReport()
+        case .diagnostics: showDiagnosticsBackdrop(window); window.showDiagnostics()
+        case .rockbox: showDiagnosticsBackdrop(window); window.showRockboxReport()
+        case .sendReport: showDiagnosticsBackdrop(window); window.showSendReport()
         case .developerMode: _ = ExperimentalConsent.askDeveloperMode()
         case .coverflow, nil: break
         }
+        if let page = options.modulePage { window.show(.module(page)) }
         if let url = options.importURL {
             let delay = options.importDelay
             Task {
@@ -98,6 +97,11 @@ struct LaunchScript: Sendable {
                 window.showImport([url])
             }
         }
+    }
+
+    /// The page under Diagnostics opened from the command line, as when opened from it by hand.
+    @MainActor private func showDiagnosticsBackdrop(_ window: WindowState) {
+        if let page = ModulePage.diagnosticsBackdrop { window.show(.module(page)) }
     }
 
     /// An album by title, then by artist, and finally a title containing the name.

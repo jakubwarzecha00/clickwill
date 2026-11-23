@@ -1,4 +1,5 @@
 import SwiftUI
+import ClickwillShared
 
 struct EmptyStateView: View {
     let text: String

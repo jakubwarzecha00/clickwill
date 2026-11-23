@@ -1,6 +1,7 @@
 import SwiftUI
 import ITDBKit
 import ClickwillModel
+import ClickwillShared
 
 /// Changes between two libraries, expandable by album.
 ///

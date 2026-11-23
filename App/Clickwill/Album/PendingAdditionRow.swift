@@ -1,5 +1,6 @@
 import SwiftUI
 import ClickwillModel
+import ClickwillShared
 
 /// A track waiting to be added to an album: it is visible in the list already, but
 /// it reaches the iPod only on "Write to iPod".

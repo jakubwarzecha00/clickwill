@@ -1,5 +1,6 @@
 import SwiftUI
 import ClickwillModel
+import ClickwillShared
 
 /// The popover with connected iPods, opened by the arrow on the iPod card.
 /// No separate list in the sidebar: the iPod is

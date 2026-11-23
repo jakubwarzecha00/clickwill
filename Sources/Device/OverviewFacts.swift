@@ -1,4 +1,5 @@
 import ClickwillModel
+import ClickwillShared
 import ITDBKit
 
 /// What the Overview screen says about the device and the library - the rows separate from

@@ -1,5 +1,6 @@
 import SwiftUI
 import ClickwillModel
+import ClickwillShared
 
 /// All tracks in one table: sorting by column, searching,
 /// playing with a double click.

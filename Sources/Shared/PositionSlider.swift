@@ -3,12 +3,18 @@ import SwiftUI
 /// The system position slider for a list (Cover Flow, Albums): the value is
 /// the item number, not a fraction. System, not drawn - the Liquid Glass knob
 /// while dragging comes from macOS, just as in the playback bar.
-struct PositionSlider: View {
-    @Binding var index: Int
-    let count: Int
-    let label: String
+public struct PositionSlider: View {
+    @Binding public var index: Int
+    public let count: Int
+    public let label: String
 
-    var body: some View {
+    public init(index: Binding<Int>, count: Int, label: String) {
+        _index = index
+        self.count = count
+        self.label = label
+    }
+
+    public var body: some View {
         Slider(value: Binding(get: { Double(index) },
                               set: { index = min(count - 1, max(0, Int($0.rounded()))) }),
                in: 0...Double(max(1, count - 1)))
@@ -22,11 +28,16 @@ struct PositionSlider: View {
 /// "4 of 18" next to the slider. It takes as much space as the longest label
 /// ("18 of 18") - otherwise going from 9 to 10 widened the counter,
 /// and the slider next to it shrank by a few points while scrolling.
-struct PositionCounter: View {
-    let index: Int
-    let count: Int
+public struct PositionCounter: View {
+    public let index: Int
+    public let count: Int
 
-    var body: some View {
+    public init(index: Int, count: Int) {
+        self.index = index
+        self.count = count
+    }
+
+    public var body: some View {
         ZStack(alignment: .trailing) {
             Text("\(count) of \(count)").hidden()
             Text("\(index + 1) of \(count)")
@@ -41,10 +52,16 @@ struct PositionCounter: View {
 /// (Liquid Glass). Custom, because there is no system vertical one: a vertical `NSSlider`
 /// has its start at the bottom, and a rotated one is rotated only on screen,
 /// it reads clicks unrotated (checked by recording a drag).
-struct VerticalPositionSlider: View {
-    @Binding var index: Int
-    let count: Int
-    let label: String
+public struct VerticalPositionSlider: View {
+    @Binding public var index: Int
+    public let count: Int
+    public let label: String
+
+    public init(index: Binding<Int>, count: Int, label: String) {
+        _index = index
+        self.count = count
+        self.label = label
+    }
     @State private var dragging = false
     @Environment(\.isEnabled) private var enabled
 
@@ -52,7 +69,7 @@ struct VerticalPositionSlider: View {
     private static let knob = CGSize(width: 15, height: 20)
     private static let track: CGFloat = 5
 
-    var body: some View {
+    public var body: some View {
         GeometryReader { geo in
             let travel = max(1, geo.size.height - Self.knob.height)
             let offset = count > 1 ? travel * CGFloat(index) / CGFloat(count - 1) : 0

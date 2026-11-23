@@ -2,6 +2,7 @@ import SwiftUI
 import AppKit
 import ITDBKit
 import ClickwillModel
+import ClickwillShared
 
 /// The iPod drawing: our own vector illustration in the shape of the case,
 /// in the color from the model catalog. No Apple photos or renders.

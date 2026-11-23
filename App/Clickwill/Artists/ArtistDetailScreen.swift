@@ -1,5 +1,6 @@
 import SwiftUI
 import ClickwillModel
+import ClickwillShared
 
 /// Albums for a specific artist.
 struct ArtistDetailScreen: View {

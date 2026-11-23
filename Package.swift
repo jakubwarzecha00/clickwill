@@ -11,6 +11,8 @@ let package = Package(
     products: [
         .library(name: "ITDBKit", targets: ["ITDBKit"]),
         .library(name: "ClickwillModel", targets: ["ClickwillModel"]),
+        .library(name: "ClickwillShared", targets: ["ClickwillShared"]),
+        .library(name: "ClickwillDevice", targets: ["ClickwillDevice"]),
         .executable(name: "ipodctl", targets: ["ipodctl"]),
     ],
     targets: [
@@ -18,9 +20,18 @@ let package = Package(
         // The app's model layer: the library state, the change queue, the artwork cache.
         // No AppKit, so it can be tested with `swift test`.
         .target(name: "ClickwillModel", dependencies: ["ITDBKit"]),
+        // What every screen module of the app shares: the theme, the error sentences, the
+        // common views. A module takes shared things from here, never from another module or the app.
+        .target(name: "ClickwillShared", dependencies: ["ITDBKit", "ClickwillModel"], path: "Sources/Shared"),
+        // The sidebar's Device section (Overview, Backups) as one module. The app shows it through
+        // one file, App/Clickwill/Shell/Modules.swift, so removing the module touches only that file.
+        .target(name: "ClickwillDevice", dependencies: ["ITDBKit", "ClickwillModel", "ClickwillShared"],
+                path: "Sources/Device"),
         .executableTarget(name: "ipodctl", dependencies: ["ITDBKit", "ClickwillModel"]),
         .testTarget(name: "ITDBKitTests", dependencies: ["ITDBKit"]),
         // The `ipodctl` command tests use the fake iPod from the write tests.
         .testTarget(name: "ClickwillModelTests", dependencies: ["ClickwillModel", "ITDBKit", "ipodctl"]),
+        .testTarget(name: "ClickwillSharedTests", dependencies: ["ClickwillShared"]),
+        .testTarget(name: "ClickwillDeviceTests", dependencies: ["ClickwillDevice", "ITDBKit"]),
     ]
 )

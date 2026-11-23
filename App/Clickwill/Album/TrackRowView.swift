@@ -1,6 +1,7 @@
 import SwiftUI
 import AppKit
 import ClickwillModel
+import ClickwillShared
 
 /// A track row field edited in place.
 enum TrackRowField { case title, number }

@@ -1,5 +1,6 @@
 import SwiftUI
 import ClickwillModel
+import ClickwillShared
 
 /// A quiet column next to the Albums wheel: what is going on with the selected album on the iPod.
 /// Problems only when there are any - with a healthy album the column is three

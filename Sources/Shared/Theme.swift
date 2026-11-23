@@ -3,78 +3,78 @@ import AppKit
 
 /// Colors and dimensions from the UI design (dark theme).
 /// Kept in one place, so the views do not repeat literals.
-enum Theme {
-    static let bg = Color(red: 0x1c/255, green: 0x1c/255, blue: 0x1e/255)
-    static let card = Color(red: 0x2a/255, green: 0x2a/255, blue: 0x2c/255)
-    static let fg = Color(red: 0xf5/255, green: 0xf5/255, blue: 0xf7/255)
-    static let f2 = Color(red: 235/255, green: 235/255, blue: 245/255).opacity(0.6)
-    static let f3 = Color(red: 235/255, green: 235/255, blue: 245/255).opacity(0.3)
-    static let sep = Color.white.opacity(0.09)
-    static let sel = Color(red: 120/255, green: 145/255, blue: 180/255).opacity(0.3)
-    static let glassBorder = Color.white.opacity(0.14)
-    static let row = Color.white.opacity(0.04)
-    static let rowHover = Color.white.opacity(0.07)
+public enum Theme {
+    public static let bg = Color(red: 0x1c/255, green: 0x1c/255, blue: 0x1e/255)
+    public static let card = Color(red: 0x2a/255, green: 0x2a/255, blue: 0x2c/255)
+    public static let fg = Color(red: 0xf5/255, green: 0xf5/255, blue: 0xf7/255)
+    public static let f2 = Color(red: 235/255, green: 235/255, blue: 245/255).opacity(0.6)
+    public static let f3 = Color(red: 235/255, green: 235/255, blue: 245/255).opacity(0.3)
+    public static let sep = Color.white.opacity(0.09)
+    public static let sel = Color(red: 120/255, green: 145/255, blue: 180/255).opacity(0.3)
+    public static let glassBorder = Color.white.opacity(0.14)
+    public static let row = Color.white.opacity(0.04)
+    public static let rowHover = Color.white.opacity(0.07)
     /// A field to fill in. Separate from `row`: at 4% it blended with the panel background
     /// and it was not visible where one could type, and raising `row` would also brighten
     /// all list rows.
-    static let field = Color.white.opacity(0.09)
-    static let fieldBorder = Color.white.opacity(0.17)
-    static let accent = Color(red: 0x7d/255, green: 0x9d/255, blue: 0xc4/255)
-    static let warn = Color(red: 0xff/255, green: 0x9f/255, blue: 0x0a/255)
-    static let destructive = Color(red: 0xff/255, green: 0x45/255, blue: 0x3a/255)
-    static let ok = Color(red: 0x30/255, green: 0xd1/255, blue: 0x58/255)
+    public static let field = Color.white.opacity(0.09)
+    public static let fieldBorder = Color.white.opacity(0.17)
+    public static let accent = Color(red: 0x7d/255, green: 0x9d/255, blue: 0xc4/255)
+    public static let warn = Color(red: 0xff/255, green: 0x9f/255, blue: 0x0a/255)
+    public static let destructive = Color(red: 0xff/255, green: 0x45/255, blue: 0x3a/255)
+    public static let ok = Color(red: 0x30/255, green: 0xd1/255, blue: 0x58/255)
 
     /// The position slider fill on the black scene (Cover Flow, Albums).
     /// The full accent shone brighter than the artwork the slider only scrolls through.
-    static let positionSliderTint = accent.opacity(0.42)
+    public static let positionSliderTint = accent.opacity(0.42)
 
-    static let flowTop = Color(red: 0x0b/255, green: 0x0b/255, blue: 0x0d/255)
-    static let flowBottom = Color(red: 0x16/255, green: 0x16/255, blue: 0x18/255)
-    static let floorTop = Color(red: 0x08/255, green: 0x08/255, blue: 0x0a/255)
-    static let floorBottom = Color(red: 0x0d/255, green: 0x0d/255, blue: 0x10/255)
+    public static let flowTop = Color(red: 0x0b/255, green: 0x0b/255, blue: 0x0d/255)
+    public static let flowBottom = Color(red: 0x16/255, green: 0x16/255, blue: 0x18/255)
+    public static let floorTop = Color(red: 0x08/255, green: 0x08/255, blue: 0x0a/255)
+    public static let floorBottom = Color(red: 0x0d/255, green: 0x0d/255, blue: 0x10/255)
 
     /// The shared scene background - the same one Cover Flow stands on. The toolbar
     /// and the playback bar no longer paint their own gray panels, but
     /// float over this background.
-    static let stage = flowTop
+    public static let stage = flowTop
 
     /// One grid for the whole side panel: the device card, the navigation rows
     /// and the section headers are computed from the same numbers, otherwise
     /// each element starts in a different place.
-    static let panelInset: CGFloat = 12
-    static let rowInset: CGFloat = 9
-    static let rowIconWidth: CGFloat = 15
-    static let rowIconGap: CGFloat = 9
+    public static let panelInset: CGFloat = 12
+    public static let rowInset: CGFloat = 9
+    public static let rowIconWidth: CGFloat = 15
+    public static let rowIconGap: CGFloat = 9
     /// The icon column - the section headers start from it.
-    static var panelIconColumn: CGFloat { panelInset + rowInset }
-    static let toolbarHeight: CGFloat = 52
-    static let playerBarHeight: CGFloat = 64
+    public static var panelIconColumn: CGFloat { panelInset + rowInset }
+    public static let toolbarHeight: CGFloat = 52
+    public static let playerBarHeight: CGFloat = 64
     /// The playback bar is a panel, not a strip - it does not stretch across the whole window.
-    static let playerBarWidth: CGFloat = 900
-    static let inspectorWidth: CGFloat = 282
+    public static let playerBarWidth: CGFloat = 900
+    public static let inspectorWidth: CGFloat = 282
     /// A screen change: the old one fades out completely, only then the new one lights up.
     /// With a plain crossfade both are semi-transparent for a moment and
     /// show through each other - that looks like flicker, not like a transition.
-    static let screenFadeStep = 0.22
-    static let screenFade: Animation = .linear(duration: screenFadeStep * 2)
+    public static let screenFadeStep = 0.22
+    public static let screenFade: Animation = .linear(duration: screenFadeStep * 2)
     /// Computed on every use: `AnyTransition` is not `Sendable`,
     /// so it cannot be a global constant under strict concurrency.
-    static var screenTransition: AnyTransition {
+    public static var screenTransition: AnyTransition {
         .asymmetric(insertion: .opacity.animation(.easeIn(duration: screenFadeStep).delay(screenFadeStep)),
                     removal: .opacity.animation(.easeOut(duration: screenFadeStep)))
     }
 
     /// The fixed width of the sidebar (0.3.1: no hiding and no dragging).
-    static let sidebarWidth: CGFloat = 236
+    public static let sidebarWidth: CGFloat = 236
 
     /// The radius of large panels - the album scene, the inspector, the playback bar.
-    static let panelCorner: CGFloat = 18
+    public static let panelCorner: CGFloat = 18
 
     /// The window's text scale, in points. Cover Flow, the album and the lists have a denser
     /// layout than the system styles, so the steps are here, and the views take them by
     /// name (`.font(.theme(.body))`). A symbol standing in line with text takes
     /// that text's step.
-    enum TextSize: CGFloat {
+    public enum TextSize: CGFloat {
         /// Fine print: "Read-only" on the iPod card, group headers in reordering.
         case fine = 10
         /// Counters and the labels next to them: free space, the time in the playback bar, "compilation".
@@ -104,7 +104,7 @@ enum Theme {
     }
 
     /// Symbols standing alone, not in line with text.
-    enum SymbolSize: CGFloat {
+    public enum SymbolSize: CGFloat {
         /// The iPod chooser arrow on the device card.
         case tiny = 8.5
         /// Arrows in rows and the exclamation mark on the artwork badge.
@@ -126,7 +126,7 @@ enum Theme {
     }
 }
 
-extension Font {
+public extension Font {
     /// A step of the window's text scale (`Theme.TextSize`).
     static func theme(_ size: Theme.TextSize, weight: Font.Weight? = nil, design: Font.Design? = nil) -> Font {
         .system(size: size.rawValue, weight: weight, design: design)
@@ -138,7 +138,7 @@ extension Font {
     }
 }
 
-extension View {
+public extension View {
     /// A floating element with Liquid Glass. It paints no background of its own - it refracts
     /// what is under it - which is why buttons can stand directly on the scene,
     /// with no bar underneath.
@@ -169,7 +169,7 @@ extension View {
     }
 }
 
-extension View {
+public extension View {
     /// A sheet takes the keyboard the moment it appears (`SheetKeyFocus`).
     @ViewBuilder func sheetKeyFocus() -> some View {
         background(SheetKeyFocus())
@@ -200,7 +200,7 @@ private struct SheetKeyFocus: NSViewRepresentable {
 /// All floating elements go through these functions: on 26 and newer, glass
 /// as before; on 14-25, a material with the same shape and the same tint,
 /// with a thin outline in place of the glass edge.
-extension View {
+public extension View {
     @ViewBuilder func glassSurface<S: Shape>(tint: Color? = nil, interactive: Bool = false, in shape: S) -> some View {
         if #available(macOS 26, *) {
             glassEffect(Self.glass(tint: tint, interactive: interactive), in: shape)

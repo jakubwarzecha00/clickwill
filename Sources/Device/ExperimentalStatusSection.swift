@@ -1,5 +1,6 @@
 import SwiftUI
 import ClickwillModel
+import ClickwillShared
 import ITDBKit
 
 /// The top of Overview for an iPod outside the confirmed models: why it is read-only and the way
@@ -7,7 +8,7 @@ import ITDBKit
 /// whether the iPod showed the changes. Technical wording.
 struct ExperimentalStatusSection: View {
     @Environment(LibraryModel.self) private var model
-    @Environment(WindowState.self) private var window
+    @Environment(\.deviceActions) private var actions
 
     var body: some View {
         if let device = model.device {
@@ -27,7 +28,7 @@ struct ExperimentalStatusSection: View {
             } else if device.writesOutsideConfirmedModels {
                 Section("Writing") {
                     LabeledContent(device.writePolicy == .developer ? "Developer Mode" : "Experimental") {
-                        Button("Run Diagnostics…") { window.showDiagnostics() }
+                        Button("Run Diagnostics…") { actions.runDiagnostics() }
                     }
                     Text(device.writePolicy == .developer
                          ? "Unconfirmed model, Developer Mode: lists of confirmed families and artwork formats lifted."
@@ -42,12 +43,12 @@ struct ExperimentalStatusSection: View {
                         HStack(alignment: .firstTextBaseline) {
                             Text("Run Diagnostics to check this iPod and send the result.").foregroundStyle(.secondary)
                             Spacer()
-                            Button("Run Diagnostics…") { window.showDiagnostics() }
+                            Button("Run Diagnostics…") { actions.runDiagnostics() }
                                 .buttonStyle(.borderedProminent)
                         }
                     } else {
                         LabeledContent("Read-only") {
-                            Button("Run Diagnostics…") { window.showDiagnostics() }
+                            Button("Run Diagnostics…") { actions.runDiagnostics() }
                         }
                         Text(ErrorPresenter.readOnlyMessage(device.readOnlyReason))
                             .font(.theme(.footnote)).foregroundStyle(.secondary)
@@ -62,7 +63,7 @@ struct ExperimentalStatusSection: View {
     private func answer(_ shown: Bool, record: ExperimentalPermissions.WriteRecord, identity: String) {
         model.permissions.answer(shown, for: identity)
         let write = "Experimental write \(record.date.formatted(.iso8601.year().month().day())), \(record.changes) \(record.changes == 1 ? "change" : "changes")"
-        window.showSendReport(comment: shown
+        actions.sendReport(shown
             ? "\(write): the iPod showed the changes."
             : "\(write): the iPod did not show the changes as expected. What the iPod showed: ")
     }

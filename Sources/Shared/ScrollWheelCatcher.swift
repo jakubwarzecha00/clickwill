@@ -3,25 +3,30 @@ import AppKit
 
 /// Captures scrolling with the mouse wheel and the trackpad. SwiftUI offers no API for this,
 /// and in Cover Flow and on the Albums wheel it is the main way of navigating.
-struct ScrollWheelCatcher: NSViewRepresentable {
+public struct ScrollWheelCatcher: NSViewRepresentable {
     /// A vertical list (the Albums wheel): only vertical movement counts, and scrolling
     /// the content up - as in any list - leads to the next album.
     /// Otherwise (Cover Flow) - the stronger axis, with the sign as given by the system.
-    var vertical = false
-    let onStep: (Int) -> Void
+    public var vertical = false
+    public let onStep: (Int) -> Void
 
-    func makeNSView(context: Context) -> CatcherView {
+    public init(vertical: Bool = false, onStep: @escaping (Int) -> Void) {
+        self.vertical = vertical
+        self.onStep = onStep
+    }
+
+    public func makeNSView(context: Context) -> CatcherView {
         let view = CatcherView()
         view.vertical = vertical
         view.onStep = onStep
         return view
     }
-    func updateNSView(_ nsView: CatcherView, context: Context) {
+    public func updateNSView(_ nsView: CatcherView, context: Context) {
         nsView.vertical = vertical
         nsView.onStep = onStep
     }
 
-    final class CatcherView: NSView {
+    public final class CatcherView: NSView {
         var vertical = false
         var onStep: ((Int) -> Void)?
         private var accumulated: CGFloat = 0
@@ -30,10 +35,10 @@ struct ScrollWheelCatcher: NSViewRepresentable {
         // The view is transparent to clicks - they go to the artwork underneath -
         // and scrolling is caught through a local event monitor, because without a hit test
         // AppKit would not deliver it here.
-        override func hitTest(_ point: NSPoint) -> NSView? { nil }
-        override var acceptsFirstResponder: Bool { false }
+        public override func hitTest(_ point: NSPoint) -> NSView? { nil }
+        public override var acceptsFirstResponder: Bool { false }
 
-        override func viewDidMoveToWindow() {
+        public override func viewDidMoveToWindow() {
             super.viewDidMoveToWindow()
             if let monitor { NSEvent.removeMonitor(monitor); self.monitor = nil }
             guard window != nil else { return }

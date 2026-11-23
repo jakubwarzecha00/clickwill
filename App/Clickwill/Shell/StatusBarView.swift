@@ -1,5 +1,6 @@
 import SwiftUI
 import ClickwillModel
+import ClickwillShared
 
 /// How much space on the right the panel slid out by the current screen takes.
 /// The playback bar stands above all screens and would otherwise have no way to

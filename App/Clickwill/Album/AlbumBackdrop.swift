@@ -1,5 +1,6 @@
 import SwiftUI
 import CoreImage
+import ClickwillShared
 
 /// The blurred artwork under the album view, computed once per artwork. A small source
 /// (160 px) blurred in Core Image looks the same after enlarging as a 30 pt blur

@@ -1,5 +1,6 @@
 import SwiftUI
 import ClickwillModel
+import ClickwillShared
 
 struct PlaybackBarControls: View {
     @Environment(LibraryModel.self) private var model

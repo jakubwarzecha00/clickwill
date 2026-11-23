@@ -1,6 +1,7 @@
 import SwiftUI
 import ClickwillModel
 import ITDBKit
+import ClickwillShared
 
 /// The iPod card above the sidebar: the name, model, used and free space,
 /// choosing an iPod (with two or more) and ejecting. A system fill,

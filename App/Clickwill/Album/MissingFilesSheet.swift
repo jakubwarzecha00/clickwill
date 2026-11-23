@@ -2,6 +2,7 @@ import SwiftUI
 import AppKit
 import ClickwillModel
 import ITDBKit
+import ClickwillShared
 
 /// Entries pointing to a file that does not exist - and a way to give them that file
 /// back.

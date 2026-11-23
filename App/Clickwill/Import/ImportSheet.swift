@@ -3,6 +3,7 @@ import AppKit
 import UniformTypeIdentifiers
 import ClickwillModel
 import ITDBKit
+import ClickwillShared
 
 /// Importing tracks: choosing files, reviewing what came out of the tags, corrections
 /// before the write. Nothing reaches the iPod from this dialog - confirming adds

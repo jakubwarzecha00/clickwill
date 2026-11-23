@@ -1,6 +1,7 @@
 import SwiftUI
 import AppKit
 import ClickwillModel
+import ClickwillShared
 
 /// Cover Flow following the design: 250 pt artwork, neighbors tilted by 60-64 degrees
 /// and shifted by 186/272/352 pt, a 120 pt reflection masked to transparency,

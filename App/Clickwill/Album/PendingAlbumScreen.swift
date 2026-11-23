@@ -1,5 +1,6 @@
 import SwiftUI
 import ClickwillModel
+import ClickwillShared
 
 /// A new album waiting in the add queue. It is not on the iPod
 /// yet, so there is no editing, ordering or playback from the iPod here -

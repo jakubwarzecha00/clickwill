@@ -1,4 +1,5 @@
 import SwiftUI
+import ClickwillShared
 
 /// Track list columns - shared by the header and the rows, in an album and in an album
 /// waiting to be written. The header and the row are computed from the same numbers,

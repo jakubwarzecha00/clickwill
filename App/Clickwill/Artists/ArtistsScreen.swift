@@ -1,5 +1,6 @@
 import SwiftUI
 import ClickwillModel
+import ClickwillShared
 
 /// All artists in one table: sorting by column, searching,
 /// opening artist's albums.

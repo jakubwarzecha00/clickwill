@@ -1,5 +1,6 @@
 import SwiftUI
 import ClickwillModel
+import ClickwillShared
 
 /// Songs that are on the iPod several times, and merging them.
 /// Nothing disappears right away: the merge goes onto the change list like deleting
