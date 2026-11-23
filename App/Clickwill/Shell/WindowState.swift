@@ -49,22 +49,25 @@ final class WindowState {
         }
     }
 
-    private(set) var screen: Screen = .coverFlow
-    /// The album in the middle of Cover Flow - it stays when entering an album and coming back.
-    var centered = 0
+    private(set) var screen: Screen
     /// The album in the middle of the Albums wheel (an index into `albumsDisplay`) - likewise.
     var albumsCentered = 0
     /// The screen a page that opens over (an album) was opened from; Back returns to it.
-    private(set) var origin: Screen = .coverFlow
+    private(set) var origin: Screen
     private(set) var modal: Modal?
     /// A request that came while something else hung over the window - e.g. files
     /// from a disc ripped while the change list was open. Shown after it closes.
     @ObservationIgnored private var waiting: Modal?
 
     @ObservationIgnored private let model: LibraryModel
+    @ObservationIgnored private let modules: ModuleStores
 
-    init(model: LibraryModel) {
+    init(model: LibraryModel, modules: ModuleStores) {
         self.model = model
+        self.modules = modules
+        let start = ModulePage.start.map(Screen.module) ?? .albums
+        screen = start
+        origin = start
     }
 
     // MARK: - Screens
@@ -74,15 +77,20 @@ final class WindowState {
         withAnimation(Theme.screenFade) { self.screen = screen }
     }
 
-    /// The first library screen: Cover Flow, and on an iPod without Cover Flow - Albums.
-    var home: Screen { model.hasCoverFlow ? .coverFlow : .albums }
+    /// The first library screen: Cover Flow, and on an iPod without Cover Flow, Albums.
+    var home: Screen { ModulePage.home(in: model).map(Screen.module) ?? .albums }
+
+    /// False once the shown page stops fitting the loaded iPod; the window then goes home.
+    var screenIsAvailable: Bool {
+        if case .module(let page) = screen { page.isAvailable(in: model) } else { true }
+    }
 
     func showHome(animated: Bool = false) { show(home, animated: animated) }
 
     func open(_ album: AlbumCard) {
         guard let page = ModulePage.album(album) else { return }
         switch screen {
-        case .coverFlow, .albums: origin = screen
+        case .albums: origin = screen
         case .module(let current) where current.staysAsOrigin: origin = screen
         // From Songs and from the change list we go back to the first library screen.
         default: origin = home
@@ -95,11 +103,8 @@ final class WindowState {
         guard case .module(let page) = screen else { return nil }
         if let parent = page.parent { return parent.title }
         guard page.opensOver else { return nil }
-        switch origin {
-        case .albums: return "Albums"
-        case .module(let page): return page.root.title
-        default: return "Cover Flow"
-        }
+        if case .module(let page) = origin { return page.root.title }
+        return "Albums"
     }
 
     /// Back from a page opened over another screen, with the album it showed in the middle there.
@@ -108,8 +113,8 @@ final class WindowState {
         if let album = page.shownAlbum {
             if case .albums = origin {
                 if let index = model.albumsDisplay.firstIndex(where: { $0.id == album.id }) { albumsCentered = index }
-            } else if let index = model.coverFlowDisplay.firstIndex(where: { $0.id == album.id }) {
-                centered = index
+            } else {
+                modules.center(album, in: model)
             }
         }
         show(origin, animated: animated)
@@ -137,12 +142,11 @@ final class WindowState {
         if case .module(let page) = screen, !page.needsLibrary { return .module(page.root) }
         guard model.state == .loaded else { return nil }
         switch screen {
-        case .coverFlow: return .coverFlow
         case .albums, .reorder: return .albums
         case .module(let page) where page.opensOver:
             if case .albums = origin { return .albums }
             if case .module(let page) = origin { return .module(page.root) }
-            return .coverFlow
+            return nil
         case .module(let page): return .module(page.root)
         }
     }
@@ -150,8 +154,6 @@ final class WindowState {
     func select(_ item: SidebarItem) {
         switch item {
         // Clicking the tab that the open album belongs to keeps the album open.
-        case .coverFlow:
-            if sidebarSelection != .coverFlow { show(.coverFlow) }
         case .albums:
             if sidebarSelection != .albums { show(.albums) }
         case .module(let page):

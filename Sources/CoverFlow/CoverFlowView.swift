@@ -9,28 +9,42 @@ import ClickwillShared
 /// window the whole scene shrinks in the same proportion.
 struct CoverFlowScreen: View {
     @Environment(LibraryModel.self) private var model
-    @Binding var centered: Int
-    let open: (AlbumCard) -> Void
+    @Environment(CoverFlowState.self) private var state
+    @Environment(\.coverFlowActions) private var actions
 
     var body: some View {
+        @Bindable var state = state
         VStack(spacing: 0) {
-            CoverFlowStage(albums: model.coverFlowDisplay, centered: $centered, open: open)
+            CoverFlowStage(albums: model.coverFlowDisplay, centered: $state.centered, open: actions.openAlbum)
             scrubber
         }
         .background(Theme.flowTop)
         .onChange(of: model.coverFlowDisplay.count) { _, count in clamp(to: count) }
         .onAppear { clamp(to: model.coverFlowDisplay.count) }
+        .toolbar { toolbarContent }
     }
 
     /// After deleting albums from another screen the index may point beyond the list.
     private func clamp(to count: Int) {
-        centered = min(max(0, centered), max(0, count - 1))
+        state.centered = min(max(0, state.centered), max(0, count - 1))
+    }
+
+    @ToolbarContentBuilder private var toolbarContent: some ToolbarContent {
+        if let reorder = actions.reorder {
+            ToolbarItem(placement: .primaryAction) {
+                // The symbol alone, without a label: the HIG says not to mix text and icons on
+                // a shared background. The name stays for VoiceOver and in the tooltip.
+                Button(action: reorder) { Label("Reorder Albums", systemImage: "arrow.up.arrow.down") }
+                    .help("Reorder Albums")
+            }
+        }
     }
 
     private var scrubber: some View {
-        HStack(spacing: 10) {
-            PositionSlider(index: $centered, count: model.coverFlowDisplay.count, label: "Album in Cover Flow")
-            PositionCounter(index: centered, count: model.coverFlowDisplay.count)
+        @Bindable var state = state
+        return HStack(spacing: 10) {
+            PositionSlider(index: $state.centered, count: model.coverFlowDisplay.count, label: "Album in Cover Flow")
+            PositionCounter(index: state.centered, count: model.coverFlowDisplay.count)
         }
         .padding(EdgeInsets(top: 0, leading: 30, bottom: 26, trailing: 30))
     }
@@ -40,7 +54,7 @@ struct CoverFlowStage: View {
     @Environment(LibraryModel.self) private var model
     let albums: [AlbumCard]
     @Binding var centered: Int
-    let open: (AlbumCard) -> Void
+    let open: @MainActor (AlbumCard) -> Void
 
     private let fullCoverSize: CGFloat = 250
     private let visibleEachSide = 6

@@ -66,17 +66,17 @@ struct LaunchScript: Sendable {
     /// `--screen …` and `--import <path>` (`--import-after <s>`: after this many
     /// seconds - a window with a sheet does not enter full screen, so full-screen
     /// screenshots turn it on first). It adds and writes nothing.
-    @MainActor func libraryLoaded(window: WindowState, model: LibraryModel) {
+    @MainActor func libraryLoaded(window: WindowState, model: LibraryModel, modules: ModuleStores) {
         let albums = model.coverFlowDisplay
-        if let index = options.centered, albums.indices.contains(index) { window.centered = index }
-        if let index = options.center.flatMap({ Self.albumIndex($0, in: albums) }) { window.centered = index }
+        if let index = options.centered, albums.indices.contains(index) { modules.centerCoverFlow(at: index) }
+        if let index = options.center.flatMap({ Self.albumIndex($0, in: albums) }) { modules.centerCoverFlow(at: index) }
         if let loop = options.coverFlowLoop, let from = Self.albumIndex(loop.from, in: albums),
            let to = Self.albumIndex(loop.to, in: albums), from != to {
-            window.centered = from
-            Task { await Self.runCoverFlowLoop(window: window, from: from, to: to) }
+            modules.loopCoverFlow(from: from, to: to)
         }
         switch options.screen {
-        case .album: if albums.indices.contains(window.centered), let page = ModulePage.album(albums[window.centered]) { window.show(.module(page)) }
+        case .album:
+            if let album = modules.coverFlowAlbum(in: model), let page = ModulePage.album(album) { window.show(.module(page)) }
         case .albums:
             // `--centered N` then concerns the wheel: the N-th album of the Albums menu.
             if let index = options.centered, model.albumsDisplay.indices.contains(index) { window.albumsCentered = index }
@@ -87,7 +87,7 @@ struct LaunchScript: Sendable {
         case .rockbox: showDiagnosticsBackdrop(window); window.showRockboxReport()
         case .sendReport: showDiagnosticsBackdrop(window); window.showSendReport()
         case .developerMode: _ = ExperimentalConsent.askDeveloperMode()
-        case .coverflow, nil: break
+        case nil: break
         }
         if let page = options.modulePage { window.show(.module(page)) }
         if let url = options.importURL {
@@ -109,30 +109,5 @@ struct LaunchScript: Sendable {
         albums.firstIndex { $0.displayTitle.localizedCaseInsensitiveCompare(name) == .orderedSame }
             ?? albums.firstIndex { $0.displayArtist.localizedCaseInsensitiveCompare(name) == .orderedSame }
             ?? albums.firstIndex { $0.displayTitle.localizedCaseInsensitiveContains(name) }
-    }
-
-    /// Cover Flow moves album by album from `from` to `to` and back, one
-    /// step per beat. At the ends it stands for two beats. The steps follow the clock from the start,
-    /// not from the previous step, so the motion is strictly periodic: any cut
-    /// segment one period long loops in a video without a seam.
-    @MainActor private static func runCoverFlowLoop(window: WindowState, from: Int, to: Int) async {
-        let beat = Duration.milliseconds(1200)
-        let direction = to > from ? 1 : -1
-        let forward = Array(stride(from: from + direction, through: to, by: direction))
-        let backward = Array(stride(from: to - direction, through: from, by: -direction))
-        let slots = [from] + forward + [to] + backward
-        let clock = ContinuousClock()
-        let start = clock.now
-        // The wall-clock start lets a recorder cut whole periods without looking at the frames;
-        // each period starts halfway through the pause on `from`.
-        let startedAt = String(format: "%.3f", Date().timeIntervalSince1970)
-        FileHandle.standardError.write(Data("coverflow-loop \(slots.count) beats of 1.2 s, started at \(startedAt)\n".utf8))
-        for tick in 0... {
-            try? await clock.sleep(until: start + beat * tick)
-            let target = slots[tick % slots.count]
-            if target != window.centered {
-                withAnimation(.spring(duration: 0.8, bounce: 0.08)) { window.centered = target }
-            }
-        }
     }
 }

@@ -9,7 +9,7 @@ struct ContentView: View {
     @Environment(LibraryModel.self) private var model
     @Environment(DeviceMonitor.self) private var monitor
     @Environment(PlaybackController.self) private var playback
-    /// The screen, the album in the middle of Cover Flow and this window's sheets.
+    /// The screen, the album in the middle of the Albums wheel and this window's sheets.
     @State private var window: WindowState
     @State private var modules: ModuleStores
     @State private var demoHover: DemoHover
@@ -30,9 +30,10 @@ struct ContentView: View {
     /// The model knows the window state: from it, it knows whether the library is loaded and where
     /// the album being returned from stands.
     init(model: LibraryModel, launch: LaunchScript) {
-        _window = State(initialValue: WindowState(model: model))
+        let modules = ModuleStores(launch: launch)
+        _modules = State(initialValue: modules)
+        _window = State(initialValue: WindowState(model: model, modules: modules))
         _demoHover = State(initialValue: DemoHover(listening: launch.listensForDemoHover))
-        _modules = State(initialValue: ModuleStores(launch: launch))
         self.launch = launch
     }
 
@@ -95,11 +96,11 @@ struct ContentView: View {
         }
         .onChange(of: window.screen) { sceneFocused = true }
         .foregroundStyle(Theme.fg)
-        // The window handles the arrows and Return, only on the Cover Flow screen or the Albums
-        // wheel. The scene would move the artwork even when the album view
-        // is on top. Escape goes back where the Back button leads.
-        .onKeyPress(.leftArrow) { stepCoverFlow(-1) }
-        .onKeyPress(.rightArrow) { stepCoverFlow(1) }
+        // The scene holds the focus, so the window takes the keys and hands them to the screen
+        // on top: the arrows and Return to the Albums wheel or to a module page such as Cover Flow.
+        // A stage handling them itself would move the artwork even under the album view.
+        // Escape goes back where the Back button leads.
+        .onKeyPress(keys: [.leftArrow, .rightArrow]) { press in passToModule(press.key) }
         .onKeyPress(.upArrow) { stepAlbums(-1) }
         .onKeyPress(.downArrow) { stepAlbums(1) }
         // A letter from the keyboard - the first album under that letter, like the jump bar on the iPod.
@@ -107,14 +108,14 @@ struct ContentView: View {
         .onKeyPress(.return) {
             guard !sheetIsOpen else { return .ignored }
             switch window.screen {
-            case .coverFlow where model.coverFlowDisplay.indices.contains(window.centered):
-                window.open(model.coverFlowDisplay[window.centered])
             case .albums where model.albumsDisplay.indices.contains(window.albumsCentered):
                 window.open(model.albumsDisplay[window.albumsCentered])
+                return .handled
+            case .module(let page):
+                return page.handle(.return, model: model, modules: modules, window: window)
             default:
                 return .ignored
             }
-            return .handled
         }
         .onKeyPress(.escape) {
             guard !sheetIsOpen else { return .ignored }
@@ -126,13 +127,13 @@ struct ContentView: View {
         .onChange(of: model.state) { _, state in
             guard state == .loaded, !launchApplied else { return }
             launchApplied = true
-            launch.libraryLoaded(window: window, model: model)
+            launch.libraryLoaded(window: window, model: model, modules: modules)
         }
         // The iPod disappeared (`DeviceMonitor` took the library down) - we go back to the first screen.
         .onChange(of: model.source == nil) { _, gone in if gone { window.showHome() } }
-        // An iPod without Cover Flow (recognized after loading or after switching) - Albums.
-        .onChange(of: model.hasCoverFlow) { _, has in
-            if !has, case .coverFlow = window.screen { window.show(.albums) }
+        // E.g. Cover Flow once an iPod without it is recognized, after loading or after switching.
+        .onChange(of: window.screenIsAvailable) { _, available in
+            if !available { window.showHome() }
         }
         .onChange(of: monitor.volumes) { before, now in
             modules.volumesChanged(inserted: !now.subtracting(before).isEmpty, removed: !before.subtracting(now).isEmpty,
@@ -163,7 +164,6 @@ struct ContentView: View {
         // HIG: we do not title the window with the app name - without a library the title is empty.
         guard model.state == .loaded else { return "" }
         switch window.screen {
-        case .coverFlow: return "Cover Flow"
         case .albums: return "Albums"
         case .reorder: return "Reorder Albums"
         case .module(let page): return page.windowTitle(in: model, modules: modules)
@@ -175,7 +175,7 @@ struct ContentView: View {
         guard model.state == .loaded else { return "" }
         switch window.screen {
         // As many albums as the iPod shows - an album scattered across the table is one.
-        case .coverFlow, .albums: return "\(Self.count(model.coverFlowAlbums.count, "album")) · \(Self.count(model.trackCount, "song"))"
+        case .albums: return "\(Self.count(model.coverFlowAlbums.count, "album")) · \(Self.count(model.trackCount, "song"))"
         case .reorder: return "The order the iPod shows"
         case .module(let page): return page.subtitle(in: model, modules: modules)
         }
@@ -207,14 +207,6 @@ struct ContentView: View {
             ToolbarItem(placement: .navigation) {
                 Button { window.goBack() } label: { Label(backTitle, systemImage: "chevron.left") }
                     .help("Back to \(backTitle)")
-            }
-        }
-        if AppFeatures.reorderAlbums, model.state == .loaded, case .coverFlow = window.screen {
-            ToolbarItem(placement: .primaryAction) {
-                // The symbol alone, without a label: the HIG says not to mix text and icons on
-                // a shared background. The name stays for VoiceOver and in the tooltip.
-                Button(action: window.showReorder) { Label("Reorder Albums", systemImage: "arrow.up.arrow.down") }
-                    .help("Reorder Albums")
             }
         }
         if case .reorder = window.screen {
@@ -259,14 +251,9 @@ struct ContentView: View {
         NSApp.windows.contains { $0.isSheet && $0.isVisible }
     }
 
-    private func stepCoverFlow(_ delta: Int) -> KeyPress.Result {
-        guard !sheetIsOpen else { return .ignored }
-        guard case .coverFlow = window.screen, !model.coverFlowDisplay.isEmpty else { return .ignored }
-        let target = min(model.coverFlowDisplay.count - 1, max(0, window.centered + delta))
-        if target != window.centered {
-            withAnimation(.spring(duration: 0.32, bounce: 0.12)) { window.centered = target }
-        }
-        return .handled
+    private func passToModule(_ key: KeyEquivalent) -> KeyPress.Result {
+        guard !sheetIsOpen, case .module(let page) = window.screen else { return .ignored }
+        return page.handle(key, model: model, modules: modules, window: window)
     }
 
     private func stepAlbums(_ delta: Int) -> KeyPress.Result {
@@ -311,8 +298,6 @@ struct ContentView: View {
             EmptyStateView(text: "Clickwill Couldn't Read This iPod's Library", detail: ErrorPresenter.message(for: failure))
         case .loaded:
             switch window.screen {
-            case .coverFlow:
-                CoverFlowScreen(centered: $window.centered, open: window.open)
             case .albums:
                 AlbumWheelScreen(centered: $window.albumsCentered, open: window.open)
             case .reorder:

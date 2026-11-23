@@ -35,18 +35,12 @@ struct SidebarView: View {
                     .selectionDisabled()
             }
             Section("Library") {
-                // Only an iPod that itself has Cover Flow - otherwise the tab would show
-                // something the device does not have.
-                if model.hasCoverFlow {
-                    Label("Cover Flow", systemImage: "square.stack.3d.forward.dottedline")
-                        .tag(SidebarItem.coverFlow)
-                        .disabled(!loaded)
-                }
+                ModuleLibraryItems(placement: .beforeAlbums)
                 Label("Albums", systemImage: "square.stack")
                     .badge(loaded ? model.albumsDisplay.count : 0)
                     .tag(SidebarItem.albums)
                     .disabled(!loaded)
-                ModuleLibraryItems()
+                ModuleLibraryItems(placement: .afterAlbums)
                 // The file panel is opened here, not in the sheet: a modal window
                 // started from inside a presented sheet does not show at all.
                 Button {
