@@ -2,33 +2,30 @@ import SwiftUI
 import ClickwillModel
 import ClickwillShared
 
-/// All tracks in one table: sorting by column, searching,
-/// playing with a double click.
-struct SongsScreen: View {
+/// Every track of the library in one sortable, searchable table.
+public struct SongsScreen: View {
     @Environment(LibraryModel.self) private var model
-    @Environment(PlaybackController.self) private var playback
-    /// Opens the song's album ("Show Album").
-    var openAlbum: (AlbumCard) -> Void = { _ in }
-    /// An empty list = the library order (by album), as before.
+    @Environment(\.songsActions) private var actions
+    /// Empty means the library order (by album).
     @State private var sortOrder: [KeyPathComparator<Row>] = []
     @State private var query = ""
     @State private var selection = Set<UInt32>()
-    /// Editing from the table - this is where a song is easiest to find. Return plays, as in Music, so the title and number
-    /// are changed in a small window from the menu, not in a table cell.
+    /// Return plays, as in Music, so editing happens in a sheet from the menu rather than in a cell.
     @State private var editing: Row?
     @State private var error: String?
-    /// Duplicates to review - collected at the moment of the click, not on every redraw of the sheet.
+    /// Collected on click, not on every redraw of the sheet.
     @State private var duplicates: [DuplicateGroup]?
-    /// How many songs the bar above the table reports - counted once per library change.
     @State private var duplicateCount = 0
     @State private var rows = TableRows<Row>()
-    /// Column widths: kept here, because a search or a sort puts a new table in place (`TableRows.arrangement`).
+    /// Kept outside the table: a search or a sort replaces the table (`TableRows.arrangement`).
     @State private var columns = TableColumnCustomization<Row>()
 
     struct Row: Identifiable, Sendable {
         let id: UInt32; let title: String; let artist: String; let album: String; let duration: TimeInterval; let plays: UInt32
         let track: TrackRow; let card: AlbumCard
     }
+
+    public init() {}
 
     private func allRows() -> [Row] {
         model.albums.flatMap { album in
@@ -37,7 +34,7 @@ struct SongsScreen: View {
         }
     }
 
-    var body: some View {
+    public var body: some View {
         let request = TableRows<Row>.Request(revision: model.catalogRevision, query: query, sortOrder: sortOrder)
         VStack(spacing: 0) {
             duplicatesBar
@@ -59,7 +56,6 @@ struct SongsScreen: View {
         }
     }
 
-    /// The bar above the table only when there are duplicates on the iPod.
     @ViewBuilder private var duplicatesBar: some View {
         if duplicateCount > 0 {
             HStack(spacing: 10) {
@@ -116,7 +112,7 @@ struct SongsScreen: View {
         Button("Play") { play(ids.first, in: shown) }.disabled(ids.isEmpty)
         Divider()
         Button("Edit Title…") { editing = single }.disabled(single == nil)
-        Button("Show Album") { if let single { openAlbum(single.card) } }.disabled(single == nil)
+        Button("Show Album") { if let single { actions.openAlbum(single.card) } }.disabled(single == nil)
         Divider()
         Button(ids.count > 1 ? "Delete \(ids.count) Songs from iPod" : "Delete from iPod", role: .destructive) {
             delete(ids, in: shown)
@@ -124,7 +120,7 @@ struct SongsScreen: View {
         .disabled(ids.isEmpty || shown.contains { ids.contains($0.id) && model.isSyncedOnDevice($0.track) })
     }
 
-    /// Deleting is a change in the queue, as in the album view - "Discard All" undoes it.
+    /// Queued like any other change, so "Discard All" undoes it.
     private func delete(_ ids: Set<UInt32>, in shown: [Row]) {
         do {
             for row in shown where ids.contains(row.id) { try model.deleteTrack(row.track, in: row.card) }
@@ -134,14 +130,13 @@ struct SongsScreen: View {
         }
     }
 
-    /// Plays a track from the iPod, and after it the rest of its album - as in the album view.
+    /// Continues with the rest of the album, as in the album view.
     private func play(_ id: UInt32?, in shown: [Row]) {
         guard let id, let row = shown.first(where: { $0.id == id }) else { return }
-        playback.play(model.tracks(of: row.card), startingAt: row.track, in: row.card)
+        actions.play(model.tracks(of: row.card), row.track, row.card)
     }
 }
 
-/// A song's title and number from the Songs table. The change goes to the queue like any other.
 struct SongInfoSheet: View {
     let row: SongsScreen.Row
     let save: (String, UInt32) -> Void

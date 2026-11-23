@@ -140,7 +140,6 @@ final class WindowState {
             if case .artists = albumOrigin { return .artists }
             if case .artist = albumOrigin { return .artists }
             return .coverFlow
-        case .songs: return .songs
         case .artists, .artist: return .artists
         case .module(let page): return .module(page)
         case .audioCD: return nil
@@ -154,7 +153,6 @@ final class WindowState {
             if sidebarSelection != .coverFlow { show(.coverFlow) }
         case .albums:
             if sidebarSelection != .albums { show(.albums) }
-        case .songs: show(.songs)
         case .artists:
             if sidebarSelection != .artists { show(.artists) }
         case .module(let page): show(.module(page))

@@ -81,7 +81,6 @@ struct LaunchScript: Sendable {
             if let index = options.centered, model.albumsDisplay.indices.contains(index) { window.albumsCentered = index }
             window.show(.albums)
         case .reorder: window.show(.reorder)
-        case .songs: window.show(.songs)
         case .pending, .writeReport: window.showPending()
         case .diagnostics: showDiagnosticsBackdrop(window); window.showDiagnostics()
         case .rockbox: showDiagnosticsBackdrop(window); window.showRockboxReport()

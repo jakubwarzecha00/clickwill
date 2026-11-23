@@ -2,20 +2,18 @@ import SwiftUI
 import ClickwillModel
 import ClickwillShared
 
-/// Songs that are on the iPod several times, and merging them.
-/// Nothing disappears right away: the merge goes onto the change list like deleting
-/// an album, and the files disappear from the iPod only after "Write to iPod".
+/// Merging songs that are on the iPod more than once. The merge is queued like any other change;
+/// files leave the iPod only on "Write to iPod".
 struct DuplicatesSheet: View {
     let groups: [DuplicateGroup]
 
     @Environment(LibraryModel.self) private var model
     @Environment(\.dismiss) private var dismiss
-    /// Groups unchecked by the user - by default we merge all of them.
     @State private var skipped: Set<UInt32> = []
     @State private var keepCopies = true
     @State private var error: String?
 
-    /// `~/Music/Clickwill/Removed Duplicates` - next to ripped discs, without asking for a folder.
+    /// Next to ripped discs, so there is no folder to ask for.
     static var archive: URL {
         CDRipper.defaultRoot.appendingPathComponent("Removed Duplicates", isDirectory: true)
     }

@@ -185,7 +185,6 @@ struct ContentView: View {
         // the window bar kept showing the old one.
         case .album(let album): return (model.current(album) ?? album).displayTitle
         case .reorder: return "Reorder Albums"
-        case .songs: return "Songs"
         case .artists: return "Artists"
         case .artist(let artist): return artist
         case .module(let page): return page.title
@@ -205,7 +204,6 @@ struct ContentView: View {
         case .coverFlow, .albums: return "\(Self.count(model.coverFlowAlbums.count, "album")) · \(Self.count(model.trackCount, "song"))"
         case .album(let album): return (model.current(album) ?? album).displayArtist
         case .reorder: return "The order the iPod shows"
-        case .songs: return Self.count(model.trackCount, "song")
         case .artists: return Self.count(model.artistCount, "artist")
         case .artist(let artist):
             let artistAlbums = model.albums.filter { $0.displayArtist == artist }
@@ -365,8 +363,6 @@ struct ContentView: View {
                 }
             case .reorder:
                 ReorderScreen()
-            case .songs:
-                SongsScreen(openAlbum: window.open)
             case .artists:
                 ArtistsScreen(openAlbum: window.open)
             case .artist(let artist):

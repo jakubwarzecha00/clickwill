@@ -13,6 +13,7 @@ let package = Package(
         .library(name: "ClickwillModel", targets: ["ClickwillModel"]),
         .library(name: "ClickwillShared", targets: ["ClickwillShared"]),
         .library(name: "ClickwillDevice", targets: ["ClickwillDevice"]),
+        .library(name: "ClickwillSongs", targets: ["ClickwillSongs"]),
         .executable(name: "ipodctl", targets: ["ipodctl"]),
     ],
     targets: [
@@ -23,15 +24,18 @@ let package = Package(
         // What every screen module of the app shares: the theme, the error sentences, the
         // common views. A module takes shared things from here, never from another module or the app.
         .target(name: "ClickwillShared", dependencies: ["ITDBKit", "ClickwillModel"], path: "Sources/Shared"),
-        // The sidebar's Device section (Overview, Backups) as one module. The app shows it through
-        // one file, App/Clickwill/Shell/Modules.swift, so removing the module touches only that file.
+        // Screen modules. The app shows them through one file, App/Clickwill/Shell/Modules.swift,
+        // so removing a module touches only its target here, App/project.yml and that file.
         .target(name: "ClickwillDevice", dependencies: ["ITDBKit", "ClickwillModel", "ClickwillShared"],
                 path: "Sources/Device"),
+        .target(name: "ClickwillSongs", dependencies: ["ITDBKit", "ClickwillModel", "ClickwillShared"],
+                path: "Sources/Songs"),
         .executableTarget(name: "ipodctl", dependencies: ["ITDBKit", "ClickwillModel"]),
         .testTarget(name: "ITDBKitTests", dependencies: ["ITDBKit"]),
         // The `ipodctl` command tests use the fake iPod from the write tests.
         .testTarget(name: "ClickwillModelTests", dependencies: ["ClickwillModel", "ITDBKit", "ipodctl"]),
         .testTarget(name: "ClickwillSharedTests", dependencies: ["ClickwillShared"]),
         .testTarget(name: "ClickwillDeviceTests", dependencies: ["ClickwillDevice", "ITDBKit"]),
+        .testTarget(name: "ClickwillSongsTests", dependencies: ["ClickwillSongs"]),
     ]
 )

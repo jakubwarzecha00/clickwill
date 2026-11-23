@@ -36,6 +36,8 @@ targets:
         product: ClickwillShared
       - package: ITDBKit
         product: ClickwillDevice
+      - package: ITDBKit
+        product: ClickwillSongs
       - package: Sparkle
     info:
       path: Clickwill/Info.plist

@@ -8,7 +8,6 @@ enum Screen: Hashable {
     case albums
     case album(AlbumCard)
     case reorder
-    case songs
     case artists
     case artist(String)
     /// A screen of a module (`Modules.swift`).
@@ -19,4 +18,4 @@ enum Screen: Hashable {
 
 /// Sidebar items. An open album belongs to the tab it was
 /// opened from; Reorder to Albums.
-enum SidebarItem: Hashable { case coverFlow, albums, songs, artists, module(ModulePage), disc(URL) }
+enum SidebarItem: Hashable { case coverFlow, albums, artists, module(ModulePage), disc(URL) }
