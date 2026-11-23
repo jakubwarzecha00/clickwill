@@ -52,7 +52,7 @@ struct LaunchScript: Sendable {
     @MainActor func windowAppeared(window: WindowState, cds: AudioCDStore) {
         guard let fixture = options.audioCDFixture, let disc = cds.add(fixture: fixture),
               let page = ModulePage.disc(disc.volume) else { return }
-        window.show(.module(page))
+        window.show(page)
         if !options.isDemo, let session = cds.session(disc.volume), let release = options.cdRelease,
            let data = try? Data(contentsOf: release),
            let releases = try? MusicBrainz.releases(fromJSON: data, discID: disc.discID, trackCount: disc.tracks.count),
@@ -76,7 +76,7 @@ struct LaunchScript: Sendable {
         }
         switch options.screen {
         case .album:
-            if let album = modules.coverFlowAlbum(in: model), let page = ModulePage.album(album) { window.show(.module(page)) }
+            if let album = modules.coverFlowAlbum(in: model), let page = ModulePage.album(album) { window.show(page) }
         case .pending, .writeReport: window.showPending()
         case .diagnostics: showDiagnosticsBackdrop(window); window.showDiagnostics()
         case .rockbox: showDiagnosticsBackdrop(window); window.showRockboxReport()
@@ -86,7 +86,7 @@ struct LaunchScript: Sendable {
         }
         if let page = options.modulePage {
             if let index = options.centered { modules.center(at: index, on: page, in: model) }
-            window.show(.module(page))
+            window.show(page)
         }
         if let url = options.importURL {
             let delay = options.importDelay
@@ -99,7 +99,7 @@ struct LaunchScript: Sendable {
 
     /// The page under Diagnostics opened from the command line, as when opened from it by hand.
     @MainActor private func showDiagnosticsBackdrop(_ window: WindowState) {
-        if let page = ModulePage.diagnosticsBackdrop { window.show(.module(page)) }
+        if let page = ModulePage.diagnosticsBackdrop { window.show(page) }
     }
 
     /// An album by title, then by artist, and finally a title containing the name.

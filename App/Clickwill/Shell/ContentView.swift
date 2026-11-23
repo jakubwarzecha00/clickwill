@@ -139,25 +139,20 @@ struct ContentView: View {
 
     /// A module page that does not need the library, e.g. a disc in a drive.
     private var standalonePage: ModulePage? {
-        if case .module(let page) = window.screen, !page.needsLibrary { return page }
-        return nil
+        window.screen.needsLibrary ? nil : window.screen
     }
 
     private var title: String {
         if let standalonePage { return standalonePage.windowTitle(in: model, modules: modules) }
         // HIG: we do not title the window with the app name - without a library the title is empty.
         guard model.state == .loaded else { return "" }
-        switch window.screen {
-        case .module(let page): return page.windowTitle(in: model, modules: modules)
-        }
+        return window.screen.windowTitle(in: model, modules: modules)
     }
 
     private var subtitle: String {
         if let standalonePage { return standalonePage.subtitle(in: model, modules: modules) }
         guard model.state == .loaded else { return "" }
-        switch window.screen {
-        case .module(let page): return page.subtitle(in: model, modules: modules)
-        }
+        return window.screen.subtitle(in: model, modules: modules)
     }
 
     /// The playback bar at the bottom of the window: when a track was chosen, when playback reported
@@ -220,8 +215,8 @@ struct ContentView: View {
     }
 
     private func passToModule(_ press: KeyPress) -> KeyPress.Result {
-        guard !sheetIsOpen, case .module(let page) = window.screen else { return .ignored }
-        return page.handle(press, model: model, modules: modules, window: window)
+        guard !sheetIsOpen else { return .ignored }
+        return window.screen.handle(press, model: model, modules: modules, window: window)
     }
 
     @ViewBuilder private var content: some View {
@@ -246,10 +241,7 @@ struct ContentView: View {
         case .failed(let failure):
             EmptyStateView(text: "Clickwill Couldn't Read This iPod's Library", detail: ErrorPresenter.message(for: failure))
         case .loaded:
-            switch window.screen {
-            case .module(let page):
-                page.screen
-            }
+            window.screen.screen
         }
     }
 

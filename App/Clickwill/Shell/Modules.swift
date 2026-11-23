@@ -168,18 +168,18 @@ enum ModulePage: Hashable {
 /// The modules' rows in the sidebar's Library section.
 struct ModuleLibraryItems: View {
     var body: some View {
-        CoverFlowSidebarItem { SidebarItem.module(.coverFlow($0)) }
-        AlbumsSidebarItem { SidebarItem.module(.albums($0)) }
-        ArtistsSidebarItem { SidebarItem.module(.artists($0)) }
-        SongsSidebarItem { SidebarItem.module(.songs($0)) }
+        CoverFlowSidebarItem { ModulePage.coverFlow($0) }
+        AlbumsSidebarItem { ModulePage.albums($0) }
+        ArtistsSidebarItem { ModulePage.artists($0) }
+        SongsSidebarItem { ModulePage.songs($0) }
     }
 }
 
 /// The modules' sections after the Library section.
 struct ModuleSidebarSections: View {
     var body: some View {
-        CDSidebarSection { SidebarItem.module(.cd($0)) }
-        DeviceSidebarSection { SidebarItem.module(.device($0)) }
+        CDSidebarSection { ModulePage.cd($0) }
+        DeviceSidebarSection { ModulePage.device($0) }
     }
 }
 
@@ -235,13 +235,13 @@ final class ModuleStores {
     /// An inserted disc opens its page, as in Music, unless a sheet is open or another disc is
     /// being ripped. A removed disc takes its page down.
     func volumesChanged(inserted: Bool, removed: Bool, window: WindowState, sheetIsOpen: Bool) {
-        let shownDisc: CDSession? = if case .module(.cd(let page)) = window.screen { cds.session(page.volume) } else { nil }
+        let shownDisc: CDSession? = if case .cd(let page) = window.screen { cds.session(page.volume) } else { nil }
         if inserted, let disc = cds.refresh().first, !sheetIsOpen, shownDisc?.isRipping != true {
-            window.show(.module(.cd(.disc(disc.volume))), animated: true)
+            window.show(.cd(.disc(disc.volume)), animated: true)
         }
         if removed {
             cds.refresh()
-            if case .module(.cd(let page)) = window.screen, cds.session(page.volume) == nil { window.showHome(animated: true) }
+            if case .cd(let page) = window.screen, cds.session(page.volume) == nil { window.showHome(animated: true) }
         }
     }
 }
@@ -261,7 +261,7 @@ extension View {
             .environment(\.coverFlowActions, CoverFlowActions(openAlbum: { window.open($0) }, reorder: reorder))
             .environment(\.cdActions, CDActions(importFiles: { window.showImport($0) }))
             .environment(\.artistsActions, ArtistsActions(
-                show: { window.show(.module(.artists($0)), animated: true) },
+                show: { window.show(.artists($0), animated: true) },
                 openAlbum: { window.open($0) }))
             .environment(\.songsActions, SongsActions(
                 play: { playback.play($0, startingAt: $1, in: $2) },
