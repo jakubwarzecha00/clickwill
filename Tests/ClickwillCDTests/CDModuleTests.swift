@@ -3,7 +3,7 @@ import Testing
 @testable import ClickwillCD
 
 struct CDModuleTests {
-    @Test func timeLabels() {
+    @Test @MainActor func timeLabels() {
         #expect(AudioCDScreen.time(125_000) == "2:05")
         #expect(AudioCDScreen.time(3_725_000) == "1:02:05")
     }
