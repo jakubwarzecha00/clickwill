@@ -252,12 +252,24 @@ struct ModuleViewMenuItems: View {
 }
 
 /// The app's look: the theme every window and Settings show. The only place that knows
-/// the themes module - without it, this is `AppTheme.standard` and nothing else changes.
+/// the themes module - without it, `theme` is `AppTheme.standard`, `settingsSections` is
+/// empty, and nothing else changes.
 @MainActor
 final class ModuleAppearance {
-    private let themes = ThemeStore()
+    private let themes: ThemeStore
+
+    /// - Parameters:
+    ///   - demo: the choice lives in memory, so a demo never changes the user's.
+    ///   - launchChoice: `--appearance light|dark|system`, for this process only.
+    init(demo: Bool, launchChoice: String?) {
+        themes = ThemeStore(storage: demo ? .memory() : .standard, system: .live(),
+                            launchChoice: launchChoice.flatMap(ThemeChoice.init(rawValue:)))
+    }
 
     var theme: AppTheme { themes.current }
+
+    /// The themes module's sections at the top of Settings.
+    var settingsSections: some View { AppearanceSection(store: themes) }
 }
 
 /// What one window keeps for its modules.

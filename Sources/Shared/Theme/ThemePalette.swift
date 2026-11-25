@@ -50,12 +50,19 @@ public struct ThemePalette: Sendable, Equatable {
     public var sceneTextSoft: Color
     /// The knob of the position slider.
     public var sliderKnob: Color
+    /// What artwork away from the middle of the scene fades into: the side covers in Cover
+    /// Flow, the far covers on the Albums wheel.
+    public var sceneShade: Color
+    /// The shadow under artwork and the slider knob. Each place keeps its own strength and
+    /// multiplies this color by it.
+    public var sceneShadow: Color
 
     public init(colorScheme: ColorScheme, bg: Color, card: Color, fg: Color, f2: Color, f3: Color,
                 sep: Color, sel: Color, glassBorder: Color, row: Color, rowHover: Color, trackHover: Color,
                 field: Color, fieldBorder: Color, accent: Color, onAccent: Color, warn: Color,
                 destructive: Color, ok: Color, flowTop: Color, flowBottom: Color, floorTop: Color,
-                floorBottom: Color, sceneText: Color, sceneTextSoft: Color, sliderKnob: Color) {
+                floorBottom: Color, sceneText: Color, sceneTextSoft: Color, sliderKnob: Color,
+                sceneShade: Color, sceneShadow: Color) {
         self.colorScheme = colorScheme
         self.bg = bg
         self.card = card
@@ -82,6 +89,8 @@ public struct ThemePalette: Sendable, Equatable {
         self.sceneText = sceneText
         self.sceneTextSoft = sceneTextSoft
         self.sliderKnob = sliderKnob
+        self.sceneShade = sceneShade
+        self.sceneShadow = sceneShadow
     }
 }
 
@@ -113,5 +122,7 @@ public extension ThemePalette {
         floorBottom: Color(red: 0x0d/255, green: 0x0d/255, blue: 0x10/255),
         sceneText: .white,
         sceneTextSoft: Color(white: 0.92),
-        sliderKnob: Color.white.opacity(0.94))
+        sliderKnob: Color.white.opacity(0.94),
+        sceneShade: .black,
+        sceneShadow: .black)
 }

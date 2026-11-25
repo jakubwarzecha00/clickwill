@@ -170,6 +170,7 @@ struct WheelGeometry {
 /// the arc, and the brightness and title color change smoothly, not in a jump.
 private struct WheelItem: View, Animatable {
     @Environment(LibraryModel.self) private var model
+    @Environment(\.appTheme) private var theme
     let album: AlbumCard
     var distance: Double
     let wheel: WheelGeometry
@@ -194,9 +195,9 @@ private struct WheelItem: View, Animatable {
             AlbumCoverFace(album: album, size: cover)
                 .frame(width: cover, height: cover)
                 .clipped()
-                .overlay(Color.black.opacity(max(0, 1 - (0.34 + 0.66 * pow(c, 6)) - lift)))
+                .overlay(Theme.sceneShade.opacity(max(0, 1 - (0.34 + 0.66 * pow(c, 6)) - lift)).color(in: theme.palette))
                 .overlay(alignment: .topTrailing) { AlbumCoverBadge(album: album) }
-                .shadow(color: .black.opacity(0.6), radius: 12, y: 7)
+                .shadow(color: Theme.sceneShadow.opacity(0.6).color(in: theme.palette), radius: 12, y: 7)
             VStack(alignment: .leading, spacing: 1) {
                 // A long title of the selected album scrolls instead of being cut off.
                 MarqueeText(text: album.displayTitle, active: abs(distance) < 0.01, speed: 32 * wheel.scale)

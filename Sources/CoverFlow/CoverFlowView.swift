@@ -163,6 +163,7 @@ struct CoverFlowStage: View {
 
 struct CoverTile: View {
     @Environment(LibraryModel.self) private var model
+    @Environment(\.appTheme) private var theme
     let album: AlbumCard
     let size: CGFloat
     let distance: Int
@@ -180,7 +181,7 @@ struct CoverTile: View {
                 .frame(width: size, height: size)
                 .overlay(alignment: .leading) { if distance != 0 { shading } }
                 .overlay(alignment: .topTrailing) { AlbumCoverBadge(album: album) }
-                .shadow(color: .black.opacity(d == 0 ? 0.72 : 0.6), radius: d == 0 ? 26 : 17, y: d == 0 ? 26 : 18)
+                .shadow(color: Theme.sceneShadow.opacity(d == 0 ? 0.72 : 0.6).color(in: theme.palette), radius: d == 0 ? 26 : 17, y: d == 0 ? 26 : 18)
             reflection
         }
         // `position` sets the center of the whole tile (artwork + reflection); we shift
@@ -196,8 +197,10 @@ struct CoverTile: View {
     private var face: some View { AlbumCoverFace(album: album, size: size) }
 
     private var shading: some View {
-        LinearGradient(
-            colors: distance < 0 ? [.black.opacity(shade), .black.opacity(0.04)] : [.black.opacity(0.04), .black.opacity(shade)],
+        let deep = Theme.sceneShade.opacity(shade).color(in: theme.palette)
+        let light = Theme.sceneShade.opacity(0.04).color(in: theme.palette)
+        return LinearGradient(
+            colors: distance < 0 ? [deep, light] : [light, deep],
             startPoint: .leading, endPoint: .trailing)
     }
 

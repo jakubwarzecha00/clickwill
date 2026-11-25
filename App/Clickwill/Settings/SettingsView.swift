@@ -3,9 +3,12 @@ import AppKit
 import ClickwillModel
 import ITDBKit
 
-/// Settings: how long we keep backups (`BackupSettings`), how much space they really take
-/// (`BackupUsage`), and Experimental iPods (`ExperimentalSection`).
-struct SettingsView: View {
+/// Settings: the modules' sections (`ModuleAppearance.settingsSections`), how long we keep
+/// backups (`BackupSettings`), how much space they really take (`BackupUsage`), and
+/// Experimental iPods (`ExperimentalSection`).
+struct SettingsView<LeadingSections: View>: View {
+    let leadingSections: LeadingSections
+
     @Environment(LibraryModel.self) private var model
     @AppStorage(BackupSettings.daysKey) private var days = BackupSettings.defaultDays
 
@@ -16,6 +19,7 @@ struct SettingsView: View {
     var body: some View {
         // The native macOS 27 settings window: a grouped Form, like System Settings.
         Form {
+            leadingSections
             Section {
                 Picker("Keep backups for", selection: $days) {
                     ForEach(BackupSettings.dayChoices, id: \.self) { choice in

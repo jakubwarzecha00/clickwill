@@ -50,7 +50,7 @@ struct PendingAlbumScreen: View {
             }
             .frame(width: 250, height: 250)
             .clipShape(RoundedRectangle(cornerRadius: 10))
-            .shadow(color: .black.opacity(0.34), radius: 11, y: 6)
+            .shadow(color: Theme.sceneShadow.opacity(0.34).color(in: theme.palette), radius: 11, y: 6)
             VStack(alignment: .leading, spacing: 8) {
                 Text(card.displayTitle).font(.theme(.largeTitle, weight: .bold)).lineLimit(2)
                 Text(card.displayArtist).font(.theme(.title2, weight: .medium)).foregroundStyle(Theme.accent)

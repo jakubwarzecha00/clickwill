@@ -37,6 +37,8 @@ public enum Theme {
     public static let sceneText = ThemeColor { $0.sceneText }
     public static let sceneTextSoft = ThemeColor { $0.sceneTextSoft }
     public static let sliderKnob = ThemeColor { $0.sliderKnob }
+    public static let sceneShade = ThemeColor { $0.sceneShade }
+    public static let sceneShadow = ThemeColor { $0.sceneShadow }
 
     /// The shared scene background - the same one Cover Flow stands on. The toolbar
     /// and the playback bar no longer paint their own gray panels, but

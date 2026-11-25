@@ -84,6 +84,7 @@ struct GridGeometry {
 
 private struct GridCell: View {
     @Environment(LibraryModel.self) private var model
+    @Environment(\.appTheme) private var theme
     let album: AlbumCard
     let size: CGFloat
     let isSelected: Bool
@@ -99,7 +100,7 @@ private struct GridCell: View {
                         RoundedRectangle(cornerRadius: 7).strokeBorder(Theme.accent, lineWidth: 3).padding(-4)
                     }
                 }
-                .shadow(color: .black.opacity(0.45), radius: 8, y: 4)
+                .shadow(color: Theme.sceneShadow.opacity(0.45).color(in: theme.palette), radius: 8, y: 4)
                 .padding(.bottom, 6)
             Text(album.displayTitle)
                 .font(.theme(.row, weight: .medium))

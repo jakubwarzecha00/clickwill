@@ -32,6 +32,10 @@ struct LaunchOptions: Sendable {
     /// recordings) - when clicking by hand, sound plays as usual.
     var isDemo: Bool { has("--demo") }
 
+    /// `--appearance light|dark|system`: the look of this launch, for screenshots. The choice
+    /// saved in Settings stays as it was.
+    var appearance: String? { value("--appearance") }
+
     /// Demo mode for the model (`DemoMode`).
     ///
     /// - `--demo --snapshot <demo library>`: screenshots and ads (a library

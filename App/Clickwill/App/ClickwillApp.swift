@@ -15,7 +15,7 @@ struct ClickwillApp: App {
     @State private var mediaControls: SystemMediaControls?
     @State private var updates: Updates
     /// One theme for the library windows and Settings (`ModuleAppearance`).
-    @State private var appearance = ModuleAppearance()
+    @State private var appearance: ModuleAppearance
     @AppStorage(WelcomeSheet.seenKey) private var welcomeSeen = false
     /// Launch flags - read only here (`LaunchOptions`).
     private let options = LaunchOptions(arguments: CommandLine.arguments)
@@ -35,6 +35,7 @@ struct ClickwillApp: App {
         _playback = State(initialValue: PlaybackController(fileURL: { [weak model] in model?.fileURL(for: $0) },
                                                            muted: options.isDemo && options.isAutomated))
         _updates = State(initialValue: Updates(checkNow: options.checksUpdates, automated: options.isAutomated))
+        _appearance = State(initialValue: ModuleAppearance(demo: options.isDemo, launchChoice: options.appearance))
     }
 
     var body: some Scene {
@@ -95,9 +96,9 @@ struct ClickwillApp: App {
         // The standard settings window - this is where the item in the app
         // menu and the Command-comma shortcut come from.
         Settings {
-            SettingsView()
+            SettingsView(leadingSections: appearance.settingsSections)
                 .environment(model)
-                .preferredColorScheme(appearance.theme.palette.colorScheme)
+                .themed(appearance.theme)
         }
     }
 
