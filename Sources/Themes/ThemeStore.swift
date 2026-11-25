@@ -37,7 +37,7 @@ public final class ThemeStore {
         if case .custom(let id) = choice, let theme = library?.theme(id) {
             return AppTheme(palette: theme.palette)
         }
-        return AppTheme(palette: choice.palette(systemIsDark: system.isDark))
+        return AppTheme(palette: choice.palette(systemIsDark: system.isDark), sceneBackdrop: choice.sceneBackdrop)
     }
 
     /// Saves a theme from the editor. A new theme is also chosen, so the window shows it.

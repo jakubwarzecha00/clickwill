@@ -78,6 +78,7 @@ struct CoverFlowStage: View {
                     Color.clear.frame(height: geo.size.height / 2 + 90 * k)
                     LinearGradient(colors: [theme.palette.floorTop, theme.palette.floorBottom], startPoint: .top, endPoint: .bottom)
                 }
+                SceneBackdropLayer(horizon: (geo.size.height / 2 + 90 * k) / max(geo.size.height, 1))
                 // The bottom of the artwork lies on the floor line (middle + 90 pt), the reflection below.
                 ForEach(visibleIndices, id: \.self) { index in
                     let distance = index - centered

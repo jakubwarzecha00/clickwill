@@ -1,21 +1,23 @@
 import ClickwillShared
 import Foundation
 
-/// What the user picked in Settings: follow the Mac, always light or dark, or one of their
-/// own themes.
+/// What the user picked in Settings: follow the Mac, always light or dark, the Vice theme,
+/// or one of their own themes.
 public enum ThemeChoice: Hashable, Sendable {
-    case system, light, dark
+    case system, light, dark, vice
     case custom(UUID)
 
-    /// The choices of the segmented control; a custom theme is picked from the list below it.
-    public static let builtIn: [ThemeChoice] = [.system, .light, .dark]
+    /// The tiles before the user's own themes in Settings.
+    public static let builtIn: [ThemeChoice] = [.system, .light, .dark, .vice]
 
-    /// Parsed by hand: `system`, `light`, `dark` or `custom:<UUID>`. Anything else is nil.
+    /// Parsed by hand: `system`, `light`, `dark`, `vice` or `custom:<UUID>`. Anything else
+    /// is nil.
     public init?(storageValue: String) {
         switch storageValue {
         case "system": self = .system
         case "light": self = .light
         case "dark": self = .dark
+        case "vice": self = .vice
         default:
             let prefix = "custom:"
             guard storageValue.hasPrefix(prefix),
@@ -29,16 +31,18 @@ public enum ThemeChoice: Hashable, Sendable {
         case .system: "system"
         case .light: "light"
         case .dark: "dark"
+        case .vice: "vice"
         case .custom(let id): "custom:" + id.uuidString
         }
     }
 
-    /// The title in the segmented control; nil for a custom theme.
+    /// The title under a built-in tile; nil for a custom theme, which has its own name.
     public var title: String? {
         switch self {
         case .system: "System"
         case .light: "Light"
         case .dark: "Dark"
+        case .vice: "Vice"
         case .custom: nil
         }
     }
@@ -51,6 +55,12 @@ public enum ThemeChoice: Hashable, Sendable {
         case .system, .custom: systemIsDark ? .dark : .light
         case .light: .light
         case .dark: .dark
+        case .vice: .vice
         }
+    }
+
+    /// The moving picture behind the scene that comes with a built-in choice.
+    var sceneBackdrop: SceneBackdrop? {
+        self == .vice ? .sunset : nil
     }
 }

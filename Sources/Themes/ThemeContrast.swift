@@ -9,30 +9,25 @@ public enum ThemeContrast {
         public var id: String { message }
     }
 
+    /// Plain words, no ratios: the editor shows these to people choosing colors, not
+    /// measuring them.
     public static func warnings(_ palette: ThemePalette) -> [Warning] {
         var warnings: [Warning] = []
-        func check(_ color: Color, on surface: Color, below minimum: Double, _ message: (String) -> String) {
-            let measured = ratio(color, on: surface)
-            if measured < minimum { warnings.append(Warning(message: message(format(measured)))) }
+        func check(_ color: Color, on surface: Color, below minimum: Double, _ message: String) {
+            if ratio(color, on: surface) < minimum { warnings.append(Warning(message: message)) }
         }
-        check(palette.fg, on: palette.bg, below: 4.5) {
-            "Text reads at \($0) on the background. I'd keep it above 4.5:1."
-        }
-        check(palette.f2, on: palette.bg, below: 3.2) {
-            "Secondary Text reads at \($0) on the background. I'd keep it above 3.2:1."
-        }
-        check(palette.accent, on: palette.bg, below: 3) {
-            "The accent reads at \($0) on the background, so links and the selected album fade. I'd keep it above 3:1."
-        }
-        check(palette.onAccent, on: palette.accent, below: onAccentMinimum) {
-            "Mark on Accent reads at \($0) on the accent, so the badge on artwork is hard to see. I'd keep it above 2.5:1."
-        }
-        check(palette.sceneText, on: palette.flowTop, below: 4.5) {
-            "Album titles in Cover Flow read at \($0) on the scene. I'd keep them above 4.5:1."
-        }
-        check(palette.sliderKnob, on: palette.flowBottom, below: 3) {
-            "The slider knob reads at \($0) on the scene. I'd keep it above 3:1."
-        }
+        check(palette.fg, on: palette.bg, below: 4.5,
+              "Text is hard to read on this background.")
+        check(palette.f2, on: palette.bg, below: 3.2,
+              "Song details and other quieter text are hard to read on this background.")
+        check(palette.accent, on: palette.bg, below: 3,
+              "The accent is hard to see on the background, so buttons and the selected album fade. I'd pick one that stands out more.")
+        check(palette.onAccent, on: palette.accent, below: onAccentMinimum,
+              "The badge on artwork is hard to see on this accent.")
+        check(palette.sceneText, on: palette.flowTop, below: 4.5,
+              "Album titles are hard to read on the Cover Flow color.")
+        check(palette.sliderKnob, on: palette.flowBottom, below: 3,
+              "The slider knob is hard to see on the Cover Flow color.")
         return warnings
     }
 
@@ -47,10 +42,6 @@ public enum ThemeContrast {
         let drawn = (top.0 * a + under.0 * (1 - a), top.1 * a + under.1 * (1 - a), top.2 * a + under.2 * (1 - a))
         let l1 = luminance(drawn), l2 = luminance((under.0, under.1, under.2))
         return (max(l1, l2) + 0.05) / (min(l1, l2) + 0.05)
-    }
-
-    private static func format(_ ratio: Double) -> String {
-        String(format: "%.1f:1", ratio)
     }
 
     private static func rgba(_ color: Color) -> (Double, Double, Double, Double) {

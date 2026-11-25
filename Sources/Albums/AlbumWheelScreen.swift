@@ -52,7 +52,7 @@ struct AlbumWheelScreen: View {
             .focusEffectDisabled()
             .onAppear { focused = true }
         }
-        .background(Theme.flowTop)
+        .background { Rectangle().fill(Theme.flowTop).overlay { SceneBackdropLayer(horizon: 1, strength: 0.55) } }
         .onChange(of: albums.count) { _, count in clamp(to: count) }
         .onAppear { clamp(to: albums.count) }
         .task(id: centered) {

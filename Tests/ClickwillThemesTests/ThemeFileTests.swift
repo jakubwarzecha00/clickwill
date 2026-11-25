@@ -102,6 +102,7 @@ struct ThemeContrastTests {
     @Test func theBuiltInThemesReadClearly() {
         #expect(ThemeContrast.warnings(.light).isEmpty)
         #expect(ThemeContrast.warnings(.dark).isEmpty)
+        #expect(ThemeContrast.warnings(.vice).isEmpty)
     }
 
     @Test func theDarkAccentBadgeIsTheDesign() {
@@ -119,6 +120,7 @@ struct ThemeContrastTests {
         palette.sliderKnob = Color(white: 0.1)
         let warnings = ThemeContrast.warnings(palette)
         #expect(warnings.count == 6)
-        #expect(warnings.allSatisfy { !$0.message.contains("–") && $0.message.contains(":1") })
+        // Plain words: no dashes and no ratios.
+        #expect(warnings.allSatisfy { !$0.message.contains("–") && !$0.message.contains(where: \.isNumber) })
     }
 }

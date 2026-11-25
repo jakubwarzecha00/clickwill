@@ -50,7 +50,7 @@ struct AlbumGridScreen: View {
                 }
             }
         }
-        .background(Theme.flowTop)
+        .background { Rectangle().fill(Theme.flowTop).overlay { SceneBackdropLayer(horizon: 1, strength: 0.55) } }
         .focusable()
         .focused($focused)
         .focusEffectDisabled()

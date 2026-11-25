@@ -79,7 +79,7 @@ struct CustomThemeChoiceTests {
 
     @Test func choicesAreParsedByHand() {
         let id = UUID()
-        for choice in [ThemeChoice.system, .light, .dark, .custom(id)] {
+        for choice in [ThemeChoice.system, .light, .dark, .vice, .custom(id)] {
             #expect(ThemeChoice(storageValue: choice.storageValue) == choice)
         }
         #expect(ThemeChoice(storageValue: "custom:nope") == nil)
