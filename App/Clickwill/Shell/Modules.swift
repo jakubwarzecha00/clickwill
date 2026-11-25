@@ -243,6 +243,13 @@ struct ModuleFileMenuItems: View {
     }
 }
 
+/// The modules' items at the top of the View menu.
+struct ModuleViewMenuItems: View {
+    var body: some View {
+        AlbumsViewMenuItems()
+    }
+}
+
 /// What one window keeps for its modules.
 @MainActor
 final class ModuleStores {
