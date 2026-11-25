@@ -2,13 +2,14 @@ import SwiftUI
 import UniformTypeIdentifiers
 import ClickwillShared
 
-/// The Appearance section at the top of Settings: the built-in looks, and the user's own
-/// themes with everything done to them. The save and open panels and the delete question
-/// stay here, on the Settings window, not on the editor sheet.
+/// The Appearance section at the top of Settings: a window in each look to pick from - the
+/// built-in ones and the user's own - and everything done to the user's themes. The editor
+/// is a page of the window (`ThemeEditorPage`); the save and open panels and the delete
+/// question stay here.
 public struct AppearanceSection: View {
     @Bindable private var store: ThemeStore
+    @Environment(\.themeActions) private var actions
 
-    @State private var editing: EditorDraft?
     @State private var exporting: CustomTheme?
     @State private var importing = false
     @State private var deleting: CustomTheme?
@@ -18,22 +19,34 @@ public struct AppearanceSection: View {
         self.store = store
     }
 
+    private let columns = [GridItem(.adaptive(minimum: 116, maximum: 150), spacing: 16, alignment: .top)]
+
     public var body: some View {
         Section {
-            Picker("Appearance", selection: builtInChoice) {
+            LazyVGrid(columns: columns, alignment: .leading, spacing: 16) {
                 ForEach(ThemeChoice.builtIn, id: \.self) { choice in
-                    Text(choice.title ?? "").tag(Optional(choice))
+                    ThemeTile(title: choice.title ?? "", chosen: store.choice == choice) {
+                        store.choice = choice
+                    } picture: {
+                        if choice == .system {
+                            SystemThumbnail()
+                        } else {
+                            ThemeThumbnail(palette: choice.palette(systemIsDark: choice == .dark))
+                        }
+                    }
+                }
+                if let library = store.library {
+                    ForEach(library.themes) { theme in
+                        tile(theme, in: library)
+                    }
+                    NewThemeTile { edit(newTheme(), isNew: true) }
                 }
             }
-            .pickerStyle(.segmented)
+            .padding(.vertical, 4)
             if let library = store.library {
-                ForEach(library.themes) { theme in
-                    row(theme, in: library)
-                }
                 HStack {
                     Spacer()
                     Button("Import…") { importing = true }
-                    Button("New Theme…") { editing = EditorDraft(theme: newTheme(), isNew: true) }
                 }
                 .fileImporter(isPresented: $importing, allowedContentTypes: [.clickwillTheme, .json]) { result in
                     guard case .success(let url) = result else { return }
@@ -46,11 +59,6 @@ public struct AppearanceSection: View {
             Text(store.library == nil
                  ? "With System, Clickwill turns light or dark together with your Mac."
                  : "With System, Clickwill turns light or dark together with your Mac. Control-click a theme of your own to edit, export or delete it.")
-        }
-        .sheet(item: $editing) { draft in
-            ThemeEditor(theme: draft.theme, isNew: draft.isNew) { (theme: CustomTheme) throws(ThemeFileError) in
-                try store.save(theme, choose: draft.isNew)
-            }
         }
         .fileExporter(isPresented: exportShown, document: exporting.map(ThemeDocument.init),
                       contentType: .clickwillTheme, defaultFilename: exporting.map { ThemeName.fileName($0.name) }) { result in
@@ -71,11 +79,10 @@ public struct AppearanceSection: View {
         }
     }
 
-    /// The segmented control shows nothing selected while a custom theme is chosen, and
-    /// picking a segment is the only thing that writes through it.
-    private var builtInChoice: Binding<ThemeChoice?> {
-        Binding(get: { ThemeChoice.builtIn.contains(store.choice) ? store.choice : nil },
-                set: { if let choice = $0 { store.choice = choice } })
+    /// Opens the editor page on this theme.
+    private func edit(_ theme: CustomTheme, isNew: Bool) {
+        store.editing = ThemeStore.ThemeEditing(theme: theme, isNew: isNew)
+        actions.showEditor(isNew)
     }
 
     /// A new theme starts from the look on screen now.
@@ -111,12 +118,14 @@ public struct AppearanceSection: View {
         return "It has \(count) this version of Clickwill doesn't know (\(names)\(more)). I left them out."
     }
 
-    private func row(_ theme: CustomTheme, in library: ThemeLibrary) -> some View {
-        ThemeRow(theme: theme, chosen: store.choice == .custom(theme.id)) {
+    private func tile(_ theme: CustomTheme, in library: ThemeLibrary) -> some View {
+        ThemeTile(title: theme.name, chosen: store.choice == .custom(theme.id)) {
             store.choice = .custom(theme.id)
+        } picture: {
+            ThemeThumbnail(palette: theme.palette)
         }
         .contextMenu {
-            Button("Edit…") { editing = EditorDraft(theme: theme, isNew: false) }
+            Button("Edit…") { edit(theme, isNew: false) }
             Button("Duplicate") { duplicate(theme, in: library) }
             Button("Export…") { exporting = theme }
             Divider()
@@ -148,40 +157,53 @@ public struct AppearanceSection: View {
         Binding(get: { notice != nil }, set: { if !$0 { notice = nil } })
     }
 
-    private struct EditorDraft: Identifiable {
-        let theme: CustomTheme
-        let isNew: Bool
-        var id: UUID { theme.id }
-    }
-
     private struct Notice {
         let title: String
         let message: String
     }
 }
 
-/// One of the user's themes in Settings: its three colors, its name, and a check when chosen.
-private struct ThemeRow: View {
-    let theme: CustomTheme
+/// One look to pick in Settings: a window in its colors, its name under it, and a ring
+/// around the window when chosen.
+private struct ThemeTile<Picture: View>: View {
+    let title: String
     let chosen: Bool
     let choose: () -> Void
+    @ViewBuilder let picture: Picture
 
     var body: some View {
         Button(action: choose) {
-            HStack(spacing: 10) {
-                HStack(spacing: -4) {
-                    ForEach(ThemeToken.all) { token in
-                        Circle().fill(theme.color(token)).overlay(Circle().strokeBorder(.separator, lineWidth: 0.5))
-                            .frame(width: 14, height: 14)
+            VStack(spacing: 6) {
+                picture
+                    .padding(3)
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 8)
+                            .strokeBorder(chosen ? AnyShapeStyle(.tint) : AnyShapeStyle(.clear), lineWidth: 3)
                     }
-                }
-                Text(theme.name)
-                Spacer()
-                if chosen { Image(systemName: "checkmark").foregroundStyle(.tint) }
+                Text(title)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                    .foregroundStyle(chosen ? .primary : .secondary)
             }
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityAddTraits(chosen ? .isSelected : [])
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(title)
+        .accessibilityAddTraits(chosen ? [.isButton, .isSelected] : .isButton)
+    }
+}
+
+/// The last tile: a new theme, starting from the look on screen.
+private struct NewThemeTile: View {
+    let action: () -> Void
+
+    var body: some View {
+        ThemeTile(title: "New Theme…", chosen: false, choose: action) {
+            RoundedRectangle(cornerRadius: 5)
+                .strokeBorder(.secondary, style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
+                .overlay { Image(systemName: "plus").font(.title2).foregroundStyle(.secondary) }
+                .aspectRatio(ThemeThumbnail.aspectRatio, contentMode: .fit)
+        }
     }
 }

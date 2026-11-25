@@ -17,6 +17,8 @@ public final class ThemeStore {
     /// The user's own themes; nil when their folder could not be made, and then only the
     /// built-in themes are offered.
     public let library: ThemeLibrary?
+    /// The theme open on the editor page; set before the page is shown.
+    public var editing: ThemeEditing?
     @ObservationIgnored private let storage: Storage
     private let system: SystemAppearance
 
@@ -50,6 +52,18 @@ public final class ThemeStore {
         guard let library else { return }
         try library.delete(id)
         if choice == .custom(id) { choice = .system }
+    }
+
+    /// A theme on the editor page, and whether Save adds it.
+    public struct ThemeEditing: Identifiable, Equatable, Sendable {
+        public let theme: CustomTheme
+        public let isNew: Bool
+        public var id: UUID { theme.id }
+
+        public init(theme: CustomTheme, isNew: Bool) {
+            self.theme = theme
+            self.isNew = isNew
+        }
     }
 
     /// Where the choice is kept: `UserDefaults` in the app, memory in tests and demo mode.
