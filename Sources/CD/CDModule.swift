@@ -64,6 +64,35 @@ public struct CDSidebarSection<Tag: Hashable>: View {
     }
 }
 
+/// What the window does after volumes are mounted or unmounted. The window gives the facts only it
+/// has (an open sheet, the disc on screen) and carries the decision out.
+public enum DiscChange: Equatable, Sendable {
+    case show(URL)
+    case showHome
+    case nothing
+
+    /// Refreshes the discs and decides. A ripping disc's session is taken before the refresh,
+    /// because unmounting removes it from the store.
+    @MainActor public static func after(inserted: Bool, removed: Bool, shown: URL?, sheetIsOpen: Bool,
+                                        in cds: AudioCDStore) -> DiscChange {
+        guard inserted || removed else { return .nothing }
+        let shownSession = shown.flatMap(cds.session)
+        let appeared = cds.refresh().first?.volume
+        return decide(appeared: inserted ? appeared : nil, removed: removed, shown: shown,
+                      shownIsRipping: shownSession?.isRipping == true,
+                      shownRemains: shown.flatMap(cds.session) != nil, sheetIsOpen: sheetIsOpen)
+    }
+
+    /// An inserted disc opens its page, as in Music, unless a sheet is open or the disc on screen
+    /// is being ripped. A removed disc on screen takes its page down.
+    static func decide(appeared: URL?, removed: Bool, shown: URL?, shownIsRipping: Bool,
+                       shownRemains: Bool, sheetIsOpen: Bool) -> DiscChange {
+        if let appeared, !sheetIsOpen, !shownIsRipping { return .show(appeared) }
+        if removed, shown != nil, !shownRemains { return .showHome }
+        return .nothing
+    }
+}
+
 /// What the disc screen asks the app to do; set by the app in `App/Clickwill/Shell/Modules.swift`.
 public struct CDActions: Sendable {
     /// Ripped files go to Add Songs, so a disc gets the same duplicate check as any other album.

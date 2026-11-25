@@ -44,9 +44,8 @@ struct LaunchScript: Sendable {
     /// `--cd-release` and `--cd-cover` (without `--demo`): the state after a lookup
     /// from a saved response, without the network.
     @MainActor func windowAppeared(window: WindowState, cds: AudioCDStore) {
-        guard let fixture = options.audioCDFixture, let disc = cds.add(fixture: fixture),
-              let page = ModulePage.disc(disc.volume) else { return }
-        window.show(page)
+        guard let fixture = options.audioCDFixture, let disc = cds.add(fixture: fixture) else { return }
+        window.show(ModulePage.disc(disc.volume))
         if !options.isDemo, let session = cds.session(disc.volume), let release = options.cdRelease,
            let data = try? Data(contentsOf: release),
            let releases = try? MusicBrainz.releases(fromJSON: data, discID: disc.discID, trackCount: disc.tracks.count),
@@ -70,7 +69,7 @@ struct LaunchScript: Sendable {
         }
         switch options.screen {
         case .album:
-            if let album = modules.coverFlowAlbum(in: model), let page = ModulePage.album(album) { window.show(page) }
+            if let album = modules.coverFlowAlbum(in: model) { window.show(ModulePage.album(album)) }
         case .diagnostics: showDiagnosticsBackdrop(window); window.showDiagnostics()
         case .rockbox: showDiagnosticsBackdrop(window); window.showRockboxReport()
         case .sendReport: showDiagnosticsBackdrop(window); window.showSendReport()
@@ -93,7 +92,7 @@ struct LaunchScript: Sendable {
 
     /// The page under Diagnostics opened from the command line, as when opened from it by hand.
     @MainActor private func showDiagnosticsBackdrop(_ window: WindowState) {
-        if let page = ModulePage.diagnosticsBackdrop { window.show(page) }
+        window.show(ModulePage.diagnosticsBackdrop)
     }
 
     /// An album by title, then by artist, and finally a title containing the name.

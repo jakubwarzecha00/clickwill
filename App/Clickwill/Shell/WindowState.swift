@@ -80,10 +80,9 @@ final class WindowState {
     func showHome(animated: Bool = false) { show(home, animated: animated) }
 
     func open(_ album: AlbumCard) {
-        guard let page = ModulePage.album(album) else { return }
         // From Songs and from the change list we go back to the first library screen.
         origin = screen.staysAsOrigin ? screen : home
-        show(page, animated: true)
+        show(ModulePage.album(album), animated: true)
     }
 
     /// The name on the Back button, or nil when the screen has nowhere to go back to.
@@ -110,8 +109,8 @@ final class WindowState {
 
     /// From the toolbar and the View menu (HIG: every toolbar item has its counterpart in the menu).
     func showReorder() {
-        guard AppFeatures.reorderAlbums, model.state == .loaded, let page = ModulePage.reorder else { return }
-        show(page, animated: true)
+        guard AppFeatures.reorderAlbums, model.state == .loaded else { return }
+        show(ModulePage.reorder, animated: true)
     }
 
     /// The selected sidebar row. A page opened over another screen (an album) belongs to that
@@ -131,10 +130,10 @@ final class WindowState {
 
     func show(_ sheet: ModuleSheet) { present(.module(sheet)) }
 
-    /// Add Songs with these files, when a module adds songs.
+    /// Add Songs with these files. An empty list is a cancelled file panel.
     func addFiles(_ urls: [URL]) {
-        guard !urls.isEmpty, let sheet = ModuleSheet.addFiles?(urls) else { return }
-        present(.module(sheet))
+        guard !urls.isEmpty else { return }
+        present(.module(ModuleSheet.addFiles(urls)))
     }
 
     func showFeedback() { present(.feedback) }

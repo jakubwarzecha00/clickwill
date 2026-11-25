@@ -73,7 +73,7 @@ struct ContentView: View {
             // Files and folders from Finder dropped anywhere on the window open
             // Add Songs with them loaded. The album's track list and the artwork
             // in the Edit panel have their own targets - they lie deeper, so they win.
-            .onDrop(of: model.isWritable && ModuleSheet.addFiles != nil ? [.fileURL] : [], isTargeted: $dropTargeted) { providers in
+            .onDrop(of: model.isWritable ? [.fileURL] : [], isTargeted: $dropTargeted) { providers in
                 receiveDrop(providers)
             }
             .overlay { if dropTargeted { dropHint } }

@@ -45,16 +45,16 @@ enum ModulePage: Hashable {
     }
 
     /// Reorder Albums, from Cover Flow's toolbar and the View menu.
-    static let reorder: ModulePage? = .albums(.reorder)
+    static let reorder: ModulePage = .albums(.reorder)
 
     /// The page shown under Diagnostics and Send Diagnostic Report opened from the command line.
-    static let diagnosticsBackdrop: ModulePage? = .device(.overview)
+    static let diagnosticsBackdrop: ModulePage = .device(.overview)
 
     /// The page of a disc in a drive (`--audio-cd` in a launch for screenshots).
-    static func disc(_ volume: URL) -> ModulePage? { .cd(.disc(volume)) }
+    static func disc(_ volume: URL) -> ModulePage { .cd(.disc(volume)) }
 
     /// The page an album opens on, from Cover Flow, the Albums wheel or a module.
-    static func album(_ card: AlbumCard) -> ModulePage? { .album(.album(card)) }
+    static func album(_ card: AlbumCard) -> ModulePage { .album(.album(card)) }
 
     /// The album this page shows; Back centers it on the screen it returns to.
     var shownAlbum: AlbumCard? {
@@ -204,11 +204,11 @@ enum ModuleSheet: Hashable, Sendable {
     }
 
     /// The change list, from the playback bar and `--screen pending`.
-    static let changeList: ModuleSheet? = .pendingChanges(sampleReport: false)
+    static let changeList: ModuleSheet = .pendingChanges(sampleReport: false)
 
     /// Add Songs with these files: chosen in the sidebar, ripped from a disc, dropped on the
-    /// window or given with `--import`. Nil when no module adds songs; the window then takes no drops.
-    static let addFiles: (@Sendable ([URL]) -> ModuleSheet)? = { .importFiles($0) }
+    /// window or given with `--import`.
+    static func addFiles(_ urls: [URL]) -> ModuleSheet { .importFiles(urls) }
 
     var id: String {
         switch self {
@@ -285,16 +285,13 @@ final class ModuleStores {
         Task { await coverFlow.runLoop(from: from, to: to) }
     }
 
-    /// An inserted disc opens its page, as in Music, unless a sheet is open or another disc is
-    /// being ripped. A removed disc takes its page down.
+    /// The CD module decides what a mounted or unmounted volume does to the window (`DiscChange`).
     func volumesChanged(inserted: Bool, removed: Bool, window: WindowState, sheetIsOpen: Bool) {
-        let shownDisc: CDSession? = if case .cd(let page) = window.screen { cds.session(page.volume) } else { nil }
-        if inserted, let disc = cds.refresh().first, !sheetIsOpen, shownDisc?.isRipping != true {
-            window.show(.cd(.disc(disc.volume)), animated: true)
-        }
-        if removed {
-            cds.refresh()
-            if case .cd(let page) = window.screen, cds.session(page.volume) == nil { window.showHome(animated: true) }
+        let shown: URL? = if case .cd(let page) = window.screen { page.volume } else { nil }
+        switch DiscChange.after(inserted: inserted, removed: removed, shown: shown, sheetIsOpen: sheetIsOpen, in: cds) {
+        case .show(let volume): window.show(ModulePage.disc(volume), animated: true)
+        case .showHome: window.showHome(animated: true)
+        case .nothing: break
         }
     }
 }
@@ -314,9 +311,7 @@ extension View {
             .environment(\.coverFlowActions, CoverFlowActions(openAlbum: { window.open($0) }, reorder: reorder))
             .environment(\.cdActions, CDActions(importFiles: { window.addFiles($0) }))
             .environment(\.importActions, ImportActions(addFiles: { window.addFiles($0) }))
-            .environment(\.changesActions, ChangesActions(showChanges: {
-                if let sheet = ModuleSheet.changeList { window.show(sheet) }
-            }))
+            .environment(\.changesActions, ChangesActions(showChanges: { window.show(ModuleSheet.changeList) }))
             .environment(\.artistsActions, ArtistsActions(
                 show: { window.show(.artists($0), animated: true) },
                 openAlbum: { window.open($0) }))
