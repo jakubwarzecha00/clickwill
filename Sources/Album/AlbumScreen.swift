@@ -2,7 +2,6 @@ import SwiftUI
 import AppKit
 import UniformTypeIdentifiers
 import ClickwillModel
-import ITDBKit
 import ClickwillShared
 
 /// The album screen: a header with the artwork, a track list with dragging and removal, an inspector.
