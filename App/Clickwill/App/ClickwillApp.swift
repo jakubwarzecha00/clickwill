@@ -67,6 +67,10 @@ struct ClickwillApp: App {
             CommandGroup(after: .importExport) {
                 ModuleFileMenuItems()
             }
+            CommandGroup(before: .toolbar) {
+                ModuleViewMenuItems()
+                Divider()
+            }
             if AppFeatures.reorderAlbums {
                 CommandGroup(after: .sidebar) {
                     WindowMenuButton(title: "Reorder Albums") { $0.showReorder() }

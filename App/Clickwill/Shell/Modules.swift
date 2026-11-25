@@ -128,7 +128,7 @@ enum ModulePage: Hashable {
         case .coverFlow:
             modules.coverFlow.handle(press.key, albums: model.coverFlowDisplay, open: window.open)
         case .albums(.albums):
-            modules.albums.handle(press.key, characters: press.characters, albums: model.albumsDisplay,
+            modules.albums.handle(press.key, characters: press.characters, albums: modules.albums.shown(from: model.albumsDisplay),
                                   letter: model.menuLetter(of:), open: window.open)
         case .albums(.reorder), .artists, .songs, .cd, .album, .device:
             .ignored
@@ -243,6 +243,13 @@ struct ModuleFileMenuItems: View {
     }
 }
 
+/// The modules' items at the top of the View menu.
+struct ModuleViewMenuItems: View {
+    var body: some View {
+        AlbumsViewMenuItems()
+    }
+}
+
 /// What one window keeps for its modules.
 @MainActor
 final class ModuleStores {
@@ -260,7 +267,7 @@ final class ModuleStores {
     /// when it was opened there, otherwise Cover Flow.
     func center(_ album: AlbumCard, returningTo origin: ModulePage, in model: LibraryModel) {
         if case .albums = origin {
-            albums.center(album, in: model.albumsDisplay)
+            albums.center(album, in: albums.shown(from: model.albumsDisplay))
         } else {
             coverFlow.center(album, in: model.coverFlowDisplay)
         }
