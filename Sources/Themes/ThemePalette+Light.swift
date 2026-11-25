@@ -10,6 +10,7 @@ public extension ThemePalette {
         colorScheme: .light,
         bg: Color(red: 0xf5/255, green: 0xf5/255, blue: 0xf7/255),
         card: .white,
+        stage: Color(red: 0xf2/255, green: 0xf2/255, blue: 0xf4/255),
         fg: Color(red: 0x1d/255, green: 0x1d/255, blue: 0x1f/255),
         f2: Color(red: 60/255, green: 60/255, blue: 67/255).opacity(0.6),
         f3: Color(red: 60/255, green: 60/255, blue: 67/255).opacity(0.3),

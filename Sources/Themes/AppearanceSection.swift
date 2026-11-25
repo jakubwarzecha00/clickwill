@@ -80,7 +80,7 @@ public struct AppearanceSection: View {
 
     /// A new theme starts from the look on screen now.
     private func newTheme() -> CustomTheme {
-        CustomTheme(name: "My Theme", base: store.current.palette.colorScheme == .light ? .light : .dark)
+        CustomTheme(name: "My Theme", start: store.current.palette.colorScheme == .light ? .light : .dark)
     }
 
     private func importTheme(_ url: URL, into library: ThemeLibrary) {
@@ -160,7 +160,7 @@ public struct AppearanceSection: View {
     }
 }
 
-/// One of the user's themes in Settings: four of its colors, its name, and a check when chosen.
+/// One of the user's themes in Settings: its three colors, its name, and a check when chosen.
 private struct ThemeRow: View {
     let theme: CustomTheme
     let chosen: Bool
@@ -169,10 +169,9 @@ private struct ThemeRow: View {
     var body: some View {
         Button(action: choose) {
             HStack(spacing: 10) {
-                let palette = theme.palette
                 HStack(spacing: -4) {
-                    ForEach(Array([palette.bg, palette.fg, palette.accent, palette.flowTop].enumerated()), id: \.offset) { _, color in
-                        Circle().fill(color).overlay(Circle().strokeBorder(.separator, lineWidth: 0.5))
+                    ForEach(ThemeToken.all) { token in
+                        Circle().fill(theme.color(token)).overlay(Circle().strokeBorder(.separator, lineWidth: 0.5))
                             .frame(width: 14, height: 14)
                     }
                 }

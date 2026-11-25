@@ -1,7 +1,7 @@
 import SwiftUI
 import ClickwillShared
 
-/// Making or changing one of the user's themes: its name, its base and its colors, with a
+/// Making or changing one of the user's themes: its name and its three colors, with a
 /// preview drawn from the draft. Nothing outside the sheet changes until Save.
 struct ThemeEditor: View {
     @State private var draft: CustomTheme
@@ -19,7 +19,7 @@ struct ThemeEditor: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack(alignment: .top, spacing: 0) {
-                colors
+                form
                 Divider()
                 VStack(alignment: .leading, spacing: 14) {
                     ThemePreview(palette: draft.palette)
@@ -42,36 +42,29 @@ struct ThemeEditor: View {
             }
             .padding(16)
         }
-        .frame(width: 780, height: 620)
+        .frame(width: 680, height: 580)
     }
 
-    private var colors: some View {
+    private var form: some View {
         Form {
             Section {
                 TextField("Name", text: $draft.name)
-                Picker("Based on", selection: $draft.base) {
-                    ForEach(CustomTheme.Base.allCases) { Text($0.title).tag($0) }
-                }
-                .pickerStyle(.segmented)
-            } footer: {
-                Text("Colors you don't change come from the theme it is based on.")
             }
-            ForEach(ThemeToken.groups) { group in
-                Section(group.title) {
-                    ForEach(group.tokens) { token in
-                        HStack {
-                            ColorPicker(token.title, selection: binding(token), supportsOpacity: token.allowsOpacity)
-                            if draft.isChanged(token) {
-                                Button("Reset") { draft.reset(token) }
-                                    .buttonStyle(.borderless)
-                                    .help("Back to the color of \(draft.base.title)")
-                            }
+            Section {
+                ForEach(ThemeToken.all) { token in
+                    ColorPicker(selection: binding(token), supportsOpacity: false) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(token.title)
+                            Text(token.detail).font(.caption).foregroundStyle(.secondary)
                         }
                     }
                 }
+            } footer: {
+                Text("I work out every other color from these three, so text stays readable and the Cover Flow floor matches its scene.")
             }
         }
         .formStyle(.grouped)
+        .scrollDisabled(true)
     }
 
     @ViewBuilder private var warnings: some View {

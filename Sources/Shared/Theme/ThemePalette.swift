@@ -11,6 +11,10 @@ public struct ThemePalette: Sendable, Equatable {
     // Surfaces.
     public var bg: Color
     public var card: Color
+    /// Under every screen of the window that is not the scene: Songs, Artists, an album,
+    /// Settings, and the toolbar and playback bar floating over them. The built-in themes
+    /// use the scene's top color, so the window reads as one with Cover Flow.
+    public var stage: Color
 
     // Text on the window's surfaces.
     public var fg: Color
@@ -57,7 +61,7 @@ public struct ThemePalette: Sendable, Equatable {
     /// multiplies this color by it.
     public var sceneShadow: Color
 
-    public init(colorScheme: ColorScheme, bg: Color, card: Color, fg: Color, f2: Color, f3: Color,
+    public init(colorScheme: ColorScheme, bg: Color, card: Color, stage: Color, fg: Color, f2: Color, f3: Color,
                 sep: Color, sel: Color, glassBorder: Color, row: Color, rowHover: Color, trackHover: Color,
                 field: Color, fieldBorder: Color, accent: Color, onAccent: Color, warn: Color,
                 destructive: Color, ok: Color, flowTop: Color, flowBottom: Color, floorTop: Color,
@@ -66,6 +70,7 @@ public struct ThemePalette: Sendable, Equatable {
         self.colorScheme = colorScheme
         self.bg = bg
         self.card = card
+        self.stage = stage
         self.fg = fg
         self.f2 = f2
         self.f3 = f3
@@ -100,6 +105,7 @@ public extension ThemePalette {
         colorScheme: .dark,
         bg: Color(red: 0x1c/255, green: 0x1c/255, blue: 0x1e/255),
         card: Color(red: 0x2a/255, green: 0x2a/255, blue: 0x2c/255),
+        stage: Color(red: 0x0b/255, green: 0x0b/255, blue: 0x0d/255),
         fg: Color(red: 0xf5/255, green: 0xf5/255, blue: 0xf7/255),
         f2: Color(red: 235/255, green: 235/255, blue: 245/255).opacity(0.6),
         f3: Color(red: 235/255, green: 235/255, blue: 245/255).opacity(0.3),

@@ -40,10 +40,10 @@ public enum Theme {
     public static let sceneShade = ThemeColor { $0.sceneShade }
     public static let sceneShadow = ThemeColor { $0.sceneShadow }
 
-    /// The shared scene background - the same one Cover Flow stands on. The toolbar
-    /// and the playback bar no longer paint their own gray panels, but
-    /// float over this background.
-    public static let stage = flowTop
+    /// Under the window's screens other than the scene (`ThemePalette.stage`). The toolbar
+    /// and the playback bar do not paint their own panels, but float over it. Cover Flow
+    /// and Albums stand on `flowTop` instead.
+    public static let stage = ThemeColor { $0.stage }
 
     /// One grid for the whole side panel: the device card, the navigation rows
     /// and the section headers are computed from the same numbers, otherwise

@@ -50,7 +50,7 @@ struct AlbumGridScreen: View {
                 }
             }
         }
-        .background(Theme.stage)
+        .background(Theme.flowTop)
         .focusable()
         .focused($focused)
         .focusEffectDisabled()

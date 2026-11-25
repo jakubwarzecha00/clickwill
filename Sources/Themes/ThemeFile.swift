@@ -1,10 +1,11 @@
 import Foundation
 
-/// A `.clickwilltheme` file: JSON with a format number, a name, a base and colors.
+/// A `.clickwilltheme` file: JSON with a format number, a name and the three colors.
 ///
 /// The file is untrusted. It is read up to a size limit before any parsing, the format must
-/// be exactly 1, and a bad base or a bad color rejects the whole file. Keys this version does
-/// not know are skipped and counted, so a theme from a newer Clickwill still opens.
+/// be exactly 1, and a bad color rejects the whole file. A missing color starts as the dark
+/// theme's. Keys this version does not know are skipped and counted, so a theme from a
+/// newer Clickwill still opens.
 public enum ThemeFile {
     public static let fileExtension = "clickwilltheme"
     public static let maxBytes = 64 * 1024
@@ -39,9 +40,6 @@ public enum ThemeFile {
         guard number.doubleValue == Double(format) else {
             throw number.doubleValue > Double(format) ? .newerFormat : .notATheme
         }
-        guard let baseName = root["base"] as? String, let base = CustomTheme.Base(rawValue: baseName) else {
-            throw .badBase
-        }
         let name = ThemeName.clean(root["name"] as? String ?? "")
 
         var colors: [String: String] = [:]
@@ -50,11 +48,11 @@ public enum ThemeFile {
             guard let entries = value as? [String: Any] else { throw .notATheme }
             for (key, value) in entries {
                 guard ThemeToken.named(key) != nil else { unknown.append(key); continue }
-                guard let text = value as? String, let hex = HexColor.normalized(text) else { throw .badColor(key) }
-                colors[key] = hex
+                guard let text = value as? String, HexColor.color(text) != nil else { throw .badColor(key) }
+                colors[key] = text
             }
         }
-        return Contents(theme: CustomTheme(id: id, name: name, base: base, colors: colors),
+        return Contents(theme: CustomTheme(id: id, name: name, colors: colors),
                         unknownColors: unknown.sorted())
     }
 
@@ -63,7 +61,6 @@ public enum ThemeFile {
         let root: [String: Any] = [
             "format": format,
             "name": ThemeName.clean(theme.name),
-            "base": theme.base.rawValue,
             "colors": theme.colors,
         ]
         // Only strings and an integer: serialization cannot fail.
@@ -77,7 +74,6 @@ public enum ThemeFileError: Error, Equatable, LocalizedError {
     case tooLarge
     case notATheme
     case newerFormat
-    case badBase
     case badColor(String)
     case cannotSave
 
@@ -87,7 +83,6 @@ public enum ThemeFileError: Error, Equatable, LocalizedError {
         case .tooLarge: "This file is too large to be a Clickwill theme."
         case .notATheme: "This file isn't a Clickwill theme."
         case .newerFormat: "This theme was made for a newer Clickwill. Update Clickwill to use it."
-        case .badBase: "This theme doesn't say whether it is light or dark."
         case .badColor(let key): "The color “\(key)” in this theme isn't a hex color like #2F6AA8."
         case .cannotSave: "I couldn't save the theme on this Mac."
         }

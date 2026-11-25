@@ -1,64 +1,57 @@
 import SwiftUI
 import ClickwillShared
 
-/// A theme the user made or imported: a base palette and the colors changed on top of it.
+/// A theme the user made or imported: a name and three colors. The rest of its palette is
+/// worked out from them (`ThemeDerivation`).
 public struct CustomTheme: Identifiable, Sendable, Equatable {
-    public enum Base: String, Sendable, CaseIterable, Identifiable {
+    /// The colors a new theme starts from: those of the built-in light or dark theme.
+    public enum Start: Sendable {
         case light, dark
 
-        public var id: Self { self }
-        public var title: String { self == .light ? "Light" : "Dark" }
-        public var palette: ThemePalette { self == .light ? .light : .dark }
+        var colors: [String: String] {
+            switch self {
+            case .light: ["accent": "#2F6AA8", "background": "#F5F5F7", "scene": "#F2F2F4"]
+            case .dark: ["accent": "#7D9DC4", "background": "#1C1C1E", "scene": "#0B0B0D"]
+            }
+        }
     }
 
     /// Also the name of its file in the library; never taken from a file's content.
     public let id: UUID
     public var name: String
-    public var base: Base
-    /// Changed colors by token key, as `#RRGGBB` or `#RRGGBBAA`. A key not here comes from
-    /// the base, so changing the base keeps every changed color.
+    /// Every token's color by its key, as opaque `#RRGGBB`. A color missing or unreadable in
+    /// `colors` comes from `start`; keys that are not tokens are dropped.
     public private(set) var colors: [String: String]
 
-    public init(id: UUID = UUID(), name: String, base: Base, colors: [String: String] = [:]) {
+    public init(id: UUID = UUID(), name: String, start: Start = .dark, colors: [String: String] = [:]) {
         self.id = id
         self.name = name
-        self.base = base
-        self.colors = colors.filter { ThemeToken.named($0.key) != nil }
-            .compactMapValues(HexColor.normalized)
+        var kept = start.colors
+        for token in ThemeToken.all {
+            if let text = colors[token.key], let color = HexColor.color(text) {
+                kept[token.key] = HexColor.string(color, opaque: true)
+            }
+        }
+        self.colors = kept
     }
 
     public var palette: ThemePalette {
-        var palette = base.palette
-        for token in ThemeToken.all {
-            if let hex = colors[token.key], let color = HexColor.color(hex) {
-                palette[keyPath: token.keyPath] = color
-            }
-        }
-        return palette
+        ThemeDerivation.palette(accent: color(.accent), background: color(.background), scene: color(.scene))
     }
 
     public func color(_ token: ThemeToken) -> Color {
-        palette[keyPath: token.keyPath]
-    }
-
-    public func isChanged(_ token: ThemeToken) -> Bool {
-        colors[token.key] != nil
+        colors[token.key].flatMap(HexColor.color) ?? .clear
     }
 
     public mutating func set(_ color: Color, for token: ThemeToken) {
-        colors[token.key] = HexColor.string(color, opaque: !token.allowsOpacity)
-    }
-
-    /// Back to the base's color.
-    public mutating func reset(_ token: ThemeToken) {
-        colors[token.key] = nil
+        colors[token.key] = HexColor.string(color, opaque: true)
     }
 
     /// A copy under a new identity, named "<name> Copy" within the name limit.
     public func duplicate() -> CustomTheme {
         let suffix = " Copy"
         let stem = String(name.prefix(ThemeName.maxLength - suffix.count))
-        return CustomTheme(name: stem + suffix, base: base, colors: colors)
+        return CustomTheme(name: stem + suffix, colors: colors)
     }
 }
 
