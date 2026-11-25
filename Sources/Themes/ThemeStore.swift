@@ -11,21 +11,45 @@ import ClickwillShared
 public final class ThemeStore {
     /// Kept between launches; a launch for screenshots may set another one for itself.
     public var choice: ThemeChoice {
-        didSet { storage.save(choice.rawValue) }
+        didSet { storage.save(choice.storageValue) }
     }
 
+    /// The user's own themes; nil when their folder could not be made, and then only the
+    /// built-in themes are offered.
+    public let library: ThemeLibrary?
     @ObservationIgnored private let storage: Storage
     private let system: SystemAppearance
 
     /// - Parameter launchChoice: this process only (`--appearance`); the saved choice stays.
-    public init(storage: Storage, system: SystemAppearance, launchChoice: ThemeChoice? = nil) {
+    public init(storage: Storage, system: SystemAppearance, library: ThemeLibrary? = nil,
+                launchChoice: ThemeChoice? = nil) {
         self.storage = storage
         self.system = system
-        choice = launchChoice ?? storage.load().flatMap(ThemeChoice.init(rawValue:)) ?? .system
+        self.library = library
+        choice = launchChoice ?? storage.load().flatMap(ThemeChoice.init(storageValue:)) ?? .system
     }
 
+    /// A chosen custom theme that is gone or does not open shows the System look, without
+    /// changing the saved choice: the file may come back.
     public var current: AppTheme {
-        AppTheme(palette: choice.palette(systemIsDark: system.isDark))
+        if case .custom(let id) = choice, let theme = library?.theme(id) {
+            return AppTheme(palette: theme.palette)
+        }
+        return AppTheme(palette: choice.palette(systemIsDark: system.isDark))
+    }
+
+    /// Saves a theme from the editor. A new theme is also chosen, so the window shows it.
+    public func save(_ theme: CustomTheme, choose: Bool) throws(ThemeFileError) {
+        guard let library else { throw .cannotSave }
+        try library.save(theme)
+        if choose { choice = .custom(theme.id) }
+    }
+
+    /// Deleting the chosen theme is the user's doing, so the choice goes back to System.
+    public func delete(_ id: UUID) throws(ThemeFileError) {
+        guard let library else { return }
+        try library.delete(id)
+        if choice == .custom(id) { choice = .system }
     }
 
     /// Where the choice is kept: `UserDefaults` in the app, memory in tests and demo mode.

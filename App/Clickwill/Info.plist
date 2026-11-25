@@ -42,5 +42,25 @@
 	<integer>86400</integer>
 	<key>SUVerifyUpdateBeforeExtraction</key>
 	<true/>
+	<key>UTExportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.json</string>
+			</array>
+			<key>UTTypeDescription</key>
+			<string>Clickwill Theme</string>
+			<key>UTTypeIdentifier</key>
+			<string>pl.jakubwarzecha.clickwill.theme</string>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>clickwilltheme</string>
+				</array>
+			</dict>
+		</dict>
+	</array>
 </dict>
 </plist>

@@ -11,6 +11,7 @@ import ClickwillDevice
 import ClickwillImport
 import ClickwillChanges
 import ClickwillThemes
+import ITDBKit
 
 /// The screen modules the window shows, and the only file in the app that names them.
 ///
@@ -259,11 +260,20 @@ final class ModuleAppearance {
     private let themes: ThemeStore
 
     /// - Parameters:
-    ///   - demo: the choice lives in memory, so a demo never changes the user's.
+    ///   - demo: the choice lives in memory and the user's themes in a folder of this
+    ///     process, so a demo never changes the user's.
     ///   - launchChoice: `--appearance light|dark|system`, for this process only.
     init(demo: Bool, launchChoice: String?) {
+        let folder = demo ? Self.demoThemesFolder : (try? ProductInfo.supportDirectory())?
+            .appendingPathComponent("Themes", isDirectory: true)
         themes = ThemeStore(storage: demo ? .memory() : .standard, system: .live(),
-                            launchChoice: launchChoice.flatMap(ThemeChoice.init(rawValue:)))
+                            library: folder.map(ThemeLibrary.init(folder:)),
+                            launchChoice: launchChoice.flatMap(ThemeChoice.init(storageValue:)))
+    }
+
+    private static var demoThemesFolder: URL {
+        FileManager.default.temporaryDirectory
+            .appendingPathComponent("clickwill-demo-themes-\(ProcessInfo.processInfo.processIdentifier)", isDirectory: true)
     }
 
     var theme: AppTheme { themes.current }
