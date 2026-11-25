@@ -114,7 +114,9 @@ struct ContentView: View {
             launch.libraryLoaded(window: window, model: model, modules: modules)
         }
         // The iPod disappeared (`DeviceMonitor` took the library down) - we go back to the first screen.
-        .onChange(of: model.source == nil) { _, gone in if gone { window.showHome() } }
+        .onChange(of: model.source == nil) { _, gone in
+            if gone, !window.screen.staysWhenIPodLeaves { window.showHome() }
+        }
         // E.g. Cover Flow once an iPod without it is recognized, after loading or after switching.
         .onChange(of: window.screenIsAvailable) { _, available in
             if !available { window.showHome() }

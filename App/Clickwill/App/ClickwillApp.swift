@@ -14,7 +14,7 @@ struct ClickwillApp: App {
     /// together with the media key hookup.
     @State private var mediaControls: SystemMediaControls?
     @State private var updates: Updates
-    /// One theme for the library windows and Settings (`ModuleAppearance`).
+    /// One theme for every library window (`ModuleAppearance`).
     @State private var appearance: ModuleAppearance
     @AppStorage(WelcomeSheet.seenKey) private var welcomeSeen = false
     /// Launch flags - read only here (`LaunchOptions`).
@@ -49,6 +49,7 @@ struct ClickwillApp: App {
                 .environment(playback)
                 .frame(minWidth: 1100, minHeight: 700)
                 .themed(appearance.theme)
+                .environment(appearance)
                 .environment(\.siteURL, siteURL)
                 .task {
                     monitor.start()
@@ -85,20 +86,18 @@ struct ClickwillApp: App {
                 Button("Check for Updates…") { updates.check() }
                     .disabled(!updates.canCheck)
             }
+            // Settings are a page of the library window, next to Send Feedback in the sidebar,
+            // so Command-comma opens that page instead of a window of its own.
+            CommandGroup(replacing: .appSettings) {
+                WindowMenuButton(title: "Settings…") { $0.show(.settings, animated: true) }
+                    .keyboardShortcut(",", modifiers: .command)
+            }
             CommandGroup(replacing: .help) {
                 WindowMenuButton(title: "Send Feedback…") { $0.showFeedback() }
                 Divider()
                 Button("Before You Edit Your iPod…") { welcomeSeen = false }
                 WindowMenuButton(title: "Send Diagnostic Report…") { $0.showSendReport() }
             }
-        }
-
-        // The standard settings window - this is where the item in the app
-        // menu and the Command-comma shortcut come from.
-        Settings {
-            SettingsView(leadingSections: appearance.settingsSections)
-                .environment(model)
-                .themed(appearance.theme)
         }
     }
 

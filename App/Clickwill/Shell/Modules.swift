@@ -27,9 +27,12 @@ enum ModulePage: Hashable {
     case cd(CDPage)
     case album(AlbumPage)
     case device(DevicePage)
+    /// The app's settings (`SettingsView`): not a module, but a page of the window like them.
+    case settings
 
     /// `--screen <name>`.
     init?(launchName: String) {
+        if launchName == "settings" { self = .settings; return }
         if let page = CoverFlowPage(rawValue: launchName) { self = .coverFlow(page); return }
         if let page = AlbumsPage(rawValue: launchName) { self = .albums(page); return }
         if let page = ArtistsPage(launchName: launchName) { self = .artists(page); return }
@@ -73,6 +76,7 @@ enum ModulePage: Hashable {
         case .cd: "Audio CD"
         case .album(let page): page.album.displayTitle
         case .device(let page): page.title
+        case .settings: "Settings"
         }
     }
 
@@ -93,6 +97,7 @@ enum ModulePage: Hashable {
         case .cd(let page): page.subtitle(in: modules.cds)
         case .album(let page): page.subtitle(in: model)
         case .device(let page): page.subtitle(in: model)
+        case .settings: ""
         }
     }
 
@@ -105,13 +110,15 @@ enum ModulePage: Hashable {
         case .cd(let page): CDScreen(page: page)
         case .album(let page): AlbumModuleScreen(page: page)
         case .device(let page): DeviceScreen(page: page)
+        case .settings: SettingsView()
         }
     }
 
-    /// Shown without a loaded library: a disc can be ripped with no iPod connected.
+    /// Shown without a loaded library: a disc can be ripped with no iPod connected, and
+    /// settings are there before any iPod.
     var needsLibrary: Bool {
         switch self {
-        case .cd: false
+        case .cd, .settings: false
         case .coverFlow, .albums, .artists, .songs, .album, .device: true
         }
     }
@@ -120,8 +127,13 @@ enum ModulePage: Hashable {
     @MainActor func isAvailable(in model: LibraryModel) -> Bool {
         switch self {
         case .coverFlow(let page): page.isAvailable(in: model)
-        case .albums, .artists, .songs, .cd, .album, .device: true
+        case .albums, .artists, .songs, .cd, .album, .device, .settings: true
         }
+    }
+
+    /// Stays on screen when the iPod is unplugged; every other page goes back home.
+    var staysWhenIPodLeaves: Bool {
+        self == .settings
     }
 
     /// A key the window passes on while this page is shown; the scene holds the focus, not the page.
@@ -132,7 +144,7 @@ enum ModulePage: Hashable {
         case .albums(.albums):
             modules.albums.handle(press.key, characters: press.characters, albums: modules.albums.shown(from: model.albumsDisplay),
                                   letter: model.menuLetter(of:), open: window.open)
-        case .albums(.reorder), .artists, .songs, .cd, .album, .device:
+        case .albums(.reorder), .artists, .songs, .cd, .album, .device, .settings:
             .ignored
         }
     }
@@ -141,7 +153,7 @@ enum ModulePage: Hashable {
     var parent: ModulePage? {
         switch self {
         case .artists(let page): page.parent.map(ModulePage.artists)
-        case .coverFlow, .albums, .songs, .cd, .album, .device: nil
+        case .coverFlow, .albums, .songs, .cd, .album, .device, .settings: nil
         }
     }
 
@@ -157,7 +169,7 @@ enum ModulePage: Hashable {
     var opensOver: Bool {
         switch self {
         case .album: true
-        case .coverFlow, .albums, .artists, .songs, .cd, .device: false
+        case .coverFlow, .albums, .artists, .songs, .cd, .device, .settings: false
         }
     }
 
@@ -165,7 +177,7 @@ enum ModulePage: Hashable {
     var staysAsOrigin: Bool {
         switch self {
         case .coverFlow, .albums(.albums), .artists: true
-        case .albums(.reorder), .songs, .cd, .album, .device: false
+        case .albums(.reorder), .songs, .cd, .album, .device, .settings: false
         }
     }
 }
@@ -252,12 +264,13 @@ struct ModuleViewMenuItems: View {
     }
 }
 
-/// The app's look: the theme every window and Settings show. The only place that knows
-/// the themes module - without it, `theme` is `AppTheme.standard`, `settingsSections` is
-/// empty, and nothing else changes.
+/// The app's look: the theme every window shows, and its sections on the Settings page.
+/// The only place that knows the themes module - without it, `theme` is
+/// `AppTheme.standard`, `settingsSections` is empty, and nothing else changes.
 @MainActor
+@Observable
 final class ModuleAppearance {
-    private let themes: ThemeStore
+    @ObservationIgnored private let themes: ThemeStore
 
     /// - Parameters:
     ///   - demo: the choice lives in memory and the user's themes in a folder of this
@@ -278,7 +291,7 @@ final class ModuleAppearance {
 
     var theme: AppTheme { themes.current }
 
-    /// The themes module's sections at the top of Settings.
+    /// The themes module's sections on the Settings page.
     var settingsSections: some View { AppearanceSection(store: themes) }
 }
 

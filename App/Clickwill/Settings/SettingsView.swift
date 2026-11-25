@@ -3,11 +3,13 @@ import AppKit
 import ClickwillModel
 import ITDBKit
 
-/// Settings: the modules' sections (`ModuleAppearance.settingsSections`), how long we keep
-/// backups (`BackupSettings`), how much space they really take (`BackupUsage`), and
-/// Experimental iPods (`ExperimentalSection`).
-struct SettingsView<LeadingSections: View>: View {
-    let leadingSections: LeadingSections
+/// The Settings page of the library window: the look (`ModuleAppearance.settingsSections`),
+/// how long we keep backups (`BackupSettings`), how much space they really take
+/// (`BackupUsage`), and Experimental iPods (`ExperimentalSection`).
+///
+/// The sections are in alphabetical order of their headers; a new one goes in its place.
+struct SettingsView: View {
+    @Environment(ModuleAppearance.self) private var appearance
 
     @Environment(LibraryModel.self) private var model
     @AppStorage(BackupSettings.daysKey) private var days = BackupSettings.defaultDays
@@ -17,9 +19,9 @@ struct SettingsView<LeadingSections: View>: View {
     @State private var lastPrune: String?
 
     var body: some View {
-        // The native macOS 27 settings window: a grouped Form, like System Settings.
+        // A grouped Form, like System Settings and Overview.
         Form {
-            leadingSections
+            appearance.settingsSections
             Section {
                 Picker("Keep backups for", selection: $days) {
                     ForEach(BackupSettings.dayChoices, id: \.self) { choice in
@@ -38,7 +40,7 @@ struct SettingsView<LeadingSections: View>: View {
                     """)
             }
 
-            Section("On This Mac") {
+            Section("Backups on This Mac") {
                 LabeledContent("Backups of this iPod") {
                     if let usage {
                         Text("\(usage.count) \(usage.count == 1 ? "copy" : "copies") · \(ByteCountFormatter.string(fromByteCount: usage.bytes, countStyle: .file))")
@@ -66,8 +68,8 @@ struct SettingsView<LeadingSections: View>: View {
             ExperimentalSection()
         }
         .formStyle(.grouped)
-        .frame(width: 480)
-        .fixedSize(horizontal: false, vertical: true)
+        // The window's scene background, as under Overview.
+        .scrollContentBackground(.hidden)
         .task { await refresh() }
         .onChange(of: days) { model.backupRetention = BackupSettings.retention(days: days) }
     }
