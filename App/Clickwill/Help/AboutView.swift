@@ -1,5 +1,6 @@
 import SwiftUI
 import AppKit
+import ClickwillShared
 
 /// The "About" panel: the legal text of a free app.
 /// The license section and the License button are the GPL's "Appropriate Legal

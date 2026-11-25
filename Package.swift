@@ -11,6 +11,16 @@ let package = Package(
     products: [
         .library(name: "ITDBKit", targets: ["ITDBKit"]),
         .library(name: "ClickwillModel", targets: ["ClickwillModel"]),
+        .library(name: "ClickwillShared", targets: ["ClickwillShared"]),
+        .library(name: "ClickwillDevice", targets: ["ClickwillDevice"]),
+        .library(name: "ClickwillSongs", targets: ["ClickwillSongs"]),
+        .library(name: "ClickwillArtists", targets: ["ClickwillArtists"]),
+        .library(name: "ClickwillCD", targets: ["ClickwillCD"]),
+        .library(name: "ClickwillAlbum", targets: ["ClickwillAlbum"]),
+        .library(name: "ClickwillCoverFlow", targets: ["ClickwillCoverFlow"]),
+        .library(name: "ClickwillAlbums", targets: ["ClickwillAlbums"]),
+        .library(name: "ClickwillImport", targets: ["ClickwillImport"]),
+        .library(name: "ClickwillChanges", targets: ["ClickwillChanges"]),
         .executable(name: "ipodctl", targets: ["ipodctl"]),
     ],
     targets: [
@@ -18,9 +28,42 @@ let package = Package(
         // The app's model layer: the library state, the change queue, the artwork cache.
         // No AppKit, so it can be tested with `swift test`.
         .target(name: "ClickwillModel", dependencies: ["ITDBKit"]),
+        // What every screen module of the app shares: the theme, the error sentences, the
+        // common views. A module takes shared things from here, never from another module or the app.
+        .target(name: "ClickwillShared", dependencies: ["ITDBKit", "ClickwillModel"], path: "Sources/Shared"),
+        // Screen modules. The app shows them through one file, App/Clickwill/Shell/Modules.swift,
+        // so removing a module touches only its target here, App/project.yml and that file.
+        .target(name: "ClickwillDevice", dependencies: ["ITDBKit", "ClickwillModel", "ClickwillShared"],
+                path: "Sources/Device"),
+        .target(name: "ClickwillSongs", dependencies: ["ClickwillModel", "ClickwillShared"],
+                path: "Sources/Songs"),
+        .target(name: "ClickwillArtists", dependencies: ["ClickwillModel", "ClickwillShared"],
+                path: "Sources/Artists"),
+        .target(name: "ClickwillCD", dependencies: ["ClickwillModel", "ClickwillShared"],
+                path: "Sources/CD"),
+        .target(name: "ClickwillAlbum", dependencies: ["ClickwillModel", "ClickwillShared"],
+                path: "Sources/Album"),
+        .target(name: "ClickwillCoverFlow", dependencies: ["ClickwillModel", "ClickwillShared"],
+                path: "Sources/CoverFlow"),
+        .target(name: "ClickwillAlbums", dependencies: ["ClickwillModel", "ClickwillShared"],
+                path: "Sources/Albums"),
+        .target(name: "ClickwillImport", dependencies: ["ITDBKit", "ClickwillModel", "ClickwillShared"],
+                path: "Sources/Import"),
+        .target(name: "ClickwillChanges", dependencies: ["ClickwillModel", "ClickwillShared"],
+                path: "Sources/Changes"),
         .executableTarget(name: "ipodctl", dependencies: ["ITDBKit", "ClickwillModel"]),
         .testTarget(name: "ITDBKitTests", dependencies: ["ITDBKit"]),
         // The `ipodctl` command tests use the fake iPod from the write tests.
         .testTarget(name: "ClickwillModelTests", dependencies: ["ClickwillModel", "ITDBKit", "ipodctl"]),
+        .testTarget(name: "ClickwillSharedTests", dependencies: ["ClickwillShared"]),
+        .testTarget(name: "ClickwillDeviceTests", dependencies: ["ClickwillDevice", "ITDBKit"]),
+        .testTarget(name: "ClickwillSongsTests", dependencies: ["ClickwillSongs"]),
+        .testTarget(name: "ClickwillArtistsTests", dependencies: ["ClickwillArtists"]),
+        .testTarget(name: "ClickwillCDTests", dependencies: ["ClickwillCD"]),
+        .testTarget(name: "ClickwillAlbumTests", dependencies: ["ClickwillAlbum"]),
+        .testTarget(name: "ClickwillCoverFlowTests", dependencies: ["ClickwillCoverFlow"]),
+        .testTarget(name: "ClickwillAlbumsTests", dependencies: ["ClickwillAlbums"]),
+        .testTarget(name: "ClickwillImportTests", dependencies: ["ClickwillImport"]),
+        .testTarget(name: "ClickwillChangesTests", dependencies: ["ClickwillChanges", "ClickwillModel"]),
     ]
 )

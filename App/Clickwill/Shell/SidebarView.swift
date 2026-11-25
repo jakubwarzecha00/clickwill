@@ -1,11 +1,10 @@
 import SwiftUI
 import ClickwillModel
+import ClickwillShared
 
 /// The sidebar: the iPod card, the library, discs in the drive, the device,
 /// and at the bottom feedback and About.
 struct SidebarView: View {
-    @Environment(LibraryModel.self) private var model
-    @Environment(AudioCDStore.self) private var cds
     @Environment(WindowState.self) private var window
 
     var body: some View {
@@ -35,59 +34,9 @@ struct SidebarView: View {
                     .selectionDisabled()
             }
             Section("Library") {
-                // Only an iPod that itself has Cover Flow - otherwise the tab would show
-                // something the device does not have.
-                if model.hasCoverFlow {
-                    Label("Cover Flow", systemImage: "square.stack.3d.forward.dottedline")
-                        .tag(SidebarItem.coverFlow)
-                        .disabled(!loaded)
-                }
-                Label("Albums", systemImage: "square.stack")
-                    .badge(loaded ? model.albumsDisplay.count : 0)
-                    .tag(SidebarItem.albums)
-                    .disabled(!loaded)
-                Label("Artists", systemImage: "person.2")
-                    .badge(loaded ? model.artistCount : 0)
-                    .tag(SidebarItem.artists)
-                    .disabled(!loaded)
-                Label("Songs", systemImage: "music.note")
-                    .badge(loaded ? model.trackCount : 0)
-                    .tag(SidebarItem.songs)
-                    .disabled(!loaded)
-                // The file panel is opened here, not in the sheet: a modal window
-                // started from inside a presented sheet does not show at all.
-                Button {
-                    window.showImport(ImportSheet.chooseFiles())
-                } label: {
-                    Label("Add Songs or Albums", systemImage: "plus")
-                        .badge(model.changes.additions.count)
-                }
-                .buttonStyle(.plain)
-                .disabled(!model.isWritable)
-                .help(model.isWritable ? "" : model.writeUnavailable.map(ErrorPresenter.message(for:)) ?? "Connect an iPod to add songs.")
+                ModuleLibraryItems()
             }
-            if !cds.discs.isEmpty {
-                Section("Audio CD") {
-                    ForEach(cds.discs) { disc in
-                        Label(cds.session(disc.volume)?.title ?? disc.volumeName, systemImage: "opticaldisc")
-                            .tag(SidebarItem.disc(disc.volume))
-                            .contextMenu {
-                                Button("Eject Disc") { cds.session(disc.volume)?.eject() }
-                            }
-                    }
-                }
-            }
-            Section("Device") {
-                Label("Overview", systemImage: "info.circle")
-                    .tag(SidebarItem.overview)
-                    .disabled(!loaded)
-                // Backups were made on every write, and there was no way to use them
-                // outside the command line.
-                Label("Backups", systemImage: "clock.arrow.circlepath")
-                    .tag(SidebarItem.backups)
-                    .disabled(!loaded || model.device == nil)
-                    .help(model.device == nil ? "Backups belong to a connected iPod." : "")
-            }
+            ModuleSidebarSections()
         }
         .listStyle(.sidebar)
         // Feedback on top, not in Overview: a tester should have it at hand
@@ -107,6 +56,4 @@ struct SidebarView: View {
         }
     }
 
-    /// Without a loaded library the panel has nothing to show and nowhere to lead.
-    private var loaded: Bool { model.state == .loaded }
 }

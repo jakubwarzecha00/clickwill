@@ -1,6 +1,7 @@
 import SwiftUI
 import AppKit
 import ClickwillModel
+import ClickwillShared
 
 /// The library window: the sidebar, the scene with the current screen, the playback bar
 /// and what hangs over the window (`WindowState`).
@@ -8,10 +9,9 @@ struct ContentView: View {
     @Environment(LibraryModel.self) private var model
     @Environment(DeviceMonitor.self) private var monitor
     @Environment(PlaybackController.self) private var playback
-    /// The screen, the album in the middle of Cover Flow and this window's sheets.
+    /// The screen, the album in the middle of the Albums wheel and this window's sheets.
     @State private var window: WindowState
-    /// Audio CDs in the drive - ripping without Music.
-    @State private var cds: AudioCDStore
+    @State private var modules: ModuleStores
     @State private var demoHover: DemoHover
     /// A launch for screenshots and recordings: the screen, the album in the middle, the add sheet.
     private let launch: LaunchScript
@@ -30,9 +30,10 @@ struct ContentView: View {
     /// The model knows the window state: from it, it knows whether the library is loaded and where
     /// the album being returned from stands.
     init(model: LibraryModel, launch: LaunchScript) {
-        _window = State(initialValue: WindowState(model: model))
+        let modules = ModuleStores(launch: launch)
+        _modules = State(initialValue: modules)
+        _window = State(initialValue: WindowState(model: model, modules: modules))
         _demoHover = State(initialValue: DemoHover(listening: launch.listensForDemoHover))
-        _cds = State(initialValue: AudioCDStore(services: launch.cdServices))
         self.launch = launch
     }
 
@@ -84,73 +85,43 @@ struct ContentView: View {
             .focusEffectDisabled()
             .focused($sceneFocused)
         }
-        .environment(cds)
         .focusedSceneValue(\.window, window)
         .environment(window)
+        .modules(modules, window: window, playback: playback)
         .environment(\.demoHover, demoHover.target)
         .onAppear {
             sceneFocused = true
-            cds.refresh()
-            launch.windowAppeared(window: window, cds: cds)
+            modules.cds.refresh()
+            launch.windowAppeared(window: window, cds: modules.cds)
         }
         .onChange(of: window.screen) { sceneFocused = true }
         .foregroundStyle(Theme.fg)
-        // The window handles the arrows and Return, only on the Cover Flow screen or the Albums
-        // wheel. The scene would move the artwork even when the album view
-        // is on top. Escape in an album goes back to the tab it was opened from.
-        .onKeyPress(.leftArrow) { stepCoverFlow(-1) }
-        .onKeyPress(.rightArrow) { stepCoverFlow(1) }
-        .onKeyPress(.upArrow) { stepAlbums(-1) }
-        .onKeyPress(.downArrow) { stepAlbums(1) }
-        // A letter from the keyboard - the first album under that letter, like the jump bar on the iPod.
-        .onKeyPress(characters: .alphanumerics) { press in jumpAlbums(to: press.characters) }
-        .onKeyPress(.return) {
-            guard !sheetIsOpen else { return .ignored }
-            switch window.screen {
-            case .coverFlow where model.coverFlowDisplay.indices.contains(window.centered):
-                window.open(model.coverFlowDisplay[window.centered])
-            case .albums where model.albumsDisplay.indices.contains(window.albumsCentered):
-                window.open(model.albumsDisplay[window.albumsCentered])
-            default:
-                return .ignored
-            }
-            return .handled
-        }
+        // The scene holds the focus, so the window takes the keys and hands them to the page
+        // on top (Cover Flow, the Albums wheel). A stage handling them itself would move the
+        // artwork even under the album view. Escape goes back where the Back button leads.
+        .onKeyPress(keys: [.leftArrow, .rightArrow, .upArrow, .downArrow, .return]) { press in passToModule(press) }
+        .onKeyPress(characters: .alphanumerics) { press in passToModule(press) }
         .onKeyPress(.escape) {
             guard !sheetIsOpen else { return .ignored }
-            switch window.screen {
-            case .album:
-                window.closeAlbum()
-                return .handled
-            case .artist:
-                window.closeArtist()
-                return .handled
-            default:
-                return .ignored
-            }
+            guard window.backTitle != nil else { return .ignored }
+            window.goBack()
+            return .handled
         }
         // The start screen only once the library is really loaded.
         .onChange(of: model.state) { _, state in
             guard state == .loaded, !launchApplied else { return }
             launchApplied = true
-            launch.libraryLoaded(window: window, model: model)
+            launch.libraryLoaded(window: window, model: model, modules: modules)
         }
         // The iPod disappeared (`DeviceMonitor` took the library down) - we go back to the first screen.
         .onChange(of: model.source == nil) { _, gone in if gone { window.showHome() } }
-        // An iPod without Cover Flow (recognized after loading or after switching) - Albums.
-        .onChange(of: model.hasCoverFlow) { _, has in
-            if !has, case .coverFlow = window.screen { window.show(.albums) }
+        // E.g. Cover Flow once an iPod without it is recognized, after loading or after switching.
+        .onChange(of: window.screenIsAvailable) { _, available in
+            if !available { window.showHome() }
         }
         .onChange(of: monitor.volumes) { before, now in
-            // An inserted disc: its screen right away, as in Music - unless a sheet
-            // hangs over the window or another disc is in progress.
-            if !now.subtracting(before).isEmpty, let disc = cds.refresh().first, !sheetIsOpen, cdSession?.isRipping != true {
-                window.show(.audioCD(disc.volume), animated: true)
-            }
-            if !before.subtracting(now).isEmpty {
-                cds.refresh()
-                if case .audioCD = window.screen, cdSession == nil { window.showHome(animated: true) }
-            }
+            modules.volumesChanged(inserted: !now.subtracting(before).isEmpty, removed: !before.subtracting(now).isEmpty,
+                                   window: window, sheetIsOpen: sheetIsOpen)
         }
         .sheet(item: Binding(get: { window.modal?.isSheet == true ? window.modal : nil },
                              set: { if $0 == nil { window.closeModal() } }),
@@ -166,59 +137,22 @@ struct ContentView: View {
 
     // MARK: - Toolbar (native)
 
-    /// The disc session, when its screen is on top.
-    private var cdSession: CDSession? {
-        if case .audioCD(let volume) = window.screen { return cds.session(volume) }
-        return nil
+    /// A module page that does not need the library, e.g. a disc in a drive.
+    private var standalonePage: ModulePage? {
+        window.screen.needsLibrary ? nil : window.screen
     }
 
     private var title: String {
-        if let cdSession { return cdSession.title }
+        if let standalonePage { return standalonePage.windowTitle(in: model, modules: modules) }
         // HIG: we do not title the window with the app name - without a library the title is empty.
         guard model.state == .loaded else { return "" }
-        switch window.screen {
-        case .coverFlow: return "Cover Flow"
-        case .albums: return "Albums"
-        // The current card, not the one from the moment of opening - otherwise after a rename
-        // the window bar kept showing the old one.
-        case .album(let album): return (model.current(album) ?? album).displayTitle
-        case .reorder: return "Reorder Albums"
-        case .songs: return "Songs"
-        case .artists: return "Artists"
-        case .artist(let artist): return artist
-        case .overview: return "Overview"
-        case .backups: return "Backups"
-        case .audioCD: return ""
-        }
+        return window.screen.windowTitle(in: model, modules: modules)
     }
 
     private var subtitle: String {
-        if let cdSession {
-            return cdSession.draft.albumArtist.isEmpty
-                ? "\(Self.count(cdSession.draft.songs.count, "song")) · \(AudioCDScreen.time(UInt64(cdSession.disc.duration * 1000)))"
-                : cdSession.draft.albumArtist
-        }
+        if let standalonePage { return standalonePage.subtitle(in: model, modules: modules) }
         guard model.state == .loaded else { return "" }
-        switch window.screen {
-        // As many albums as the iPod shows - an album scattered across the table is one.
-        case .coverFlow, .albums: return "\(Self.count(model.coverFlowAlbums.count, "album")) · \(Self.count(model.trackCount, "song"))"
-        case .album(let album): return (model.current(album) ?? album).displayArtist
-        case .reorder: return "The order the iPod shows"
-        case .songs: return Self.count(model.trackCount, "song")
-        case .artists: return Self.count(model.artistCount, "artist")
-        case .artist(let artist):
-            let artistAlbums = model.albums.filter { $0.displayArtist == artist }
-            let songCount = artistAlbums.reduce(0) { $0 + model.tracks(of: $1).count }
-            return "\(Self.count(artistAlbums.count, "album")) · \(Self.count(songCount, "song"))"
-        case .overview: return model.deviceName ?? model.source?.displayName ?? ""
-        case .backups: return "Restore the iPod to an earlier state"
-        case .audioCD: return ""
-        }
-    }
-
-    /// "1 album", "18 albums".
-    static func count(_ number: Int, _ noun: String) -> String {
-        "\(number) \(number == 1 ? noun : noun + "s")"
+        return window.screen.subtitle(in: model, modules: modules)
     }
 
     /// The playback bar at the bottom of the window: when a track was chosen, when playback reported
@@ -228,7 +162,7 @@ struct ContentView: View {
         playback.currentTrack != nil || playback.errorMessage != nil || model.hasPendingChanges
     }
 
-    /// The disc buttons are added by its screen (`AudioCDScreen`) - they call its commands directly.
+    /// Module screens add their own toolbar items (the disc screen its commands).
     @ToolbarContentBuilder private var toolbarContent: some ToolbarContent {
         // Without the sidebar button Cover Flow had no item in the
         // toolbar and the system created no bar - the title and subtitle fell into one
@@ -238,30 +172,10 @@ struct ContentView: View {
         } else {
             ToolbarItem { Spacer() }
         }
-        if case .album = window.screen {
+        if let backTitle = window.backTitle {
             ToolbarItem(placement: .navigation) {
-                Button { window.closeAlbum() } label: { Label(window.albumOriginTitle, systemImage: "chevron.left") }
-                    .help("Back to \(window.albumOriginTitle)")
-            }
-        }
-        if case .artist = window.screen {
-            ToolbarItem(placement: .navigation) {
-                Button { window.closeArtist() } label: { Label("Artists", systemImage: "chevron.left") }
-                    .help("Back to Artists")
-            }
-        }
-        if AppFeatures.reorderAlbums, model.state == .loaded, case .coverFlow = window.screen {
-            ToolbarItem(placement: .primaryAction) {
-                // The symbol alone, without a label: the HIG says not to mix text and icons on
-                // a shared background. The name stays for VoiceOver and in the tooltip.
-                Button(action: window.showReorder) { Label("Reorder Albums", systemImage: "arrow.up.arrow.down") }
-                    .help("Reorder Albums")
-            }
-        }
-        if case .reorder = window.screen {
-            ToolbarItem(placement: .confirmationAction) {
-                Button("Done") { window.showHome(animated: true) }
-                    .prominentGlassButtonStyle()
+                Button { window.goBack() } label: { Label(backTitle, systemImage: "chevron.left") }
+                    .help("Back to \(backTitle)")
             }
         }
     }
@@ -278,13 +192,13 @@ struct ContentView: View {
     }
 
     /// The same dialog and duplicate check as "Add Songs or Albums" - the files
-    /// go there the same way (`WindowState.showImport`) as a ripped disc.
+    /// go there the same way (`WindowState.addFiles`) as a ripped disc.
     private func receiveDrop(_ providers: [NSItemProvider]) -> Bool {
         guard !sheetIsOpen, model.state == .loaded else { return false }
         Task {
             let urls = await NSItemProvider.fileURLs(from: providers)
             guard !urls.isEmpty else { return }
-            window.showImport(urls)
+            window.addFiles(urls)
         }
         return true
     }
@@ -300,40 +214,16 @@ struct ContentView: View {
         NSApp.windows.contains { $0.isSheet && $0.isVisible }
     }
 
-    private func stepCoverFlow(_ delta: Int) -> KeyPress.Result {
+    private func passToModule(_ press: KeyPress) -> KeyPress.Result {
         guard !sheetIsOpen else { return .ignored }
-        guard case .coverFlow = window.screen, !model.coverFlowDisplay.isEmpty else { return .ignored }
-        let target = min(model.coverFlowDisplay.count - 1, max(0, window.centered + delta))
-        if target != window.centered {
-            withAnimation(.spring(duration: 0.32, bounce: 0.12)) { window.centered = target }
-        }
-        return .handled
-    }
-
-    private func stepAlbums(_ delta: Int) -> KeyPress.Result {
-        guard !sheetIsOpen else { return .ignored }
-        guard case .albums = window.screen, !model.albumsDisplay.isEmpty else { return .ignored }
-        let target = min(model.albumsDisplay.count - 1, max(0, window.albumsCentered + delta))
-        if target != window.albumsCentered {
-            withAnimation(.spring(duration: 0.32, bounce: 0.12)) { window.albumsCentered = target }
-        }
-        return .handled
-    }
-
-    /// A digit and any other script stand under `#` on the iPod.
-    private func jumpAlbums(to characters: String) -> KeyPress.Result {
-        guard !sheetIsOpen, case .albums = window.screen, let typed = characters.first else { return .ignored }
-        let letter = typed.isASCII && typed.isLetter ? typed.uppercased() : "#"
-        guard let index = model.albumsDisplay.firstIndex(where: { model.menuLetter(of: $0) == letter }) else { return .ignored }
-        withAnimation(.spring(duration: 0.32, bounce: 0.12)) { window.albumsCentered = index }
-        return .handled
+        return window.screen.handle(press, model: model, modules: modules, window: window)
     }
 
     @ViewBuilder private var content: some View {
         // A disc can be ripped without an iPod - that is even a better order, because a drive
         // and an iPod on one hub can bring down the whole USB tree.
-        if let cdSession {
-            AudioCDScreen(session: cdSession).id(cdSession.disc.volume)
+        if let standalonePage {
+            standalonePage.screen
         } else {
             libraryContent
         }
@@ -351,33 +241,7 @@ struct ContentView: View {
         case .failed(let failure):
             EmptyStateView(text: "Clickwill Couldn't Read This iPod's Library", detail: ErrorPresenter.message(for: failure))
         case .loaded:
-            switch window.screen {
-            case .coverFlow:
-                CoverFlowScreen(centered: $window.centered, open: window.open)
-            case .albums:
-                AlbumWheelScreen(centered: $window.albumsCentered, open: window.open)
-            case .album(let album):
-                if album.isPending {
-                    PendingAlbumScreen(album: album, onClose: { window.closeAlbum() })
-                } else {
-                    AlbumScreen(album: album, editorShown: launch.opensAlbumEditor, coverFile: launch.coverFile,
-                                onDeleted: { window.closeAlbum(animated: false) })
-                }
-            case .reorder:
-                ReorderScreen()
-            case .songs:
-                SongsScreen(openAlbum: window.open)
-            case .artists:
-                ArtistsScreen(openAlbum: window.open)
-            case .artist(let artist):
-                ArtistDetailScreen(artist: artist, openAlbum: window.open)
-            case .overview:
-                OverviewScreen()
-            case .backups:
-                BackupsScreen()
-            case .audioCD:
-                EmptyStateView(text: "The CD Was Ejected", detail: "Insert it again to import its songs.")
-            }
+            window.screen.screen
         }
     }
 
@@ -386,11 +250,8 @@ struct ContentView: View {
     /// reviewing the screens. The change list stays in the system colors.
     @ViewBuilder private func sheet(for modal: WindowState.Modal) -> some View {
         switch modal {
-        case .pending:
-            PendingChangesSheet(report: launch.sampleWriteReport(writesBlocked: model.writesBlocked))
-                .onAppear { model.refreshPreflight() }
-        case .importFiles(let urls):
-            ImportSheet(initialURLs: urls).environment(model).foregroundStyle(Theme.fg)
+        case .module(let sheet):
+            sheet.view(model: model)
         case .feedback:
             FeedbackSheet().environment(model).foregroundStyle(Theme.fg)
         case .about:

@@ -1,6 +1,7 @@
 import SwiftUI
 import Observation
 import ClickwillModel
+import ClickwillShared
 
 /// The state of one window: the screen on top, the albums in the middle of Cover Flow and of the Albums
 /// wheel, and what hangs over the window. Views, menus and panels call its
@@ -15,11 +16,8 @@ final class WindowState {
 
     /// What hangs over the window - at most one thing at a time.
     enum Modal: Identifiable, Equatable {
-        /// The change list (after a write - the report).
-        case pending
-        /// The add sheet with these files: chosen in a panel, dropped
-        /// on the window or ripped from a disc.
-        case importFiles([URL])
+        /// A module's sheet, e.g. Add Songs (`ModuleSheet`).
+        case module(ModuleSheet)
         case feedback
         case about
         /// Diagnostics of the loaded iPod (`DiagnosticsSheet`); with a comment, Send Diagnostic
@@ -32,8 +30,7 @@ final class WindowState {
 
         var id: String {
             switch self {
-            case .pending: "pending"
-            case .importFiles(let urls): "import:" + urls.map(\.path).joined(separator: "|")
+            case .module(let sheet): sheet.id
             case .feedback: "feedback"
             case .about: "about"
             case .diagnostics: "diagnostics"
@@ -48,128 +45,95 @@ final class WindowState {
         }
     }
 
-    private(set) var screen: Screen = .coverFlow
-    /// The album in the middle of Cover Flow - it stays when entering an album and coming back.
-    var centered = 0
-    /// The album in the middle of the Albums wheel (an index into `albumsDisplay`) - likewise.
-    var albumsCentered = 0
-    /// The tab the album was opened from - Back returns to it.
-    private(set) var albumOrigin: Screen = .coverFlow
+    /// The module page on top (`Modules.swift`).
+    private(set) var screen: ModulePage
+    /// The page a page that opens over (an album) was opened from; Back returns to it.
+    private(set) var origin: ModulePage
     private(set) var modal: Modal?
     /// A request that came while something else hung over the window - e.g. files
     /// from a disc ripped while the change list was open. Shown after it closes.
     @ObservationIgnored private var waiting: Modal?
 
     @ObservationIgnored private let model: LibraryModel
+    @ObservationIgnored private let modules: ModuleStores
 
-    init(model: LibraryModel) {
+    init(model: LibraryModel, modules: ModuleStores) {
         self.model = model
+        self.modules = modules
+        screen = ModulePage.start
+        origin = ModulePage.start
     }
 
     // MARK: - Screens
 
-    func show(_ screen: Screen, animated: Bool = false) {
-        guard animated else { self.screen = screen; return }
-        withAnimation(Theme.screenFade) { self.screen = screen }
+    func show(_ page: ModulePage, animated: Bool = false) {
+        guard animated else { screen = page; return }
+        withAnimation(Theme.screenFade) { screen = page }
     }
 
-    /// The first library screen: Cover Flow, and on an iPod without Cover Flow - Albums.
-    var home: Screen { model.hasCoverFlow ? .coverFlow : .albums }
+    /// The first library screen: Cover Flow, and on an iPod without Cover Flow, Albums.
+    var home: ModulePage { ModulePage.home(in: model) }
+
+    /// False once the shown page stops fitting the loaded iPod; the window then goes home.
+    var screenIsAvailable: Bool { screen.isAvailable(in: model) }
 
     func showHome(animated: Bool = false) { show(home, animated: animated) }
 
     func open(_ album: AlbumCard) {
-        switch screen {
-        case .coverFlow, .albums, .artists: albumOrigin = screen
-        case .artist(let artist):
-            albumOrigin = .artist(artist)
         // From Songs and from the change list we go back to the first library screen.
-        default: albumOrigin = home
+        origin = screen.staysAsOrigin ? screen : home
+        show(ModulePage.album(album), animated: true)
+    }
+
+    /// The name on the Back button, or nil when the screen has nowhere to go back to.
+    var backTitle: String? {
+        if let parent = screen.parent { return parent.title }
+        return screen.opensOver ? origin.root.title : nil
+    }
+
+    /// Back from a page opened over another screen, with the album it showed in the middle there.
+    func closeOver(animated: Bool = true) {
+        guard screen.opensOver else { return }
+        if let album = screen.shownAlbum { modules.center(album, returningTo: origin, in: model) }
+        show(origin, animated: animated)
+    }
+
+    /// Back from a module page: to its parent (an artist to Artists), or to the screen it opened over.
+    func goBack(animated: Bool = true) {
+        if let parent = screen.parent {
+            show(parent, animated: animated)
+        } else {
+            closeOver(animated: animated)
         }
-        show(.album(album), animated: true)
-    }
-
-    func openArtist(_ artist: String) {
-        show(.artist(artist), animated: true)
-    }
-
-    /// The name of the tab Back returns to.
-    var albumOriginTitle: String {
-        switch albumOrigin {
-        case .albums: return "Albums"
-        case .artists, .artist: return "Artists"
-        default: return "Cover Flow"
-        }
-    }
-
-    /// Going back from an album to the tab it was opened from - with that album in the middle.
-    func closeAlbum(animated: Bool = true) {
-        guard case .album(let album) = screen else { return }
-        if case .albums = albumOrigin {
-            if let index = model.albumsDisplay.firstIndex(where: { $0.id == album.id }) { albumsCentered = index }
-        } else if let index = model.coverFlowDisplay.firstIndex(where: { $0.id == album.id }) {
-            centered = index
-        }
-        show(albumOrigin, animated: animated)
-    }
-
-    /// Going back from artist detail to the artists tab.
-    func closeArtist(animated: Bool = true) {
-        guard case .artist = screen else { return }
-        show(.artists, animated: animated)
     }
 
     /// From the toolbar and the View menu (HIG: every toolbar item has its counterpart in the menu).
     func showReorder() {
         guard AppFeatures.reorderAlbums, model.state == .loaded else { return }
-        show(.reorder, animated: true)
+        show(ModulePage.reorder, animated: true)
     }
 
-    /// The sidebar selection. An album belongs to the tab it was
-    /// opened from, Reorder to Albums.
-    var sidebarSelection: SidebarItem? {
-        // A disc has its screen even without a loaded iPod.
-        if case .audioCD(let volume) = screen { return .disc(volume) }
+    /// The selected sidebar row. A page opened over another screen (an album) belongs to that
+    /// screen's row, Reorder to Albums.
+    var sidebarSelection: ModulePage? {
+        if !screen.needsLibrary { return screen.root }
         guard model.state == .loaded else { return nil }
-        switch screen {
-        case .coverFlow: return .coverFlow
-        case .albums, .reorder: return .albums
-        case .album:
-            if case .albums = albumOrigin { return .albums }
-            if case .artists = albumOrigin { return .artists }
-            if case .artist = albumOrigin { return .artists }
-            return .coverFlow
-        case .songs: return .songs
-        case .artists, .artist: return .artists
-        case .overview: return .overview
-        case .backups: return .backups
-        case .audioCD: return nil
-        }
+        return screen.opensOver ? origin.root : screen.root
     }
 
-    func select(_ item: SidebarItem) {
-        switch item {
-        // Clicking the tab that the open album belongs to keeps the album open.
-        case .coverFlow:
-            if sidebarSelection != .coverFlow { show(.coverFlow) }
-        case .albums:
-            if sidebarSelection != .albums { show(.albums) }
-        case .songs: show(.songs)
-        case .artists:
-            if sidebarSelection != .artists { show(.artists) }
-        case .overview: show(.overview)
-        case .backups: show(.backups)
-        case .disc(let volume): show(.audioCD(volume))
-        }
+    /// Clicking the row the open album belongs to keeps the album open.
+    func select(_ row: ModulePage) {
+        if sidebarSelection != row { show(row) }
     }
 
     // MARK: - Over the window
 
-    func showPending() { present(.pending) }
+    func show(_ sheet: ModuleSheet) { present(.module(sheet)) }
 
-    func showImport(_ urls: [URL]) {
+    /// Add Songs with these files. An empty list is a cancelled file panel.
+    func addFiles(_ urls: [URL]) {
         guard !urls.isEmpty else { return }
-        present(.importFiles(urls))
+        present(.module(ModuleSheet.addFiles(urls)))
     }
 
     func showFeedback() { present(.feedback) }

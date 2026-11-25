@@ -28,12 +28,6 @@ struct LaunchScript: Sendable {
     /// a file choose panel in a demo recording would be unreadable.
     var coverFile: URL? { options.demoCover }
 
-    /// `--demo --screen write-report`: a sample post-write report. Only
-    /// when writing is blocked - a real report takes precedence.
-    func sampleWriteReport(writesBlocked: Bool) -> WriteReport? {
-        writesBlocked && options.screen == .writeReport ? .demo : nil
-    }
-
     /// `--demo --screen diagnostics|rockbox`: a sample iPod Video, because a demo library is
     /// a backup on disk with nothing to measure.
     var sampleDiagnostics: SampleDiagnostics? {
@@ -51,7 +45,7 @@ struct LaunchScript: Sendable {
     /// from a saved response, without the network.
     @MainActor func windowAppeared(window: WindowState, cds: AudioCDStore) {
         guard let fixture = options.audioCDFixture, let disc = cds.add(fixture: fixture) else { return }
-        window.show(.audioCD(disc.volume))
+        window.show(ModulePage.disc(disc.volume))
         if !options.isDemo, let session = cds.session(disc.volume), let release = options.cdRelease,
            let data = try? Data(contentsOf: release),
            let releases = try? MusicBrainz.releases(fromJSON: data, discID: disc.discID, trackCount: disc.tracks.count),
@@ -65,39 +59,40 @@ struct LaunchScript: Sendable {
     /// `--screen …` and `--import <path>` (`--import-after <s>`: after this many
     /// seconds - a window with a sheet does not enter full screen, so full-screen
     /// screenshots turn it on first). It adds and writes nothing.
-    @MainActor func libraryLoaded(window: WindowState, model: LibraryModel) {
+    @MainActor func libraryLoaded(window: WindowState, model: LibraryModel, modules: ModuleStores) {
         let albums = model.coverFlowDisplay
-        if let index = options.centered, albums.indices.contains(index) { window.centered = index }
-        if let index = options.center.flatMap({ Self.albumIndex($0, in: albums) }) { window.centered = index }
+        if let index = options.centered, albums.indices.contains(index) { modules.centerCoverFlow(at: index) }
+        if let index = options.center.flatMap({ Self.albumIndex($0, in: albums) }) { modules.centerCoverFlow(at: index) }
         if let loop = options.coverFlowLoop, let from = Self.albumIndex(loop.from, in: albums),
            let to = Self.albumIndex(loop.to, in: albums), from != to {
-            window.centered = from
-            Task { await Self.runCoverFlowLoop(window: window, from: from, to: to) }
+            modules.loopCoverFlow(from: from, to: to)
         }
         switch options.screen {
-        case .album: if albums.indices.contains(window.centered) { window.show(.album(albums[window.centered])) }
-        case .albums:
-            // `--centered N` then concerns the wheel: the N-th album of the Albums menu.
-            if let index = options.centered, model.albumsDisplay.indices.contains(index) { window.albumsCentered = index }
-            window.show(.albums)
-        case .reorder: window.show(.reorder)
-        case .songs: window.show(.songs)
-        case .overview: window.show(.overview)
-        case .backups: window.show(.backups)
-        case .pending, .writeReport: window.showPending()
-        case .diagnostics: window.show(.overview); window.showDiagnostics()
-        case .rockbox: window.show(.overview); window.showRockboxReport()
-        case .sendReport: window.show(.overview); window.showSendReport()
+        case .album:
+            if let album = modules.coverFlowAlbum(in: model) { window.show(ModulePage.album(album)) }
+        case .diagnostics: showDiagnosticsBackdrop(window); window.showDiagnostics()
+        case .rockbox: showDiagnosticsBackdrop(window); window.showRockboxReport()
+        case .sendReport: showDiagnosticsBackdrop(window); window.showSendReport()
         case .developerMode: _ = ExperimentalConsent.askDeveloperMode()
-        case .coverflow, nil: break
+        case nil: break
+        }
+        if let sheet = options.moduleSheet(writesBlocked: model.writesBlocked) { window.show(sheet) }
+        if let page = options.modulePage {
+            if let index = options.centered { modules.center(at: index, on: page, in: model) }
+            window.show(page)
         }
         if let url = options.importURL {
             let delay = options.importDelay
             Task {
                 if delay > 0 { try? await Task.sleep(for: .seconds(delay)) }
-                window.showImport([url])
+                window.addFiles([url])
             }
         }
+    }
+
+    /// The page under Diagnostics opened from the command line, as when opened from it by hand.
+    @MainActor private func showDiagnosticsBackdrop(_ window: WindowState) {
+        window.show(ModulePage.diagnosticsBackdrop)
     }
 
     /// An album by title, then by artist, and finally a title containing the name.
@@ -105,30 +100,5 @@ struct LaunchScript: Sendable {
         albums.firstIndex { $0.displayTitle.localizedCaseInsensitiveCompare(name) == .orderedSame }
             ?? albums.firstIndex { $0.displayArtist.localizedCaseInsensitiveCompare(name) == .orderedSame }
             ?? albums.firstIndex { $0.displayTitle.localizedCaseInsensitiveContains(name) }
-    }
-
-    /// Cover Flow moves album by album from `from` to `to` and back, one
-    /// step per beat. At the ends it stands for two beats. The steps follow the clock from the start,
-    /// not from the previous step, so the motion is strictly periodic: any cut
-    /// segment one period long loops in a video without a seam.
-    @MainActor private static func runCoverFlowLoop(window: WindowState, from: Int, to: Int) async {
-        let beat = Duration.milliseconds(1200)
-        let direction = to > from ? 1 : -1
-        let forward = Array(stride(from: from + direction, through: to, by: direction))
-        let backward = Array(stride(from: to - direction, through: from, by: -direction))
-        let slots = [from] + forward + [to] + backward
-        let clock = ContinuousClock()
-        let start = clock.now
-        // The wall-clock start lets a recorder cut whole periods without looking at the frames;
-        // each period starts halfway through the pause on `from`.
-        let startedAt = String(format: "%.3f", Date().timeIntervalSince1970)
-        FileHandle.standardError.write(Data("coverflow-loop \(slots.count) beats of 1.2 s, started at \(startedAt)\n".utf8))
-        for tick in 0... {
-            try? await clock.sleep(until: start + beat * tick)
-            let target = slots[tick % slots.count]
-            if target != window.centered {
-                withAnimation(.spring(duration: 0.8, bounce: 0.08)) { window.centered = target }
-            }
-        }
     }
 }

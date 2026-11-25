@@ -65,7 +65,7 @@ struct ClickwillApp: App {
             CommandGroup(replacing: .newItem) {}
             // HIG: every toolbar item has a counterpart in the menu.
             CommandGroup(after: .importExport) {
-                AudioCDMenu()
+                ModuleFileMenuItems()
             }
             if AppFeatures.reorderAlbums {
                 CommandGroup(after: .sidebar) {

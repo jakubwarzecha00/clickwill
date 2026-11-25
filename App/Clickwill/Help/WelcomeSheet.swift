@@ -1,4 +1,5 @@
 import SwiftUI
+import ClickwillShared
 
 /// The first launch: one welcome page as in Apple's apps
 /// (Pages, Keynote, Xcode) - an icon, a title, four things to know

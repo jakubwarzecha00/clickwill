@@ -2,6 +2,7 @@ import SwiftUI
 import AppKit
 import ClickwillModel
 import ITDBKit
+import ClickwillShared
 
 /// Send Diagnostic Report, over Diagnostics: the whole report visible before sending, an
 /// optional comment, Send. The same text as Copy Report and as the report in Send Feedback

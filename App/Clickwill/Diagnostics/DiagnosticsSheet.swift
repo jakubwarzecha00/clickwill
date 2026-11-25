@@ -2,6 +2,7 @@ import SwiftUI
 import AppKit
 import ClickwillModel
 import ITDBKit
+import ClickwillShared
 
 /// Diagnostics of the loaded iPod: every check, grouped as in `Diagnostics`, the way to
 /// experimental writing when the model isn't confirmed but every required check passed, and

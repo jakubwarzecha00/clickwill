@@ -32,6 +32,26 @@ targets:
         product: ClickwillModel
       - package: ITDBKit
         product: ITDBKit
+      - package: ITDBKit
+        product: ClickwillShared
+      - package: ITDBKit
+        product: ClickwillDevice
+      - package: ITDBKit
+        product: ClickwillSongs
+      - package: ITDBKit
+        product: ClickwillArtists
+      - package: ITDBKit
+        product: ClickwillCD
+      - package: ITDBKit
+        product: ClickwillAlbum
+      - package: ITDBKit
+        product: ClickwillCoverFlow
+      - package: ITDBKit
+        product: ClickwillAlbums
+      - package: ITDBKit
+        product: ClickwillImport
+      - package: ITDBKit
+        product: ClickwillChanges
       - package: Sparkle
     info:
       path: Clickwill/Info.plist
