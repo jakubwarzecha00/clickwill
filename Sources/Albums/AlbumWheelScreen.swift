@@ -12,6 +12,8 @@ import ClickwillShared
 /// to the middle, double-clicking the middle one - as in Cover Flow - opens the album.
 struct AlbumWheelScreen: View {
     @Environment(LibraryModel.self) private var model
+    /// `albumsDisplay`, narrowed by the search.
+    let albums: [AlbumCard]
     @Binding var centered: Int
     let open: @MainActor (AlbumCard) -> Void
     /// The letter brighter for a moment after each jump.
@@ -23,7 +25,6 @@ struct AlbumWheelScreen: View {
     @FocusState private var focused: Bool
 
     var body: some View {
-        let albums = model.albumsDisplay
         GeometryReader { geo in
             let wheel = WheelGeometry(size: geo.size)
             ZStack(alignment: .topLeading) {
@@ -116,7 +117,7 @@ struct AlbumWheelScreen: View {
     }
 
     private func move(to index: Int) {
-        let count = model.albumsDisplay.count
+        let count = albums.count
         guard count > 0 else { return }
         let target = min(count - 1, max(0, index))
         guard target != centered else { return }

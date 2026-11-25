@@ -61,8 +61,10 @@ public enum AlbumsLayout: String, CaseIterable, Sendable {
 @MainActor
 @Observable
 public final class AlbumsState {
-    /// An index into `LibraryModel.albumsDisplay`: the middle of the wheel, the selection in the grid.
+    /// An index into the shown albums (`shown(from:)`): the middle of the wheel, the selection in the grid.
     public var centered = 0
+    /// The search field's text; both layouts show only the albums it matches.
+    public var query = ""
     public var layout: AlbumsLayout {
         didSet { defaults.set(layout.rawValue, forKey: AlbumsLayout.defaultsKey) }
     }
@@ -73,6 +75,33 @@ public final class AlbumsState {
     public init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         layout = defaults.string(forKey: AlbumsLayout.defaultsKey).flatMap(AlbumsLayout.init) ?? .wheel
+    }
+
+    /// The iPod's Albums menu narrowed to the search.
+    public func shown(from albums: [AlbumCard]) -> [AlbumCard] {
+        Self.filter(albums, by: query)
+    }
+
+    /// Keeps the selected album selected when the search changes, otherwise selects the first match.
+    func searchChanged(from old: String, in albums: [AlbumCard]) {
+        let before = Self.filter(albums, by: old)
+        let selected = before.indices.contains(centered) ? before[centered].id : nil
+        centered = shown(from: albums).firstIndex { $0.id == selected } ?? 0
+    }
+
+    nonisolated static func filter(_ albums: [AlbumCard], by query: String) -> [AlbumCard] {
+        let words = words(of: query)
+        guard !words.isEmpty else { return albums }
+        return albums.filter { matches(title: $0.displayTitle, artist: $0.displayArtist, words: words) }
+    }
+
+    nonisolated static func words(of query: String) -> [String] {
+        query.split(whereSeparator: \.isWhitespace).map(String.init)
+    }
+
+    /// Every word appears in the title or the artist, ignoring case and accents.
+    nonisolated static func matches(title: String, artist: String, words: [String]) -> Bool {
+        words.allSatisfy { title.localizedStandardContains($0) || artist.localizedStandardContains($0) }
     }
 
     public func center(_ album: AlbumCard, in albums: [AlbumCard]) {
@@ -131,6 +160,7 @@ public final class AlbumsState {
 }
 
 public struct AlbumsScreen: View {
+    @Environment(LibraryModel.self) private var model
     @Environment(AlbumsState.self) private var state
     @Environment(\.albumsActions) private var actions
     let page: AlbumsPage
@@ -141,13 +171,21 @@ public struct AlbumsScreen: View {
         @Bindable var state = state
         switch page {
         case .albums:
+            let albums = state.shown(from: model.albumsDisplay)
             Group {
-                switch state.layout {
-                case .wheel: AlbumWheelScreen(centered: $state.centered, open: actions.openAlbum)
-                case .grid: AlbumGridScreen(selected: $state.centered, columns: $state.gridColumns,
-                                            open: actions.openAlbum)
+                if albums.isEmpty, !state.query.isEmpty {
+                    EmptyStateView(text: "No Albums Found", detail: "No title or artist matches “\(state.query)”.")
+                        .background(Theme.stage)
+                } else {
+                    switch state.layout {
+                    case .wheel: AlbumWheelScreen(albums: albums, centered: $state.centered, open: actions.openAlbum)
+                    case .grid: AlbumGridScreen(albums: albums, selected: $state.centered, columns: $state.gridColumns,
+                                                open: actions.openAlbum)
+                    }
                 }
             }
+            .searchable(text: $state.query, placement: .toolbar, prompt: "Search Albums")
+            .onChange(of: state.query) { old, _ in state.searchChanged(from: old, in: model.albumsDisplay) }
             .toolbar {
                 ToolbarItem {
                     Picker("View", selection: $state.layout) {

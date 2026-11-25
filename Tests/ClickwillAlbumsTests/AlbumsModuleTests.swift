@@ -46,6 +46,18 @@ import SwiftUI
         #expect(AlbumsState.rowNeighbor(of: 5, up: false, columns: 4, count: 10) == 9)
     }
 
+    @Test func searchMatchesEveryWordInTitleOrArtist() {
+        let words = AlbumsState.words(of: "  night  juniper ")
+        #expect(words == ["night", "juniper"])
+        #expect(AlbumsState.matches(title: "Night Shift Utopia", artist: "Juniper Static", words: words))
+        #expect(!AlbumsState.matches(title: "Night Market", artist: "Neon Pilgrims", words: words))
+    }
+
+    @Test func searchIgnoresCaseAndAccents() {
+        #expect(AlbumsState.matches(title: "Café Société", artist: "", words: ["cafe", "SOCIETE"]))
+        #expect(AlbumsState.words(of: "   ").isEmpty)
+    }
+
     @Test func gridFitsColumnsToTheWidth() {
         let narrow = GridGeometry(width: 300)
         #expect(narrow.columns == 1)

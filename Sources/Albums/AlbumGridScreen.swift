@@ -3,17 +3,16 @@ import ClickwillModel
 import ClickwillShared
 
 /// The Albums tab as a grid: the iPod's Albums menu in the same order as the wheel
-/// (`albumsDisplay`), artwork with the title and artist under it. A click opens the album;
+/// (`albumsDisplay`, narrowed by the search), artwork with the title and artist under it. A click opens the album;
 /// the arrows move the selection (`AlbumsState.handle`) and Return opens it.
 struct AlbumGridScreen: View {
-    @Environment(LibraryModel.self) private var model
+    let albums: [AlbumCard]
     @Binding var selected: Int
     @Binding var columns: Int
     let open: @MainActor (AlbumCard) -> Void
     @FocusState private var focused: Bool
 
     var body: some View {
-        let albums = model.albumsDisplay
         GeometryReader { geo in
             let grid = GridGeometry(width: geo.size.width)
             ScrollViewReader { proxy in
