@@ -69,7 +69,7 @@ struct ContentView: View {
             // sidebar - the system glass then has something to show through. Our own background
             // ending under the bar gave a flat gray strip (HIG, Toolbars:
             // "reduce the use of toolbar backgrounds").
-            .background { Theme.stage.ignoresSafeArea().backgroundExtension() }
+            .background { Rectangle().fill(Theme.stage).ignoresSafeArea().backgroundExtension() }
             // Files and folders from Finder dropped anywhere on the window open
             // Add Songs with them loaded. The album's track list and the artwork
             // in the Edit panel have their own targets - they lie deeper, so they win.

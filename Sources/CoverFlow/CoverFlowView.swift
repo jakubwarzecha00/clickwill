@@ -52,6 +52,7 @@ struct CoverFlowScreen: View {
 
 struct CoverFlowStage: View {
     @Environment(LibraryModel.self) private var model
+    @Environment(\.appTheme) private var theme
     let albums: [AlbumCard]
     @Binding var centered: Int
     let open: @MainActor (AlbumCard) -> Void
@@ -71,11 +72,11 @@ struct CoverFlowStage: View {
             let coverSize = coverSize(in: geo.size)
             let k = coverSize / fullCoverSize
             ZStack {
-                LinearGradient(colors: [Theme.flowTop, Theme.flowBottom], startPoint: .top, endPoint: .bottom)
+                LinearGradient(colors: [theme.palette.flowTop, theme.palette.flowBottom], startPoint: .top, endPoint: .bottom)
                 // The floor starts 90 pt below the middle.
                 VStack(spacing: 0) {
                     Color.clear.frame(height: geo.size.height / 2 + 90 * k)
-                    LinearGradient(colors: [Theme.floorTop, Theme.floorBottom], startPoint: .top, endPoint: .bottom)
+                    LinearGradient(colors: [theme.palette.floorTop, theme.palette.floorBottom], startPoint: .top, endPoint: .bottom)
                 }
                 // The bottom of the artwork lies on the floor line (middle + 90 pt), the reflection below.
                 ForEach(visibleIndices, id: \.self) { index in
@@ -126,17 +127,17 @@ struct CoverFlowStage: View {
     private var caption: some View {
         VStack(spacing: 3) {
             Text(current?.displayTitle ?? "").font(.theme(.title3, weight: .semibold))
-            Text(current?.displayArtist ?? "").font(.theme(.row)).foregroundStyle(.white.opacity(0.62))
+            Text(current?.displayArtist ?? "").font(.theme(.row)).foregroundStyle(Theme.sceneText.opacity(0.62))
             // A new album from the queue: visible right away, but not on the iPod yet.
             if current?.isPending == true {
                 Label("Added on Write to iPod", systemImage: "clock")
-                    .font(.theme(.footnote, weight: .medium)).foregroundStyle(.white.opacity(0.75))
+                    .font(.theme(.footnote, weight: .medium)).foregroundStyle(Theme.sceneText.opacity(0.75))
                     .padding(.horizontal, 9).padding(.vertical, 3)
-                    .background(.white.opacity(0.12), in: .capsule)
+                    .background(Theme.sceneText.opacity(0.12), in: .capsule)
                     .padding(.top, 4)
             }
         }
-        .foregroundStyle(.white)
+        .foregroundStyle(Theme.sceneText)
         .allowsHitTesting(false)
     }
 

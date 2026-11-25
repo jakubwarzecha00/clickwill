@@ -10,6 +10,7 @@ import ClickwillAlbum
 import ClickwillDevice
 import ClickwillImport
 import ClickwillChanges
+import ClickwillThemes
 
 /// The screen modules the window shows, and the only file in the app that names them.
 ///
@@ -248,6 +249,15 @@ struct ModuleViewMenuItems: View {
     var body: some View {
         AlbumsViewMenuItems()
     }
+}
+
+/// The app's look: the theme every window and Settings show. The only place that knows
+/// the themes module - without it, this is `AppTheme.standard` and nothing else changes.
+@MainActor
+final class ModuleAppearance {
+    private let themes = ThemeStore()
+
+    var theme: AppTheme { themes.current }
 }
 
 /// What one window keeps for its modules.

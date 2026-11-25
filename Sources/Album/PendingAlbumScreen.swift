@@ -8,12 +8,13 @@ import ClickwillShared
 struct PendingAlbumScreen: View {
     @Environment(LibraryModel.self) private var model
     @Environment(\.albumActions) private var actions
+    @Environment(\.appTheme) private var theme
     let album: AlbumCard
 
     private var pending: PendingAlbum? { model.pendingAlbum(id: album.id) }
     private var card: AlbumCard { pending?.card ?? album }
     private var image: CGImage? { model.artwork(for: card.artworkTrackID) }
-    private var tint: Color { image.map(DominantColor.of) ?? Theme.accent }
+    private var tint: Color { image.map(DominantColor.of) ?? Theme.accent.color(in: theme.palette) }
 
     var body: some View {
         ScrollView {
@@ -44,7 +45,7 @@ struct PendingAlbumScreen: View {
                 if let image {
                     Image(decorative: image, scale: 1).resizable().aspectRatio(contentMode: .fill)
                 } else {
-                    ZStack { Theme.card; Image(systemName: "music.note").font(.symbol(.placeholder, weight: .light)).foregroundStyle(Theme.f3) }
+                    ZStack { Rectangle().fill(Theme.card); Image(systemName: "music.note").font(.symbol(.placeholder, weight: .light)).foregroundStyle(Theme.f3) }
                 }
             }
             .frame(width: 250, height: 250)
@@ -104,7 +105,7 @@ struct PendingAlbumScreen: View {
         // Like the column header in the album view: the same typeface, color and line below.
         .font(.theme(.caption)).foregroundStyle(Theme.f2)
         .padding(EdgeInsets(top: 0, leading: TrackColumns.inset, bottom: 6, trailing: TrackColumns.inset))
-        .overlay(alignment: .bottom) { Theme.sep.frame(height: 0.5) }
+        .overlay(alignment: .bottom) { Rectangle().fill(Theme.sep).frame(height: 0.5) }
         // 24 as in the album plus the 8 margin that List adds there.
         .padding(.horizontal, 32)
         .padding(.bottom, 4)

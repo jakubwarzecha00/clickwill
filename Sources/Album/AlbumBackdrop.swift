@@ -31,6 +31,7 @@ enum BackdropBlur {
 struct AlbumBackdrop: View {
     let image: CGImage
     let id: UInt64?
+    @Environment(\.appTheme) private var theme
 
     var body: some View {
         GeometryReader { geo in
@@ -46,8 +47,8 @@ struct AlbumBackdrop: View {
                 .overlay(Theme.bg.opacity(0.5))
                 .overlay(LinearGradient(stops: [
                     .init(color: .clear, location: 0),
-                    .init(color: Theme.bg.opacity(0.75), location: 0.42),
-                    .init(color: Theme.bg.opacity(0.88), location: 1),
+                    .init(color: theme.palette.bg.opacity(0.75), location: 0.42),
+                    .init(color: theme.palette.bg.opacity(0.88), location: 1),
                 ], startPoint: .top, endPoint: .bottom))
                 .clipped()
         }

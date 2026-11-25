@@ -88,7 +88,7 @@ struct AlbumWheelScreen: View {
             if albums.indices.contains(centered) {
                 Text(model.menuLetter(of: albums[centered]))
                     .font(.system(size: 22 * wheel.scale, weight: .medium))
-                    .foregroundStyle(.white.opacity(letterLit ? 0.6 : 0.28))
+                    .foregroundStyle(Theme.sceneText.opacity(letterLit ? 0.6 : 0.28))
                     .animation(letterLit ? .easeOut(duration: 0.12) : .easeOut(duration: 0.5), value: letterLit)
                     .position(x: wheel.letterX, y: wheel.size.height / 2)
                     .accessibilityHidden(true)
@@ -201,15 +201,15 @@ private struct WheelItem: View, Animatable {
                 // A long title of the selected album scrolls instead of being cut off.
                 MarqueeText(text: album.displayTitle, active: abs(distance) < 0.01, speed: 32 * wheel.scale)
                     .font(.system(size: cover * 0.24, weight: .medium))
-                    .foregroundStyle(.white.opacity(min(1, 0.42 + 0.58 * lit + lift)))
+                    .foregroundStyle(Theme.sceneText.opacity(min(1, 0.42 + 0.58 * lit + lift)))
                 MarqueeText(text: album.displayArtist, active: abs(distance) < 0.01, speed: 32 * wheel.scale)
                     .font(.system(size: cover * 0.135))
-                    .foregroundStyle(Color(white: 0.92).opacity(min(1, 0.3 + 0.32 * lit + lift * 0.6)))
+                    .foregroundStyle(Theme.sceneTextSoft.opacity(min(1, 0.3 + 0.32 * lit + lift * 0.6)))
                 if album.isPending, showsPendingNote {
                     Label("Added on Write to iPod", systemImage: "clock")
-                        .font(.theme(.footnote, weight: .medium)).foregroundStyle(.white.opacity(0.75))
+                        .font(.theme(.footnote, weight: .medium)).foregroundStyle(Theme.sceneText.opacity(0.75))
                         .padding(.horizontal, 9).padding(.vertical, 3)
-                        .background(.white.opacity(0.12), in: .capsule)
+                        .background(Theme.sceneText.opacity(0.12), in: .capsule)
                         .padding(.top, 7)
                         .opacity(max(0, 1 - abs(distance) * 2))
                 }

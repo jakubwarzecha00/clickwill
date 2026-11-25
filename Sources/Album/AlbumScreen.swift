@@ -8,6 +8,7 @@ import ClickwillShared
 struct AlbumScreen: View {
     @Environment(LibraryModel.self) private var model
     @Environment(\.albumActions) private var actions
+    @Environment(\.appTheme) private var theme
     let album: AlbumCard
     /// The image "Change Cover…" takes instead of the file panel, which a demo recording could not show.
     let coverFile: URL?
@@ -33,7 +34,7 @@ struct AlbumScreen: View {
     /// When the album no longer exists (deleted), the last known one stays.
     private var current: AlbumCard { model.current(album) ?? album }
     private var image: CGImage? { model.artwork(for: current.artworkTrackID) }
-    private var tint: Color { image.map(DominantColor.of) ?? Theme.accent }
+    private var tint: Color { image.map(DominantColor.of) ?? Theme.accent.color(in: theme.palette) }
     /// Songs the iPod's own library sync rebuilds from their files: no removal, no new cover.
     private var synced: Bool { model.isSyncedOnDevice(current) }
 
@@ -241,7 +242,7 @@ struct AlbumScreen: View {
         if let image {
             Image(decorative: image, scale: 1).resizable().aspectRatio(contentMode: .fill)
         } else {
-            ZStack { Theme.card; Image(systemName: "music.note").font(.symbol(.placeholder, weight: .light)).foregroundStyle(Theme.f3) }
+            ZStack { Rectangle().fill(Theme.card); Image(systemName: "music.note").font(.symbol(.placeholder, weight: .light)).foregroundStyle(Theme.f3) }
         }
     }
 
@@ -257,7 +258,7 @@ struct AlbumScreen: View {
             }
             .font(.theme(.caption)).foregroundStyle(Theme.f2)
             .padding(EdgeInsets(top: 0, leading: TrackColumns.inset, bottom: 6, trailing: TrackColumns.inset))
-            .overlay(alignment: .bottom) { Theme.sep.frame(height: 0.5) }
+            .overlay(alignment: .bottom) { Rectangle().fill(Theme.sep).frame(height: 0.5) }
             .padding(.horizontal, 24)
         }
     }

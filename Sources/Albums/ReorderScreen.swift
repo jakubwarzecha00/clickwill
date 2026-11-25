@@ -81,7 +81,7 @@ struct ReorderScreen: View {
                                 Image(systemName: "chevron.right").font(.symbol(.small, weight: .bold)).foregroundStyle(Theme.f3)
                             }
                             .padding(EdgeInsets(top: 7, leading: 12, bottom: 7, trailing: 12))
-                            .overlay(alignment: .bottom) { Theme.sep.frame(height: 0.5) }
+                            .overlay(alignment: .bottom) { Rectangle().fill(Theme.sep).frame(height: 0.5) }
                         }
                     }
                 }
@@ -122,7 +122,7 @@ struct ReorderRow: View {
             Text("\(index + 1)").frame(width: 20, alignment: .trailing).font(.theme(.row)).foregroundStyle(Theme.f2).monospacedDigit()
             Group {
                 if let image { Image(decorative: image, scale: 1).resizable().aspectRatio(contentMode: .fill) }
-                else { ZStack { Theme.card; Image(systemName: "music.note").foregroundStyle(Theme.f3) } }
+                else { ZStack { Rectangle().fill(Theme.card); Image(systemName: "music.note").foregroundStyle(Theme.f3) } }
             }
             .frame(width: 56, height: 56).clipShape(RoundedRectangle(cornerRadius: 6))
             VStack(alignment: .leading, spacing: 2) {

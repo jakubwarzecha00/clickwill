@@ -1,6 +1,7 @@
 import SwiftUI
 import ImageIO
 import ClickwillModel
+import ClickwillShared
 
 @main
 struct ClickwillApp: App {
@@ -13,6 +14,8 @@ struct ClickwillApp: App {
     /// together with the media key hookup.
     @State private var mediaControls: SystemMediaControls?
     @State private var updates: Updates
+    /// One theme for the library windows and Settings (`ModuleAppearance`).
+    @State private var appearance = ModuleAppearance()
     @AppStorage(WelcomeSheet.seenKey) private var welcomeSeen = false
     /// Launch flags - read only here (`LaunchOptions`).
     private let options = LaunchOptions(arguments: CommandLine.arguments)
@@ -44,7 +47,7 @@ struct ClickwillApp: App {
                 .environment(monitor)
                 .environment(playback)
                 .frame(minWidth: 1100, minHeight: 700)
-                .preferredColorScheme(.dark)
+                .themed(appearance.theme)
                 .environment(\.siteURL, siteURL)
                 .task {
                     monitor.start()
@@ -94,7 +97,7 @@ struct ClickwillApp: App {
         Settings {
             SettingsView()
                 .environment(model)
-                .preferredColorScheme(.dark)
+                .preferredColorScheme(appearance.theme.palette.colorScheme)
         }
     }
 

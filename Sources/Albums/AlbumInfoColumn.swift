@@ -23,7 +23,7 @@ struct AlbumInfoColumn: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(album.isPending ? "To Be Added" : "On the iPod")
                     .font(.theme(.small, weight: .semibold)).textCase(.uppercase).tracking(0.7)
-                    .foregroundStyle(Color(white: 0.92).opacity(0.55))
+                    .foregroundStyle(Theme.sceneTextSoft.opacity(0.55))
                 Text("\(facts.format ?? "Mixed formats") · \(facts.bytes.formatted(.byteCount(style: .file)))")
                     .font(.theme(.row)).foregroundStyle(Theme.f2).monospacedDigit()
             }
