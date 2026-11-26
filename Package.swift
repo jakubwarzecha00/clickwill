@@ -55,7 +55,8 @@ let package = Package(
         // The themes plug: choosing the window's theme. Views use only the socket in
         // ClickwillShared (`AppTheme`, `Theme.fg`), so no screen module depends on this one,
         // and the app names it only in Modules.swift. Removed, every window is `AppTheme.standard`.
-        .target(name: "ClickwillThemes", dependencies: ["ClickwillShared"], path: "Sources/Themes"),
+        .target(name: "ClickwillThemes", dependencies: ["ClickwillShared"], path: "Sources/Themes",
+                resources: [.process("Resources")]),
         .executableTarget(name: "ipodctl", dependencies: ["ITDBKit", "ClickwillModel"]),
         .testTarget(name: "ITDBKitTests", dependencies: ["ITDBKit"]),
         // The `ipodctl` command tests use the fake iPod from the write tests.

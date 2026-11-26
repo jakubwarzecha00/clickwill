@@ -48,14 +48,30 @@ struct ThemeStoreTests {
         #expect(ThemeContrast.ratio(vice.sceneText, on: vice.floorTop) >= 3)
     }
 
-    /// The sunset is one unbroken gradient whose coral glow sits on the horizon, wherever
-    /// the horizon is, and which ends in the night of the bar under the slider.
-    @Test func theSunsetGlowsOnTheHorizonAndEndsInNight() {
+    /// The sky is one unbroken gradient: the palette's horizon color sits on the horizon,
+    /// wherever it is, and the bottom edge is the plum of the bar under the slider.
+    @Test func theSkyMeetsTheHorizonAndTheBarUnderTheSlider() {
+        let vice = ThemePalette.vice
         for horizon in [0.6, 0.7, 1.0] as [CGFloat] {
-            let stops = SunsetBackdrop.sky(horizon: horizon)
+            let stops = SunsetSky.stops(horizon: horizon)
             #expect(stops.map(\.location) == stops.map(\.location).sorted())
-            #expect(stops.contains { $0.location == horizon && HexColor.string($0.color) == "#D96654" })
-            #expect(stops.last.map { HexColor.string($0.color) } == HexColor.string(ThemePalette.vice.flowTop))
+            #expect(stops.contains { $0.location == horizon && HexColor.string($0.color) == HexColor.string(vice.flowBottom) })
+            #expect(stops.last.map { HexColor.string($0.color) } == HexColor.string(vice.flowTop))
+            #expect(HexColor.string(vice.floorBottom) == HexColor.string(vice.flowTop))
+        }
+    }
+
+    /// Album titles stand in the upper part of the sky; every color there reads with white.
+    @Test func titlesReadOnTheUpperSky() {
+        let vice = ThemePalette.vice
+        for stop in SunsetSky.stops(horizon: 0.65) where stop.location <= 0.65 * 0.35 {
+            #expect(ThemeContrast.ratio(vice.sceneText, on: stop.color) >= 4.5)
+        }
+    }
+
+    @Test func everyPalmIsInTheBundle() {
+        for palm in PalmSilhouette.allCases {
+            #expect(palm.image != nil, "\(palm.rawValue) is missing")
         }
     }
 

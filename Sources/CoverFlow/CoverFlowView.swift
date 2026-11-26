@@ -72,13 +72,6 @@ struct CoverFlowStage: View {
             let coverSize = coverSize(in: geo.size)
             let k = coverSize / fullCoverSize
             ZStack {
-                LinearGradient(colors: [theme.palette.flowTop, theme.palette.flowBottom], startPoint: .top, endPoint: .bottom)
-                // The floor starts 90 pt below the middle.
-                VStack(spacing: 0) {
-                    Color.clear.frame(height: geo.size.height / 2 + 90 * k)
-                    LinearGradient(colors: [theme.palette.floorTop, theme.palette.floorBottom], startPoint: .top, endPoint: .bottom)
-                }
-                SceneBackdropLayer(horizon: (geo.size.height / 2 + 90 * k) / max(geo.size.height, 1))
                 // The bottom of the artwork lies on the floor line (middle + 90 pt), the reflection below.
                 ForEach(visibleIndices, id: \.self) { index in
                     let distance = index - centered
@@ -103,6 +96,8 @@ struct CoverFlowStage: View {
                     .zIndex(200)
             }
             .clipped()
+            // Behind the clip, so a theme's picture can reach under the sidebar.
+            .background { scene(size: geo.size, floorLine: geo.size.height / 2 + 90 * k) }
             .overlay { ScrollWheelCatcher { delta in step(delta) } }
             // ContentView handles the keys (it knows the active screen); the scene only
             // holds focus, so that keyboard events reach SwiftUI at all.
@@ -111,6 +106,20 @@ struct CoverFlowStage: View {
             .focusEffectDisabled()
             .onAppear { focused = true }
         }
+    }
+
+    /// The sky and the floor in the palette's colors, with the theme's own picture over them.
+    /// The floor starts at `floorLine` points from the top.
+    private func scene(size: CGSize, floorLine: CGFloat) -> some View {
+        ZStack {
+            LinearGradient(colors: [theme.palette.flowTop, theme.palette.flowBottom], startPoint: .top, endPoint: .bottom)
+            VStack(spacing: 0) {
+                Color.clear.frame(height: floorLine)
+                LinearGradient(colors: [theme.palette.floorTop, theme.palette.floorBottom], startPoint: .top, endPoint: .bottom)
+            }
+            SceneBackdropLayer(horizon: floorLine / max(size.height, 1))
+        }
+        .accessibilityHidden(true)
     }
 
     private func move(to index: Int) {

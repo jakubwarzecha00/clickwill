@@ -26,7 +26,8 @@ public struct SceneBackdrop: Sendable, Equatable {
 }
 
 /// The theme's backdrop for one scene, or nothing. It never takes clicks and is hidden from
-/// VoiceOver: it is decoration.
+/// VoiceOver: it is decoration. On macOS 26 and later it also reaches, mirrored and blurred,
+/// under the sidebar's glass; the scene must not clip it.
 public struct SceneBackdropLayer: View {
     @Environment(\.appTheme) private var theme
     private let horizon: CGFloat
@@ -44,6 +45,7 @@ public struct SceneBackdropLayer: View {
     public var body: some View {
         if let backdrop = theme.sceneBackdrop {
             backdrop.view(horizon: horizon, strength: strength)
+                .backgroundExtension()
                 .allowsHitTesting(false)
                 .accessibilityHidden(true)
         }
