@@ -18,7 +18,7 @@ struct CoverFlowScreen: View {
             CoverFlowStage(albums: model.coverFlowDisplay, centered: $state.centered, open: actions.openAlbum)
             scrubber
         }
-        .background(Theme.flowTop)
+        .sceneColors { Rectangle().fill(Theme.flowTop) }
         .onChange(of: model.coverFlowDisplay.count) { _, count in clamp(to: count) }
         .onAppear { clamp(to: model.coverFlowDisplay.count) }
         .toolbar { toolbarContent }
@@ -96,8 +96,10 @@ struct CoverFlowStage: View {
                     .zIndex(200)
             }
             .clipped()
-            // Behind the clip, so a theme's picture can reach under the sidebar.
-            .background { scene(size: geo.size, floorLine: geo.size.height / 2 + 90 * k) }
+            .sceneColors { scene(floorLine: geo.size.height / 2 + 90 * k) }
+            .sceneBackdrop(id: "coverflow",
+                           horizon: UnitPoint(x: 0.5, y: (geo.size.height / 2 + 90 * k) / max(geo.size.height, 1)),
+                           moment: centered)
             .overlay { ScrollWheelCatcher { delta in step(delta) } }
             // ContentView handles the keys (it knows the active screen); the scene only
             // holds focus, so that keyboard events reach SwiftUI at all.
@@ -108,16 +110,15 @@ struct CoverFlowStage: View {
         }
     }
 
-    /// The sky and the floor in the palette's colors, with the theme's own picture over them.
-    /// The floor starts at `floorLine` points from the top.
-    private func scene(size: CGSize, floorLine: CGFloat) -> some View {
+    /// The sky and the floor in the palette's colors. The floor starts at `floorLine` points
+    /// from the top.
+    private func scene(floorLine: CGFloat) -> some View {
         ZStack {
             LinearGradient(colors: [theme.palette.flowTop, theme.palette.flowBottom], startPoint: .top, endPoint: .bottom)
             VStack(spacing: 0) {
                 Color.clear.frame(height: floorLine)
                 LinearGradient(colors: [theme.palette.floorTop, theme.palette.floorBottom], startPoint: .top, endPoint: .bottom)
             }
-            SceneBackdropLayer(horizon: floorLine / max(size.height, 1))
         }
         .accessibilityHidden(true)
     }

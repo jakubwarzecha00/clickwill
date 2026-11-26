@@ -17,11 +17,13 @@ enum PalmSilhouette: String, CaseIterable {
 }
 
 /// Palms standing on the bottom edge of the scene, at its sides, so the artwork in the
-/// middle stays clear. The near ones are dark plum; the far ones paler, as if in haze. Each
-/// sways a little in the wind, around the foot of its trunk.
+/// middle stays clear. The near ones are dark plum; the far ones paler, as if in haze. While
+/// the scene moves, each sways a little in the wind, around the foot of its trunk.
 struct PalmGrove: View {
     let size: CGSize
     let time: Double
+    /// 0 to 1: how strongly the scene moves; at 0 the palms stand straight.
+    let motion: Double
 
     private enum Depth {
         case near, far
@@ -63,7 +65,7 @@ struct PalmGrove: View {
         if let image = palm.silhouette.image {
             let height = size.height * palm.height
             let width = height * image.size.width / max(image.size.height, 1)
-            let lean = sin(time * 2 * .pi / palm.period + phase) * palm.depth.sway
+            let lean = sin(time * 2 * .pi / palm.period + phase) * palm.depth.sway * motion
             Image(nsImage: image)
                 .renderingMode(.template)
                 .resizable()

@@ -67,8 +67,8 @@ public extension ThemePalette {
 }
 
 extension SceneBackdrop {
-    /// The Vice theme's moving sunset; see `SunsetBackdrop`.
-    static let sunset = SceneBackdrop(name: "sunset") { horizon, strength in
-        AnyView(SunsetBackdrop(horizon: horizon, strength: strength))
+    /// The Vice theme's sunset; see `SunsetBackdrop`.
+    static let sunset = SceneBackdrop(name: "sunset") { horizon, strength, moment in
+        AnyView(SunsetBackdrop(horizon: horizon, strength: strength, moment: moment))
     }
 }

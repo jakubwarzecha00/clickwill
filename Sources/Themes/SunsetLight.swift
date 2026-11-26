@@ -1,12 +1,14 @@
 import SwiftUI
 
-/// Soft red and orange clouds drifting across the sky. Laid on with soft light, so they
-/// tint the sky rather than cover it.
+/// Soft red and orange clouds over the horizon, drifting while the scene moves. Laid on
+/// with soft light, so they tint the sky rather than cover it.
 struct SunsetClouds: View {
     let size: CGSize
     /// The horizon's distance from the top, in points.
     let line: CGFloat
     let time: Double
+    /// 0 to 1: how strongly the scene moves; at 0 everything stands at rest.
+    let motion: Double
     let strength: Double
 
     /// A blurred brush stroke of color: its height around the horizon, its length and
@@ -36,7 +38,7 @@ struct SunsetClouds: View {
         ZStack(alignment: .topLeading) {
             ForEach(Self.clouds.indices, id: \.self) { index in
                 let cloud = Self.clouds[index]
-                let sway = sin(time * 2 * .pi / cloud.period + Double(index)) * size.width * 0.06
+                let sway = sin(time * 2 * .pi / cloud.period + Double(index)) * size.width * 0.06 * motion
                 Capsule()
                     .fill(cloud.color)
                     .frame(width: size.width * cloud.length, height: max(4, size.height * cloud.thickness))
@@ -49,13 +51,16 @@ struct SunsetClouds: View {
     }
 }
 
-/// A low sun that slowly swells and fades on the horizon, and streaks of blue, pink and
-/// violet light crossing it. Laid on with screen, so it only ever adds light.
+/// A low sun glowing on the horizon, and, while the scene moves, swelling and fading with
+/// streaks of blue, pink and violet light crossing it. Laid on with screen, so it only ever
+/// adds light.
 struct SunsetLight: View {
     let size: CGSize
     /// The horizon's distance from the top, in points.
     let line: CGFloat
     let time: Double
+    /// 0 to 1: how strongly the scene moves; at 0 everything stands at rest.
+    let motion: Double
     let strength: Double
 
     /// One streak of light: its height around the horizon as a share of the scene, its
@@ -88,9 +93,10 @@ struct SunsetLight: View {
         .blendMode(.screen)
     }
 
-    /// A wide peach glow that swells and fades once every 14 seconds.
+    /// A wide peach glow; while the scene moves it swells and fades once every 14 seconds
+    /// around its glow at rest.
     private var sun: some View {
-        let swell = (sin(time * 2 * .pi / 14) + 1) / 2
+        let swell = 0.5 + 0.5 * sin(time * 2 * .pi / 14) * motion
         let width = min(size.width * 0.9, 900)
         return Ellipse()
             .fill(EllipticalGradient(stops: [
@@ -112,7 +118,7 @@ struct SunsetLight: View {
             .fill(LinearGradient(colors: [.clear, streak.color, .clear], startPoint: .leading, endPoint: .trailing))
             .frame(width: length, height: streak.thickness)
             .blur(radius: 7)
-            .opacity(streak.opacity * strength)
+            .opacity(streak.opacity * strength * motion)
             .position(x: -length / 2 + travel * (size.width + length), y: line + streak.offset * size.height)
     }
 }
