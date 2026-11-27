@@ -68,8 +68,9 @@ struct ContentView: View {
             // The scene reaches under the toolbar and (as a mirror reflection) under the
             // sidebar - the system glass then has something to show through. Our own background
             // ending under the bar gave a flat gray strip (HIG, Toolbars:
-            // "reduce the use of toolbar backgrounds").
-            .background { Theme.stage.ignoresSafeArea().backgroundExtension() }
+            // "reduce the use of toolbar backgrounds"). A theme's picture for Cover Flow and
+            // Albums lies here too, so it also fills the toolbar and the player's strip.
+            .pageBackground { Rectangle().fill(Theme.stage) }
             // Files and folders from Finder dropped anywhere on the window open
             // Add Songs with them loaded. The album's track list and the artwork
             // in the Edit panel have their own targets - they lie deeper, so they win.
@@ -114,7 +115,9 @@ struct ContentView: View {
             launch.libraryLoaded(window: window, model: model, modules: modules)
         }
         // The iPod disappeared (`DeviceMonitor` took the library down) - we go back to the first screen.
-        .onChange(of: model.source == nil) { _, gone in if gone { window.showHome() } }
+        .onChange(of: model.source == nil) { _, gone in
+            if gone, !window.screen.staysWhenIPodLeaves { window.showHome() }
+        }
         // E.g. Cover Flow once an iPod without it is recognized, after loading or after switching.
         .onChange(of: window.screenIsAvailable) { _, available in
             if !available { window.showHome() }

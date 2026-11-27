@@ -31,7 +31,7 @@ struct TrackRowView<RowMenu: View>: View {
     @State private var draft = ""
     @FocusState private var fieldFocused: Bool
 
-    private func badge(_ text: String, _ color: Color) -> some View {
+    private func badge(_ text: String, _ color: ThemeColor) -> some View {
         Text(text).font(.theme(.caption)).foregroundStyle(color)
             .padding(.horizontal, 7).padding(.vertical, 1)
             .background(color.opacity(0.15), in: RoundedRectangle(cornerRadius: 5))
@@ -100,7 +100,7 @@ struct TrackRowView<RowMenu: View>: View {
         }
         .padding(EdgeInsets(top: TrackColumns.rowPadding, leading: TrackColumns.inset,
                             bottom: TrackColumns.rowPadding, trailing: TrackColumns.inset))
-        .background(selected ? Theme.sel : (hovering ? Color.white.opacity(0.08) : .clear), in: RoundedRectangle(cornerRadius: 6))
+        .background(selected ? Theme.sel : (hovering ? Theme.trackHover : .clear), in: RoundedRectangle(cornerRadius: 6))
         .trackRowDivider(hidden: selected || hovering)
         .opacity(row.fileMissing && restoring == nil ? 0.55 : 1)
         // Gestures on the whole row (that is how dragging works in List); the Play button

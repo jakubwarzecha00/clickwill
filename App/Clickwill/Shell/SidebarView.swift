@@ -3,7 +3,7 @@ import ClickwillModel
 import ClickwillShared
 
 /// The sidebar: the iPod card, the library, discs in the drive, the device,
-/// and at the bottom feedback and About.
+/// and at the bottom Settings, feedback and About.
 struct SidebarView: View {
     @Environment(WindowState.self) private var window
 
@@ -44,7 +44,9 @@ struct SidebarView: View {
         .safeAreaInset(edge: .bottom, spacing: 0) {
             // The same system list rows as Albums and Songs: the same typeface,
             // color and icon indent.
-            List {
+            // Settings is a page, selected like the rows above; the other two open sheets.
+            List(selection: settingsSelection) {
+                Label("Settings", systemImage: "gearshape").tag(ModulePage.settings)
                 Button { window.showFeedback() } label: { Label("Send Feedback", systemImage: "bubble.left") }
                 Button { window.showAbout() } label: { Label("About \(AboutFacts.appName)", systemImage: "info.circle") }
             }
@@ -52,8 +54,13 @@ struct SidebarView: View {
             .buttonStyle(.plain)
             .scrollDisabled(true)
             .scrollContentBackground(.hidden)
-            .frame(height: 76)
+            .frame(height: 104)
         }
+    }
+
+    private var settingsSelection: Binding<ModulePage?> {
+        Binding(get: { window.sidebarSelection == .settings ? .settings : nil },
+                set: { if let item = $0 { window.select(item) } })
     }
 
 }

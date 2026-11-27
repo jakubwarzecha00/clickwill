@@ -39,13 +39,13 @@ public struct AlbumCoverBadge: View {
 
     public var body: some View {
         if album.isPending {
-            Image(systemName: "clock").font(.symbol(.badge, weight: .bold)).foregroundStyle(.white)
+            Image(systemName: "clock").font(.symbol(.badge, weight: .bold)).foregroundStyle(Theme.onAccent)
                 .frame(width: 20, height: 20).background(Theme.accent, in: Circle())
                 .shadow(color: .black.opacity(0.5), radius: 2, y: 1)
                 .padding(9)
                 .help("Not on the iPod yet. Added when you choose Write to iPod.")
         } else if album.missingFiles > 0 {
-            Image(systemName: "exclamationmark").font(.symbol(.small, weight: .black)).foregroundStyle(.white)
+            Image(systemName: "exclamationmark").font(.symbol(.small, weight: .black)).foregroundStyle(Theme.onAccent)
                 .frame(width: 18, height: 18).background(Theme.warn, in: Circle())
                 .shadow(color: .black.opacity(0.5), radius: 2, y: 1)
                 .padding(9)

@@ -10,6 +10,8 @@ import ClickwillAlbum
 import ClickwillDevice
 import ClickwillImport
 import ClickwillChanges
+import ClickwillThemes
+import ITDBKit
 
 /// The screen modules the window shows, and the only file in the app that names them.
 ///
@@ -25,9 +27,14 @@ enum ModulePage: Hashable {
     case cd(CDPage)
     case album(AlbumPage)
     case device(DevicePage)
+    /// The app's settings (`SettingsView`): not a module, but a page of the window like them.
+    case settings
+    /// A theme of the user's, new or changed, from the Appearance section of Settings.
+    case themeEditor(isNew: Bool)
 
     /// `--screen <name>`.
     init?(launchName: String) {
+        if launchName == "settings" { self = .settings; return }
         if let page = CoverFlowPage(rawValue: launchName) { self = .coverFlow(page); return }
         if let page = AlbumsPage(rawValue: launchName) { self = .albums(page); return }
         if let page = ArtistsPage(launchName: launchName) { self = .artists(page); return }
@@ -71,6 +78,8 @@ enum ModulePage: Hashable {
         case .cd: "Audio CD"
         case .album(let page): page.album.displayTitle
         case .device(let page): page.title
+        case .settings: "Settings"
+        case .themeEditor(let isNew): isNew ? "New Theme" : "Edit Theme"
         }
     }
 
@@ -91,6 +100,7 @@ enum ModulePage: Hashable {
         case .cd(let page): page.subtitle(in: modules.cds)
         case .album(let page): page.subtitle(in: model)
         case .device(let page): page.subtitle(in: model)
+        case .settings, .themeEditor: ""
         }
     }
 
@@ -103,13 +113,16 @@ enum ModulePage: Hashable {
         case .cd(let page): CDScreen(page: page)
         case .album(let page): AlbumModuleScreen(page: page)
         case .device(let page): DeviceScreen(page: page)
+        case .settings: SettingsView()
+        case .themeEditor: ThemeEditorScreen()
         }
     }
 
-    /// Shown without a loaded library: a disc can be ripped with no iPod connected.
+    /// Shown without a loaded library: a disc can be ripped with no iPod connected, and
+    /// settings are there before any iPod.
     var needsLibrary: Bool {
         switch self {
-        case .cd: false
+        case .cd, .settings, .themeEditor: false
         case .coverFlow, .albums, .artists, .songs, .album, .device: true
         }
     }
@@ -118,7 +131,15 @@ enum ModulePage: Hashable {
     @MainActor func isAvailable(in model: LibraryModel) -> Bool {
         switch self {
         case .coverFlow(let page): page.isAvailable(in: model)
-        case .albums, .artists, .songs, .cd, .album, .device: true
+        case .albums, .artists, .songs, .cd, .album, .device, .settings, .themeEditor: true
+        }
+    }
+
+    /// Stays on screen when the iPod is unplugged; every other page goes back home.
+    var staysWhenIPodLeaves: Bool {
+        switch self {
+        case .settings, .themeEditor: true
+        case .coverFlow, .albums, .artists, .songs, .cd, .album, .device: false
         }
     }
 
@@ -130,7 +151,7 @@ enum ModulePage: Hashable {
         case .albums(.albums):
             modules.albums.handle(press.key, characters: press.characters, albums: modules.albums.shown(from: model.albumsDisplay),
                                   letter: model.menuLetter(of:), open: window.open)
-        case .albums(.reorder), .artists, .songs, .cd, .album, .device:
+        case .albums(.reorder), .artists, .songs, .cd, .album, .device, .settings, .themeEditor:
             .ignored
         }
     }
@@ -139,7 +160,8 @@ enum ModulePage: Hashable {
     var parent: ModulePage? {
         switch self {
         case .artists(let page): page.parent.map(ModulePage.artists)
-        case .coverFlow, .albums, .songs, .cd, .album, .device: nil
+        case .themeEditor: .settings
+        case .coverFlow, .albums, .songs, .cd, .album, .device, .settings: nil
         }
     }
 
@@ -155,7 +177,7 @@ enum ModulePage: Hashable {
     var opensOver: Bool {
         switch self {
         case .album: true
-        case .coverFlow, .albums, .artists, .songs, .cd, .device: false
+        case .coverFlow, .albums, .artists, .songs, .cd, .device, .settings, .themeEditor: false
         }
     }
 
@@ -163,7 +185,7 @@ enum ModulePage: Hashable {
     var staysAsOrigin: Bool {
         switch self {
         case .coverFlow, .albums(.albums), .artists: true
-        case .albums(.reorder), .songs, .cd, .album, .device: false
+        case .albums(.reorder), .songs, .cd, .album, .device, .settings, .themeEditor: false
         }
     }
 }
@@ -248,6 +270,48 @@ struct ModuleViewMenuItems: View {
     var body: some View {
         AlbumsViewMenuItems()
     }
+}
+
+/// The app's look: the theme every window shows, its sections on the Settings page and the
+/// theme editor page. The only place that knows the themes module - without it, `theme` is
+/// `AppTheme.standard`, `settingsSections` and `themeEditor` are empty, and the editor
+/// page goes with them.
+@MainActor
+@Observable
+final class ModuleAppearance {
+    @ObservationIgnored private let themes: ThemeStore
+
+    /// - Parameters:
+    ///   - demo: the choice lives in memory and the user's themes in a folder of this
+    ///     process, so a demo never changes the user's.
+    ///   - launchChoice: `--appearance light|dark|system`, for this process only.
+    init(demo: Bool, launchChoice: String?) {
+        let folder = demo ? Self.demoThemesFolder : (try? ProductInfo.supportDirectory())?
+            .appendingPathComponent("Themes", isDirectory: true)
+        themes = ThemeStore(storage: demo ? .memory() : .standard, system: .live(),
+                            library: folder.map(ThemeLibrary.init(folder:)),
+                            launchChoice: launchChoice.flatMap(ThemeChoice.init(storageValue:)))
+    }
+
+    private static var demoThemesFolder: URL {
+        FileManager.default.temporaryDirectory
+            .appendingPathComponent("clickwill-demo-themes-\(ProcessInfo.processInfo.processIdentifier)", isDirectory: true)
+    }
+
+    var theme: AppTheme { themes.current }
+
+    /// The themes module's sections on the Settings page.
+    var settingsSections: some View { AppearanceSection(store: themes) }
+
+    /// The page for one of the user's themes (`ModulePage.themeEditor`).
+    var themeEditor: some View { ThemeEditorPage(store: themes) }
+}
+
+/// The theme editor page; the window's `ModuleAppearance` holds the theme it shows.
+private struct ThemeEditorScreen: View {
+    @Environment(ModuleAppearance.self) private var appearance
+
+    var body: some View { appearance.themeEditor }
 }
 
 /// What one window keeps for its modules.
@@ -335,5 +399,8 @@ extension View {
                 sendReport: { window.showSendReport(comment: $0) },
                 sendFeedback: { window.showFeedback() },
                 stopPlayback: { playback.stop() }))
+            .environment(\.themeActions, ThemeActions(
+                showEditor: { window.show(.themeEditor(isNew: $0), animated: true) },
+                closeEditor: { window.goBack() }))
     }
 }

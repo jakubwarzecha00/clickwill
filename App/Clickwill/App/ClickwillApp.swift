@@ -1,6 +1,7 @@
 import SwiftUI
 import ImageIO
 import ClickwillModel
+import ClickwillShared
 
 @main
 struct ClickwillApp: App {
@@ -13,6 +14,8 @@ struct ClickwillApp: App {
     /// together with the media key hookup.
     @State private var mediaControls: SystemMediaControls?
     @State private var updates: Updates
+    /// One theme for every library window (`ModuleAppearance`).
+    @State private var appearance: ModuleAppearance
     @AppStorage(WelcomeSheet.seenKey) private var welcomeSeen = false
     /// Launch flags - read only here (`LaunchOptions`).
     private let options = LaunchOptions(arguments: CommandLine.arguments)
@@ -32,6 +35,7 @@ struct ClickwillApp: App {
         _playback = State(initialValue: PlaybackController(fileURL: { [weak model] in model?.fileURL(for: $0) },
                                                            muted: options.isDemo && options.isAutomated))
         _updates = State(initialValue: Updates(checkNow: options.checksUpdates, automated: options.isAutomated))
+        _appearance = State(initialValue: ModuleAppearance(demo: options.isDemo, launchChoice: options.appearance))
     }
 
     var body: some Scene {
@@ -44,7 +48,8 @@ struct ClickwillApp: App {
                 .environment(monitor)
                 .environment(playback)
                 .frame(minWidth: 1100, minHeight: 700)
-                .preferredColorScheme(.dark)
+                .themed(appearance.theme)
+                .environment(appearance)
                 .environment(\.siteURL, siteURL)
                 .task {
                     monitor.start()
@@ -81,20 +86,18 @@ struct ClickwillApp: App {
                 Button("Check for Updates…") { updates.check() }
                     .disabled(!updates.canCheck)
             }
+            // Settings are a page of the library window, next to Send Feedback in the sidebar,
+            // so Command-comma opens that page instead of a window of its own.
+            CommandGroup(replacing: .appSettings) {
+                WindowMenuButton(title: "Settings…") { $0.show(.settings, animated: true) }
+                    .keyboardShortcut(",", modifiers: .command)
+            }
             CommandGroup(replacing: .help) {
                 WindowMenuButton(title: "Send Feedback…") { $0.showFeedback() }
                 Divider()
                 Button("Before You Edit Your iPod…") { welcomeSeen = false }
                 WindowMenuButton(title: "Send Diagnostic Report…") { $0.showSendReport() }
             }
-        }
-
-        // The standard settings window - this is where the item in the app
-        // menu and the Command-comma shortcut come from.
-        Settings {
-            SettingsView()
-                .environment(model)
-                .preferredColorScheme(.dark)
         }
     }
 

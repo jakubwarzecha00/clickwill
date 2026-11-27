@@ -199,12 +199,12 @@ private struct CheckRow: View {
         }
     }
 
-    private var color: Color {
+    private var color: AnyShapeStyle {
         switch check.status {
-        case .passed: Theme.ok
-        case .warning: Theme.warn
-        case .failed: Theme.destructive
-        case .info: .secondary
+        case .passed: AnyShapeStyle(Theme.ok)
+        case .warning: AnyShapeStyle(Theme.warn)
+        case .failed: AnyShapeStyle(Theme.destructive)
+        case .info: AnyShapeStyle(Color.secondary)
         }
     }
 

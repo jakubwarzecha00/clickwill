@@ -18,7 +18,7 @@ struct CoverFlowScreen: View {
             CoverFlowStage(albums: model.coverFlowDisplay, centered: $state.centered, open: actions.openAlbum)
             scrubber
         }
-        .background(Theme.flowTop)
+        .sceneColors { Rectangle().fill(Theme.flowTop) }
         .onChange(of: model.coverFlowDisplay.count) { _, count in clamp(to: count) }
         .onAppear { clamp(to: model.coverFlowDisplay.count) }
         .toolbar { toolbarContent }
@@ -52,6 +52,7 @@ struct CoverFlowScreen: View {
 
 struct CoverFlowStage: View {
     @Environment(LibraryModel.self) private var model
+    @Environment(\.appTheme) private var theme
     let albums: [AlbumCard]
     @Binding var centered: Int
     let open: @MainActor (AlbumCard) -> Void
@@ -71,12 +72,6 @@ struct CoverFlowStage: View {
             let coverSize = coverSize(in: geo.size)
             let k = coverSize / fullCoverSize
             ZStack {
-                LinearGradient(colors: [Theme.flowTop, Theme.flowBottom], startPoint: .top, endPoint: .bottom)
-                // The floor starts 90 pt below the middle.
-                VStack(spacing: 0) {
-                    Color.clear.frame(height: geo.size.height / 2 + 90 * k)
-                    LinearGradient(colors: [Theme.floorTop, Theme.floorBottom], startPoint: .top, endPoint: .bottom)
-                }
                 // The bottom of the artwork lies on the floor line (middle + 90 pt), the reflection below.
                 ForEach(visibleIndices, id: \.self) { index in
                     let distance = index - centered
@@ -101,6 +96,10 @@ struct CoverFlowStage: View {
                     .zIndex(200)
             }
             .clipped()
+            .sceneColors { scene(floorLine: geo.size.height / 2 + 90 * k) }
+            .sceneBackdrop(id: "coverflow",
+                           horizon: UnitPoint(x: 0.5, y: (geo.size.height / 2 + 90 * k) / max(geo.size.height, 1)),
+                           moment: centered)
             .overlay { ScrollWheelCatcher { delta in step(delta) } }
             // ContentView handles the keys (it knows the active screen); the scene only
             // holds focus, so that keyboard events reach SwiftUI at all.
@@ -109,6 +108,19 @@ struct CoverFlowStage: View {
             .focusEffectDisabled()
             .onAppear { focused = true }
         }
+    }
+
+    /// The sky and the floor in the palette's colors. The floor starts at `floorLine` points
+    /// from the top.
+    private func scene(floorLine: CGFloat) -> some View {
+        ZStack {
+            LinearGradient(colors: [theme.palette.flowTop, theme.palette.flowBottom], startPoint: .top, endPoint: .bottom)
+            VStack(spacing: 0) {
+                Color.clear.frame(height: floorLine)
+                LinearGradient(colors: [theme.palette.floorTop, theme.palette.floorBottom], startPoint: .top, endPoint: .bottom)
+            }
+        }
+        .accessibilityHidden(true)
     }
 
     private func move(to index: Int) {
@@ -126,17 +138,17 @@ struct CoverFlowStage: View {
     private var caption: some View {
         VStack(spacing: 3) {
             Text(current?.displayTitle ?? "").font(.theme(.title3, weight: .semibold))
-            Text(current?.displayArtist ?? "").font(.theme(.row)).foregroundStyle(.white.opacity(0.62))
+            Text(current?.displayArtist ?? "").font(.theme(.row)).foregroundStyle(Theme.sceneText.opacity(0.62))
             // A new album from the queue: visible right away, but not on the iPod yet.
             if current?.isPending == true {
                 Label("Added on Write to iPod", systemImage: "clock")
-                    .font(.theme(.footnote, weight: .medium)).foregroundStyle(.white.opacity(0.75))
+                    .font(.theme(.footnote, weight: .medium)).foregroundStyle(Theme.sceneText.opacity(0.75))
                     .padding(.horizontal, 9).padding(.vertical, 3)
-                    .background(.white.opacity(0.12), in: .capsule)
+                    .background(Theme.sceneText.opacity(0.12), in: .capsule)
                     .padding(.top, 4)
             }
         }
-        .foregroundStyle(.white)
+        .foregroundStyle(Theme.sceneText)
         .allowsHitTesting(false)
     }
 
@@ -162,6 +174,7 @@ struct CoverFlowStage: View {
 
 struct CoverTile: View {
     @Environment(LibraryModel.self) private var model
+    @Environment(\.appTheme) private var theme
     let album: AlbumCard
     let size: CGFloat
     let distance: Int
@@ -179,7 +192,7 @@ struct CoverTile: View {
                 .frame(width: size, height: size)
                 .overlay(alignment: .leading) { if distance != 0 { shading } }
                 .overlay(alignment: .topTrailing) { AlbumCoverBadge(album: album) }
-                .shadow(color: .black.opacity(d == 0 ? 0.72 : 0.6), radius: d == 0 ? 26 : 17, y: d == 0 ? 26 : 18)
+                .shadow(color: Theme.sceneShadow.opacity(d == 0 ? 0.72 : 0.6).color(in: theme.palette), radius: d == 0 ? 26 : 17, y: d == 0 ? 26 : 18)
             reflection
         }
         // `position` sets the center of the whole tile (artwork + reflection); we shift
@@ -195,8 +208,10 @@ struct CoverTile: View {
     private var face: some View { AlbumCoverFace(album: album, size: size) }
 
     private var shading: some View {
-        LinearGradient(
-            colors: distance < 0 ? [.black.opacity(shade), .black.opacity(0.04)] : [.black.opacity(0.04), .black.opacity(shade)],
+        let deep = Theme.sceneShade.opacity(shade).color(in: theme.palette)
+        let light = Theme.sceneShade.opacity(0.04).color(in: theme.palette)
+        return LinearGradient(
+            colors: distance < 0 ? [deep, light] : [light, deep],
             startPoint: .leading, endPoint: .trailing)
     }
 

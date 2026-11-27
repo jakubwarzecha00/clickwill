@@ -52,6 +52,8 @@ targets:
         product: ClickwillImport
       - package: ITDBKit
         product: ClickwillChanges
+      - package: ITDBKit
+        product: ClickwillThemes
       - package: Sparkle
     info:
       path: Clickwill/Info.plist
@@ -86,6 +88,14 @@ targets:
         LSMinimumSystemVersion: "14.0"
         NSHumanReadableCopyright: "Copyright © 2026 Jakub Warzecha. Licensed under the GNU GPL, version 3."
         LSApplicationCategoryType: public.app-category.music
+        # A theme file of the themes module (`UTType.clickwillTheme`), so the save panel
+        # keeps its extension. Removed together with the module.
+        UTExportedTypeDeclarations:
+          - UTTypeIdentifier: pl.jakubwarzecha.clickwill.theme
+            UTTypeDescription: Clickwill Theme
+            UTTypeConformsTo: [public.json]
+            UTTypeTagSpecification:
+              public.filename-extension: [clickwilltheme]
     settings:
       base:
         SWIFT_VERSION: "6.0"

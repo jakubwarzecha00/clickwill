@@ -52,7 +52,8 @@ struct AlbumWheelScreen: View {
             .focusEffectDisabled()
             .onAppear { focused = true }
         }
-        .background(Theme.stage)
+        .sceneColors { Rectangle().fill(Theme.flowTop) }
+        .sceneBackdrop(id: "albums", strength: 0.55, moment: centered)
         .onChange(of: albums.count) { _, count in clamp(to: count) }
         .onAppear { clamp(to: albums.count) }
         .task(id: centered) {
@@ -88,7 +89,7 @@ struct AlbumWheelScreen: View {
             if albums.indices.contains(centered) {
                 Text(model.menuLetter(of: albums[centered]))
                     .font(.system(size: 22 * wheel.scale, weight: .medium))
-                    .foregroundStyle(.white.opacity(letterLit ? 0.6 : 0.28))
+                    .foregroundStyle(Theme.sceneText.opacity(letterLit ? 0.6 : 0.28))
                     .animation(letterLit ? .easeOut(duration: 0.12) : .easeOut(duration: 0.5), value: letterLit)
                     .position(x: wheel.letterX, y: wheel.size.height / 2)
                     .accessibilityHidden(true)
@@ -170,6 +171,7 @@ struct WheelGeometry {
 /// the arc, and the brightness and title color change smoothly, not in a jump.
 private struct WheelItem: View, Animatable {
     @Environment(LibraryModel.self) private var model
+    @Environment(\.appTheme) private var theme
     let album: AlbumCard
     var distance: Double
     let wheel: WheelGeometry
@@ -194,22 +196,22 @@ private struct WheelItem: View, Animatable {
             AlbumCoverFace(album: album, size: cover)
                 .frame(width: cover, height: cover)
                 .clipped()
-                .overlay(Color.black.opacity(max(0, 1 - (0.34 + 0.66 * pow(c, 6)) - lift)))
+                .overlay(Theme.sceneShade.opacity(max(0, 1 - (0.34 + 0.66 * pow(c, 6)) - lift)).color(in: theme.palette))
                 .overlay(alignment: .topTrailing) { AlbumCoverBadge(album: album) }
-                .shadow(color: .black.opacity(0.6), radius: 12, y: 7)
+                .shadow(color: Theme.sceneShadow.opacity(0.6).color(in: theme.palette), radius: 12, y: 7)
             VStack(alignment: .leading, spacing: 1) {
                 // A long title of the selected album scrolls instead of being cut off.
                 MarqueeText(text: album.displayTitle, active: abs(distance) < 0.01, speed: 32 * wheel.scale)
                     .font(.system(size: cover * 0.24, weight: .medium))
-                    .foregroundStyle(.white.opacity(min(1, 0.42 + 0.58 * lit + lift)))
+                    .foregroundStyle(Theme.sceneText.opacity(min(1, 0.42 + 0.58 * lit + lift)))
                 MarqueeText(text: album.displayArtist, active: abs(distance) < 0.01, speed: 32 * wheel.scale)
                     .font(.system(size: cover * 0.135))
-                    .foregroundStyle(Color(white: 0.92).opacity(min(1, 0.3 + 0.32 * lit + lift * 0.6)))
+                    .foregroundStyle(Theme.sceneTextSoft.opacity(min(1, 0.3 + 0.32 * lit + lift * 0.6)))
                 if album.isPending, showsPendingNote {
                     Label("Added on Write to iPod", systemImage: "clock")
-                        .font(.theme(.footnote, weight: .medium)).foregroundStyle(.white.opacity(0.75))
+                        .font(.theme(.footnote, weight: .medium)).foregroundStyle(Theme.sceneText.opacity(0.75))
                         .padding(.horizontal, 9).padding(.vertical, 3)
-                        .background(.white.opacity(0.12), in: .capsule)
+                        .background(Theme.sceneText.opacity(0.12), in: .capsule)
                         .padding(.top, 7)
                         .opacity(max(0, 1 - abs(distance) * 2))
                 }

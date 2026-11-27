@@ -61,7 +61,7 @@ private struct AlbumCardView: View {
                 .overlay {
                     if hovered {
                         Rectangle()
-                            .fill(.white.opacity(0.1))
+                            .fill(Theme.sceneText.opacity(0.1))
                     }
                 }
                 .onHover { inside in hovered = inside }

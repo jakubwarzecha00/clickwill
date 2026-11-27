@@ -1,42 +1,49 @@
 import SwiftUI
 import AppKit
 
-/// Colors and dimensions from the UI design (dark theme).
-/// Kept in one place, so the views do not repeat literals.
+/// The window's colors, dimensions and text scale, kept in one place, so the views do not
+/// repeat literals. Only the colors come from a theme.
+///
+/// A color here is a name (`ThemeColor`): its value comes from the window's theme
+/// (`AppTheme`), which is dark unless the app plugs in another.
 public enum Theme {
-    public static let bg = Color(red: 0x1c/255, green: 0x1c/255, blue: 0x1e/255)
-    public static let card = Color(red: 0x2a/255, green: 0x2a/255, blue: 0x2c/255)
-    public static let fg = Color(red: 0xf5/255, green: 0xf5/255, blue: 0xf7/255)
-    public static let f2 = Color(red: 235/255, green: 235/255, blue: 245/255).opacity(0.6)
-    public static let f3 = Color(red: 235/255, green: 235/255, blue: 245/255).opacity(0.3)
-    public static let sep = Color.white.opacity(0.09)
-    public static let sel = Color(red: 120/255, green: 145/255, blue: 180/255).opacity(0.3)
-    public static let glassBorder = Color.white.opacity(0.14)
-    public static let row = Color.white.opacity(0.04)
-    public static let rowHover = Color.white.opacity(0.07)
-    /// A field to fill in. Separate from `row`: at 4% it blended with the panel background
-    /// and it was not visible where one could type, and raising `row` would also brighten
-    /// all list rows.
-    public static let field = Color.white.opacity(0.09)
-    public static let fieldBorder = Color.white.opacity(0.17)
-    public static let accent = Color(red: 0x7d/255, green: 0x9d/255, blue: 0xc4/255)
-    public static let warn = Color(red: 0xff/255, green: 0x9f/255, blue: 0x0a/255)
-    public static let destructive = Color(red: 0xff/255, green: 0x45/255, blue: 0x3a/255)
-    public static let ok = Color(red: 0x30/255, green: 0xd1/255, blue: 0x58/255)
+    public static let bg = ThemeColor { $0.bg }
+    public static let card = ThemeColor { $0.card }
+    public static let fg = ThemeColor { $0.fg }
+    public static let f2 = ThemeColor { $0.f2 }
+    public static let f3 = ThemeColor { $0.f3 }
+    public static let sep = ThemeColor { $0.sep }
+    public static let sel = ThemeColor { $0.sel }
+    public static let glassBorder = ThemeColor { $0.glassBorder }
+    public static let row = ThemeColor { $0.row }
+    public static let rowHover = ThemeColor { $0.rowHover }
+    public static let trackHover = ThemeColor { $0.trackHover }
+    public static let field = ThemeColor { $0.field }
+    public static let fieldBorder = ThemeColor { $0.fieldBorder }
+    public static let accent = ThemeColor { $0.accent }
+    public static let onAccent = ThemeColor { $0.onAccent }
+    public static let warn = ThemeColor { $0.warn }
+    public static let destructive = ThemeColor { $0.destructive }
+    public static let ok = ThemeColor { $0.ok }
 
-    /// The position slider fill on the black scene (Cover Flow, Albums).
+    /// The position slider fill on the scene (Cover Flow, Albums).
     /// The full accent shone brighter than the artwork the slider only scrolls through.
     public static let positionSliderTint = accent.opacity(0.42)
 
-    public static let flowTop = Color(red: 0x0b/255, green: 0x0b/255, blue: 0x0d/255)
-    public static let flowBottom = Color(red: 0x16/255, green: 0x16/255, blue: 0x18/255)
-    public static let floorTop = Color(red: 0x08/255, green: 0x08/255, blue: 0x0a/255)
-    public static let floorBottom = Color(red: 0x0d/255, green: 0x0d/255, blue: 0x10/255)
+    public static let flowTop = ThemeColor { $0.flowTop }
+    public static let flowBottom = ThemeColor { $0.flowBottom }
+    public static let floorTop = ThemeColor { $0.floorTop }
+    public static let floorBottom = ThemeColor { $0.floorBottom }
+    public static let sceneText = ThemeColor { $0.sceneText }
+    public static let sceneTextSoft = ThemeColor { $0.sceneTextSoft }
+    public static let sliderKnob = ThemeColor { $0.sliderKnob }
+    public static let sceneShade = ThemeColor { $0.sceneShade }
+    public static let sceneShadow = ThemeColor { $0.sceneShadow }
 
-    /// The shared scene background - the same one Cover Flow stands on. The toolbar
-    /// and the playback bar no longer paint their own gray panels, but
-    /// float over this background.
-    public static let stage = flowTop
+    /// Under the window's screens other than the scene (`ThemePalette.stage`). The toolbar
+    /// and the playback bar do not paint their own panels, but float over it. Cover Flow
+    /// and Albums stand on `flowTop` instead.
+    public static let stage = ThemeColor { $0.stage }
 
     /// One grid for the whole side panel: the device card, the navigation rows
     /// and the section headers are computed from the same numbers, otherwise
@@ -201,26 +208,8 @@ private struct SheetKeyFocus: NSViewRepresentable {
 /// as before; on 14-25, a material with the same shape and the same tint,
 /// with a thin outline in place of the glass edge.
 public extension View {
-    @ViewBuilder func glassSurface<S: Shape>(tint: Color? = nil, interactive: Bool = false, in shape: S) -> some View {
-        if #available(macOS 26, *) {
-            glassEffect(Self.glass(tint: tint, interactive: interactive), in: shape)
-        } else {
-            background {
-                ZStack {
-                    shape.fill(.regularMaterial)
-                    if let tint { shape.fill(tint) }
-                }
-            }
-            .overlay(shape.stroke(Color.primary.opacity(0.12), lineWidth: 0.5))
-        }
-    }
-
-    @available(macOS 26, *)
-    private static func glass(tint: Color?, interactive: Bool) -> Glass {
-        var glass = Glass.regular
-        if let tint { glass = glass.tint(tint) }
-        if interactive { glass = glass.interactive() }
-        return glass
+    func glassSurface<S: Shape>(tint: ThemeColor? = nil, interactive: Bool = false, in shape: S) -> some View {
+        modifier(GlassSurface(tint: tint, interactive: interactive, shape: shape))
     }
 
     /// The main button of the toolbar and the disc screen: glass on 26+,
@@ -251,7 +240,7 @@ public extension View {
             buttonStyle(.plain)
         } else if selected {
             buttonStyle(.borderedProminent).buttonBorderShape(.capsule)
-                .controlSize(small ? .regular : .large).tint(Theme.accent)
+                .controlSize(small ? .regular : .large).themeTint(Theme.accent)
         } else {
             buttonStyle(.bordered).buttonBorderShape(.capsule)
                 .controlSize(small ? .regular : .large)
@@ -277,5 +266,37 @@ public extension View {
                 .background(.regularMaterial, in: Capsule())
                 .overlay(Capsule().strokeBorder(.separator, lineWidth: 0.5))
         }
+    }
+}
+
+/// `glassSurface`: the tint is a theme color, and glass takes a `Color`.
+private struct GlassSurface<S: Shape>: ViewModifier {
+    let tint: ThemeColor?
+    let interactive: Bool
+    let shape: S
+    @Environment(\.appTheme) private var theme
+
+    func body(content: Content) -> some View {
+        let tint = tint?.color(in: theme.palette)
+        if #available(macOS 26, *) {
+            content.glassEffect(Self.glass(tint: tint, interactive: interactive), in: shape)
+        } else {
+            content
+                .background {
+                    ZStack {
+                        shape.fill(.regularMaterial)
+                        if let tint { shape.fill(tint) }
+                    }
+                }
+                .overlay(shape.stroke(Color.primary.opacity(0.12), lineWidth: 0.5))
+        }
+    }
+
+    @available(macOS 26, *)
+    private static func glass(tint: Color?, interactive: Bool) -> Glass {
+        var glass = Glass.regular
+        if let tint { glass = glass.tint(tint) }
+        if interactive { glass = glass.interactive() }
+        return glass
     }
 }
