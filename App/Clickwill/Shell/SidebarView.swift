@@ -2,7 +2,7 @@ import SwiftUI
 import ClickwillModel
 import ClickwillShared
 
-/// The sidebar: the iPod card, the library, discs in the drive, the device,
+/// The sidebar: the iPod card, the music library, media, discs in the drive, the device,
 /// and at the bottom feedback and About.
 struct SidebarView: View {
     @Environment(WindowState.self) private var window
@@ -33,9 +33,10 @@ struct SidebarView: View {
                     .listRowInsets(EdgeInsets())
                     .selectionDisabled()
             }
-            Section("Library") {
+            Section("Music Library") {
                 ModuleLibraryItems()
             }
+            ModuleMediaSection()
             ModuleSidebarSections()
         }
         .listStyle(.sidebar)

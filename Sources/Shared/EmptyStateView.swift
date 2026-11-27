@@ -29,3 +29,14 @@ public struct EmptyStateView: View {
         .background(Theme.stage)
     }
 }
+
+public extension EmptyStateView {
+    /// A Media screen whose kind Clickwill cannot recognize yet (TV shows, podcasts). With no
+    /// unrecognized records it can say for sure that there are none; otherwise it must not.
+    static func unsortedMedia(none: String, unrecognized: Int) -> EmptyStateView {
+        guard unrecognized > 0 else { return EmptyStateView(text: none) }
+        let items = unrecognized == 1 ? "1 item that isn't a song or a movie" : "\(unrecognized) items that aren't songs or movies"
+        return EmptyStateView(text: "Some Items Aren't Sorted Yet",
+                              detail: "Your iPod has \(items). I can't tell yet what they are, so I leave them untouched.")
+    }
+}

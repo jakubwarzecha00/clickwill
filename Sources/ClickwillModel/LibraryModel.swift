@@ -77,6 +77,15 @@ public final class LibraryModel {
     public var albums: [AlbumCard] { catalog.albums }
     /// The order in which Cover Flow shows covers on the iPod.
     public var coverFlowAlbums: [AlbumCard] { catalog.coverFlow }
+    /// The movies on the iPod, rebuilt together with the cards; `catalogRevision` covers them too.
+    public private(set) var videos = VideoCatalog.empty
+    /// Whether the iPod keeps photos (`PhotoPresence`); without a source, none.
+    public var photos: PhotoPresence { session?.photos ?? .none }
+    /// The sidebar's Media section: an iPod that plays video, or a library that already holds
+    /// records other than music (a backup has no device to ask).
+    public var showsMedia: Bool {
+        state == .loaded && (capabilities.supportsVideo || !videos.movies.isEmpty || videos.unrecognizedCount > 0)
+    }
     /// Everything waiting for the write: the log and the tasks for `apply()`.
     /// New albums from the add queue are recomputed on every queue change.
     public internal(set) var changes = ChangeSet() {
@@ -217,7 +226,11 @@ public final class LibraryModel {
             // While reading, another load may have started or the iPod may have disappeared.
             guard generation == loadGeneration else { return }
             // A backup shown as an iPod pretends to be a recognized iPod classic.
-            if demo.presentsAsDevice(source) { session.capabilities.isAssumed = false }
+            if demo.presentsAsDevice(source) {
+                session.capabilities.isAssumed = false
+                // The demo library stands in for an iPod, so it speaks of one, not of a backup.
+                session.photos = .none
+            }
 
             // The new state comes in whole only after a successful read - after an error
             // the old library must not be tied to a new write target.
@@ -310,6 +323,8 @@ public final class LibraryModel {
     // MARK: - Cards
 
     func rebuildCards() {
+        // Videos first: the catalog's didSet bumps the revision that screens watch.
+        videos = library.map(VideoCatalog.init(library:)) ?? .empty
         catalog = library.map { AlbumCatalog(library: $0, artwork: artwork, missingFiles: missingFileIDs) } ?? .empty
         refreshPendingAlbums()
     }
@@ -380,6 +395,7 @@ public final class LibraryModel {
         session = nil
         formats = FormatReport()
         covers.clear()
+        videos = .empty
         catalog = .empty
         preflightState = nil
         changes = ChangeSet()

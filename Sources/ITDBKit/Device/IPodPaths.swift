@@ -19,6 +19,9 @@ public struct IPodPaths: Sendable, Hashable {
     public var artworkDirectory: URL { control.appendingPathComponent("Artwork", isDirectory: true) }
     public var musicDirectory: URL { control.appendingPathComponent("Music", isDirectory: true) }
     public var deviceDirectory: URL { control.appendingPathComponent("Device", isDirectory: true) }
+    /// The photo library at the top of the volume, beside `iPod_Control`. Where Finder puts it
+    /// is not measured yet; the folder was absent on an iPod classic that never had photos.
+    public var photosDirectory: URL { mountPoint.appendingPathComponent("Photos", isDirectory: true) }
 
     public var iTunesDB: URL { iTunesDirectory.appendingPathComponent("iTunesDB") }
     public var playCounts: URL { iTunesDirectory.appendingPathComponent("Play Counts") }

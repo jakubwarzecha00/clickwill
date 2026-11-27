@@ -29,6 +29,8 @@ public struct LibrarySession: Sendable {
     let files: any FileSystem
     /// The iPod's own library sync, when its firmware has one (`OnDeviceSync`).
     public let onDeviceSync: OnDeviceSync?
+    /// Whether the iPod keeps photos. Clickwill does not read them yet.
+    public internal(set) var photos: PhotoPresence
 
     public var device: IPodDevice? {
         if case .device(let device) = source { return device }
@@ -57,7 +59,8 @@ public struct LibrarySession: Sendable {
         return LibrarySession(source: source, paths: paths, library: library, artwork: artwork,
                               sourceDigest: IPodDevice.digest(of: data),
                               missingFileIDs: canCheck ? missingFiles(in: library, paths: paths, files: files, sync: sync) : [],
-                              canCheckFiles: canCheck, capabilities: capabilities, files: files, onDeviceSync: sync)
+                              canCheckFiles: canCheck, capabilities: capabilities, files: files, onDeviceSync: sync,
+                              photos: PhotoPresence.detect(for: source, paths: paths, files: files))
     }
 
     /// The state after a successful write: the library as it went to disk, and the digest

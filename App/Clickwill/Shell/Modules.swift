@@ -5,6 +5,9 @@ import ClickwillCoverFlow
 import ClickwillAlbums
 import ClickwillArtists
 import ClickwillSongs
+import ClickwillVideos
+import ClickwillPodcasts
+import ClickwillPhotos
 import ClickwillCD
 import ClickwillAlbum
 import ClickwillDevice
@@ -22,6 +25,9 @@ enum ModulePage: Hashable {
     case albums(AlbumsPage)
     case artists(ArtistsPage)
     case songs(SongsPage)
+    case videos(VideosPage)
+    case podcasts(PodcastsPage)
+    case photos(PhotosPage)
     case cd(CDPage)
     case album(AlbumPage)
     case device(DevicePage)
@@ -32,6 +38,9 @@ enum ModulePage: Hashable {
         if let page = AlbumsPage(rawValue: launchName) { self = .albums(page); return }
         if let page = ArtistsPage(launchName: launchName) { self = .artists(page); return }
         if let page = SongsPage(rawValue: launchName) { self = .songs(page); return }
+        if let page = VideosPage(rawValue: launchName) { self = .videos(page); return }
+        if let page = PodcastsPage(rawValue: launchName) { self = .podcasts(page); return }
+        if let page = PhotosPage(rawValue: launchName) { self = .photos(page); return }
         if let page = DevicePage(rawValue: launchName) { self = .device(page); return }
         return nil
     }
@@ -68,6 +77,9 @@ enum ModulePage: Hashable {
         case .albums(let page): page.title
         case .artists(let page): page.title
         case .songs(let page): page.title
+        case .videos(let page): page.title
+        case .podcasts(let page): page.title
+        case .photos(let page): page.title
         case .cd: "Audio CD"
         case .album(let page): page.album.displayTitle
         case .device(let page): page.title
@@ -88,6 +100,8 @@ enum ModulePage: Hashable {
         case .albums(let page): page.subtitle(in: model)
         case .artists(let page): page.subtitle(in: model)
         case .songs(let page): page.subtitle(in: model)
+        case .videos(let page): page.subtitle(in: model)
+        case .podcasts, .photos: ""
         case .cd(let page): page.subtitle(in: modules.cds)
         case .album(let page): page.subtitle(in: model)
         case .device(let page): page.subtitle(in: model)
@@ -100,6 +114,9 @@ enum ModulePage: Hashable {
         case .albums(let page): AlbumsScreen(page: page)
         case .artists(let page): ArtistsScreen(page: page)
         case .songs: SongsScreen()
+        case .videos(let page): VideosScreen(page: page)
+        case .podcasts: PodcastsScreen()
+        case .photos: PhotosScreen()
         case .cd(let page): CDScreen(page: page)
         case .album(let page): AlbumModuleScreen(page: page)
         case .device(let page): DeviceScreen(page: page)
@@ -110,7 +127,7 @@ enum ModulePage: Hashable {
     var needsLibrary: Bool {
         switch self {
         case .cd: false
-        case .coverFlow, .albums, .artists, .songs, .album, .device: true
+        case .coverFlow, .albums, .artists, .songs, .videos, .podcasts, .photos, .album, .device: true
         }
     }
 
@@ -118,6 +135,9 @@ enum ModulePage: Hashable {
     @MainActor func isAvailable(in model: LibraryModel) -> Bool {
         switch self {
         case .coverFlow(let page): page.isAvailable(in: model)
+        case .videos(let page): page.isAvailable(in: model)
+        case .podcasts(let page): page.isAvailable(in: model)
+        case .photos(let page): page.isAvailable(in: model)
         case .albums, .artists, .songs, .cd, .album, .device: true
         }
     }
@@ -130,7 +150,7 @@ enum ModulePage: Hashable {
         case .albums(.albums):
             modules.albums.handle(press.key, characters: press.characters, albums: modules.albums.shown(from: model.albumsDisplay),
                                   letter: model.menuLetter(of:), open: window.open)
-        case .albums(.reorder), .artists, .songs, .cd, .album, .device:
+        case .albums(.reorder), .artists, .songs, .videos, .podcasts, .photos, .cd, .album, .device:
             .ignored
         }
     }
@@ -139,7 +159,7 @@ enum ModulePage: Hashable {
     var parent: ModulePage? {
         switch self {
         case .artists(let page): page.parent.map(ModulePage.artists)
-        case .coverFlow, .albums, .songs, .cd, .album, .device: nil
+        case .coverFlow, .albums, .songs, .videos, .podcasts, .photos, .cd, .album, .device: nil
         }
     }
 
@@ -155,7 +175,7 @@ enum ModulePage: Hashable {
     var opensOver: Bool {
         switch self {
         case .album: true
-        case .coverFlow, .albums, .artists, .songs, .cd, .device: false
+        case .coverFlow, .albums, .artists, .songs, .videos, .podcasts, .photos, .cd, .device: false
         }
     }
 
@@ -163,12 +183,12 @@ enum ModulePage: Hashable {
     var staysAsOrigin: Bool {
         switch self {
         case .coverFlow, .albums(.albums), .artists: true
-        case .albums(.reorder), .songs, .cd, .album, .device: false
+        case .albums(.reorder), .songs, .videos, .podcasts, .photos, .cd, .album, .device: false
         }
     }
 }
 
-/// The modules' rows in the sidebar's Library section.
+/// The modules' rows in the sidebar's Music Library section.
 struct ModuleLibraryItems: View {
     var body: some View {
         CoverFlowSidebarItem { ModulePage.coverFlow($0) }
@@ -179,7 +199,22 @@ struct ModuleLibraryItems: View {
     }
 }
 
-/// The modules' sections after the Library section.
+/// The sidebar's Media section, only while the library has media to show (`LibraryModel.showsMedia`).
+struct ModuleMediaSection: View {
+    @Environment(LibraryModel.self) private var model
+
+    var body: some View {
+        if model.showsMedia {
+            Section("Media") {
+                VideosSidebarItems { ModulePage.videos($0) }
+                PodcastsSidebarItem { ModulePage.podcasts($0) }
+                PhotosSidebarItem { ModulePage.photos($0) }
+            }
+        }
+    }
+}
+
+/// The modules' sections after the Media section.
 struct ModuleSidebarSections: View {
     var body: some View {
         CDSidebarSection { ModulePage.cd($0) }

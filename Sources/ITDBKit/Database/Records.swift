@@ -103,6 +103,10 @@ public struct ITTrack: Sendable, Identifiable {
     /// tracks leave the field empty never loses its songs from view.
     public var isMusic: Bool { mediaKind == 0 || mediaKind & 1 != 0 }
 
+    /// Whether the record is a movie: bit 0x02 without the audio bit, as on a movie added by
+    /// Finder. Other video kinds (TV shows, music videos) are not measured yet and are not counted.
+    public var isMovie: Bool { !isMusic && mediaKind & 2 != 0 }
+
     /// The key by which we group albums **in our interface**. Falls back
     /// to the artist, so that two different albums with the same name do not merge.
     public var albumKey: AlbumKey { AlbumKey(album: album ?? "", albumArtist: effectiveAlbumArtist) }
