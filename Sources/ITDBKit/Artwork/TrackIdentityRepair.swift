@@ -37,7 +37,7 @@ extension ITLibrary {
     public func repairingSecondaryIdentifiers() -> (library: ITLibrary, repaired: [String: Int]) {
         guard usesSecondaryPersistentID else { return (self, [:]) }
         var repaired: [String: Int] = [:]
-        let updated = mappingTracks { track in
+        let updated = mappingMusicTracks { track in
             guard track.secondaryPersistentID == 0, track.persistentID != 0 else { return track }
             repaired[track.album ?? "", default: 0] += 1
             return track.restoringSecondaryPersistentID()

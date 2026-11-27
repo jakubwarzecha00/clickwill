@@ -80,7 +80,7 @@ extension ITLibrary {
         existingIdentifiers: Set<UInt32>
     ) -> (library: ITLibrary, repaired: [String: Int]) {
         var repaired: [String: Int] = [:]
-        let updated = mappingTracks { track in
+        let updated = mappingMusicTracks { track in
             let album = track.album ?? ""
             guard let identifier = imageIdentifiersByAlbum[album] else { return track }
             guard !existingIdentifiers.contains(track.artworkIdentifier) else { return track }
@@ -109,7 +109,7 @@ extension ArtworkLibrary {
     public func imageIdentifiersByAlbum(in library: ITLibrary) -> [String: UInt32] {
         let byTrack = indexedByTrack()
         var found: [String: [UInt32: ArtworkImage]] = [:]
-        for track in library.tracks {
+        for track in library.musicTracks {
             guard let image = byTrack[track.persistentID] else { continue }
             found[track.album ?? "", default: [:]][image.id] = image
         }

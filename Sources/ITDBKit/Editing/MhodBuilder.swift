@@ -84,6 +84,13 @@ extension ITLibrary {
         return copy
     }
 
+    /// The same, but only music records pass through the transformation
+    /// (`ITTrack.isMusic`); a movie comes back untouched. Repairs and album edits
+    /// use this, so that rules measured on songs never reach other media.
+    public func mappingMusicTracks(_ transform: (ITTrack) -> ITTrack) -> ITLibrary {
+        mappingTracks { $0.isMusic ? transform($0) : $0 }
+    }
+
     /// The same for album records (`mhia`).
     public func mappingAlbums(_ transform: (ITAlbum) -> ITAlbum) -> ITLibrary {
         var copy = self

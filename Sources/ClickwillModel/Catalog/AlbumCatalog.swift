@@ -41,10 +41,16 @@ public struct AlbumCatalog: Sendable {
 
     /// `missingFiles`: tracks without a file on the iPod - for the count on the card.
     public init(library: ITLibrary, artwork: ArtworkLibrary?, missingFiles: Set<UInt32>) {
-        let blocks = library.albumOrder()
+        let tracks = library.tracks
+        // Only music gets a card. A movie added by Finder sits in the album table with
+        // untitled songs; it stays there on the iPod, but not in Songs, Albums or Cover Flow.
+        let blocks = library.albumOrder().compactMap { block -> MusicBlock? in
+            let music = block.trackIndices.filter { tracks[$0].isMusic }
+            return music.isEmpty ? nil : MusicBlock(id: block.id, album: block.album, trackIndices: music)
+        }
         // Once per rebuild, not once per card: there are hundreds of cards (albums
         // and Cover Flow), and a rebuild runs every 50 tracks during the format scan.
-        let builder = CardBuilder(tracks: library.tracks, byTrack: artwork?.indexedByTrack() ?? [:],
+        let builder = CardBuilder(tracks: tracks, byTrack: artwork?.indexedByTrack() ?? [:],
                                   missingFiles: missingFiles)
         self.init(albums: blocks.map { builder.card(title: $0.album, indices: $0.trackIndices, coversBlock: true) },
                   coverFlow: AlbumCatalog.coverFlowOrder(Self.coverFlowCards(blocks: blocks, builder: builder)))
@@ -94,7 +100,7 @@ public struct AlbumCatalog: Sendable {
     /// Cover Flow groups by track: (album artist, album). For an album with a
     /// consistent artist this is the same block as in the table; tracks without an album
     /// spread out to their artists, and those with nothing go to the end.
-    private static func coverFlowCards(blocks: [AlbumBlock], builder: CardBuilder) -> [AlbumCard] {
+    private static func coverFlowCards(blocks: [MusicBlock], builder: CardBuilder) -> [AlbumCard] {
         struct Group {
             let title: String
             var indices: [Int]
@@ -171,6 +177,13 @@ public struct AlbumCatalog: Sendable {
         if name.lowercased().hasPrefix("the ") { name.removeFirst(4) }
         return name
     }
+}
+
+/// The music tracks of one album table block (`AlbumBlock`).
+private struct MusicBlock {
+    let id: Int
+    let album: String
+    let trackIndices: [Int]
 }
 
 /// Assembles a card from the tracks of a block or group.

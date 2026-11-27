@@ -133,6 +133,9 @@ public enum MhitLayout {
     public static let artworkPresence = HeaderField<UInt8>(0xA4)
     /// Second copy of the `persistentID` (a copy of 0x70).
     public static let secondaryPersistentID = HeaderField<UInt64>(0xA8)
+    /// Media kind. Measured on an iPod classic: 1 on every audio track, 2 on a
+    /// movie added by Finder, which the iPod lists under Videos > Movies.
+    public static let mediaKind = HeaderField<UInt32>(0xD0)
     /// Album record index (`mhia` 0x10).
     public static let albumRecordIndex = HeaderField<UInt32>(0x120)
     /// Second record of the file size.

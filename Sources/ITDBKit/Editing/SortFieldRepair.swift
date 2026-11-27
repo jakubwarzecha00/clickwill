@@ -28,7 +28,7 @@ public enum SortFieldRepair {
     public static func plan(for library: ITLibrary) -> [Change] {
         var changes: [Change] = []
 
-        for (album, tracks) in Dictionary(grouping: library.tracks.filter({ !($0.album ?? "").isEmpty }),
+        for (album, tracks) in Dictionary(grouping: library.musicTracks.filter({ !($0.album ?? "").isEmpty }),
                                           by: { $0.album ?? "" }) {
             let groups = Dictionary(grouping: tracks) { $0.deviceGroupingKey }
             guard groups.count > 1 else { continue }

@@ -88,7 +88,7 @@ extension ITLibrary {
     /// at the track record. An album added without this showed artwork in
     /// Cover Flow, but not for the song.
     public func markingAlbumArtwork(album title: String, sourceByteCount: UInt32, count: UInt16 = 1) -> ITLibrary {
-        mappingTracks { track in
+        mappingMusicTracks { track in
             guard (track.album ?? "") == title else { return track }
             return track.markingArtwork(imageSourceByteCount: sourceByteCount, count: count)
         }
@@ -112,7 +112,7 @@ extension ITLibrary {
     public func repairingArtworkSources(imageSourcesByAlbum: [String: UInt32]) -> (library: ITLibrary, repaired: [String: Int]) {
         let available = Set(imageSourcesByAlbum.values)
         var repaired: [String: Int] = [:]
-        let updated = mappingTracks { track in
+        let updated = mappingMusicTracks { track in
             let album = track.album ?? ""
             guard let source = imageSourcesByAlbum[album] else { return track }
             // A track that already points to some existing image stays as it is -
@@ -129,9 +129,9 @@ extension ITLibrary {
     /// records were affected. The repair is safe for records without artwork,
     /// because iTunes sets `0xFFFF` there regardless.
     public func repairingArtworkMarkers() -> (library: ITLibrary, repaired: Int) {
-        let broken = tracks.count { !$0.hasArtworkMarker }
+        let broken = musicTracks.count { !$0.hasArtworkMarker }
         guard broken > 0 else { return (self, 0) }
-        return (mappingTracks { $0.restoringArtworkMarker() }, broken)
+        return (mappingMusicTracks { $0.restoringArtworkMarker() }, broken)
     }
 }
 
@@ -150,7 +150,7 @@ extension ArtworkLibrary {
     public func imageSourcesByAlbum(in library: ITLibrary) -> [String: UInt32] {
         let byTrack = indexedByTrack()
         var found: [String: Set<UInt32>] = [:]
-        for track in library.tracks {
+        for track in library.musicTracks {
             guard let image = byTrack[track.persistentID], image.sourceByteCount > 0 else { continue }
             found[track.album ?? "", default: []].insert(image.sourceByteCount)
         }

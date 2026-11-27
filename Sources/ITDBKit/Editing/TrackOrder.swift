@@ -33,11 +33,13 @@ public enum TrackOrderError: Error, CustomStringConvertible {
 
 extension ITLibrary {
 
-    /// The album's tracks in the order in which the device will show them.
+    /// The album's music tracks in the order in which the device will show them.
+    /// Other media in the same run of the table (a movie without an album sits with
+    /// untitled songs) are left out here and keep their places when the order changes.
     public func trackOrder(album name: String) throws -> [ITTrack] {
         let block = try singleBlock(album: name)
         let all = tracks
-        return block.trackIndices.map { all[$0] }
+        return block.trackIndices.map { all[$0] }.filter(\.isMusic)
     }
 
     /// Imposes the order of tracks in an album.
@@ -51,14 +53,15 @@ extension ITLibrary {
         let block = try singleBlock(album: name)
         let all = tracks
 
-        let current = block.trackIndices.map { all[$0].uniqueID }
+        let musicOffsets = block.trackIndices.indices.filter { all[block.trackIndices[$0]].isMusic }
+        let current = musicOffsets.map { all[block.trackIndices[$0]].uniqueID }
         guard uniqueIDs.count == current.count, Set(uniqueIDs) == Set(current) else {
             throw TrackOrderError.wrongTrackSet(expected: current.count, got: uniqueIDs.count)
         }
         let position = Dictionary(uniqueKeysWithValues: block.trackIndices.map { (all[$0].uniqueID, $0) })
 
         var entries = index.entries
-        for (offset, id) in uniqueIDs.enumerated() {
+        for (offset, id) in zip(musicOffsets, uniqueIDs) {
             entries[block.range.lowerBound + offset] = UInt32(position[id]!)
         }
         guard Set(entries) == Set(index.entries), entries.count == index.entries.count else {

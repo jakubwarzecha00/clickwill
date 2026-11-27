@@ -28,7 +28,7 @@ extension ITLibrary {
     /// `fileKind` recognizes only the four descriptions without store traces, so they
     /// drop out on their own.
     public func templateTrack(for kind: TrackFileKind) -> ITTrack? {
-        tracks.filter { $0.fileKind == kind }
+        musicTracks.filter { $0.fileKind == kind }
             .min { Self.templateNoise($0) < Self.templateNoise($1) }
     }
 
@@ -38,7 +38,7 @@ extension ITLibrary {
     /// `nil` for a kind without a profile - then a refusal, as before.
     public func crossKindTemplate(for kind: TrackFileKind) -> ITTrack? {
         guard let profile = TrackKindProfile.measured[kind],
-              let base = tracks.filter({ $0.fileKind != nil && $0.fileKind != kind })
+              let base = musicTracks.filter({ $0.fileKind != nil && $0.fileKind != kind })
                   .min(by: { Self.templateNoise($0) < Self.templateNoise($1) })
         else { return nil }
         var template = base.settingFileKind(kind)

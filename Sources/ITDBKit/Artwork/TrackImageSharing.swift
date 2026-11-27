@@ -18,7 +18,7 @@ extension ArtworkLibrary {
     /// is skipped - guessing would put the wrong artwork under a song.
     public func trackImageShares(in library: ITLibrary) -> [TrackImageShare] {
         let byTrack = indexedByTrack()
-        let albums = Dictionary(grouping: library.tracks, by: { $0.album ?? "" })
+        let albums = Dictionary(grouping: library.musicTracks, by: { $0.album ?? "" })
         return albums.keys.sorted().compactMap { album in
             let tracks = albums[album] ?? []
             let images = tracks.compactMap { byTrack[$0.persistentID] }

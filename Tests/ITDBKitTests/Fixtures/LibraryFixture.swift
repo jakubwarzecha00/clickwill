@@ -14,6 +14,8 @@ enum LibraryFixture {
         let number: UInt32
         var sortAlbum: String? = nil
         var kind: TrackFileKind = .mp3
+        /// `MhitLayout.mediaKind`; zero leaves the field empty, as in older fixtures.
+        var mediaKind: UInt32 = 0
     }
 
     static func u32(_ value: UInt32) -> [UInt8] {
@@ -66,7 +68,7 @@ enum LibraryFixture {
             0x0C: u32(count), 0x10: u32(track.id), 0x18: code,
             0x1D: [track.kind == .mp3 ? 1 : 0], 0x2C: u32(track.number),
             0x3C: u32(44_100 << 16), 0x70: u64(0x1000 + UInt64(track.id)),
-            0x120: u32(albumIndex),
+            0xD0: u32(track.mediaKind), 0x120: u32(albumIndex),
         ], children: mhods)
     }
 
