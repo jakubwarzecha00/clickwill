@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-import ITDBKit
+@testable import ITDBKit
 @testable import ClickwillModel
 
 /// The card catalog computed directly from the library, without the model and without a disk.
@@ -40,6 +40,22 @@ struct AlbumCatalogTests {
         let currents = library.tracks.filter { $0.album == "Currents" }.map(\.uniqueID)
         let catalog = AlbumCatalog(library: library, artwork: nil, missingFiles: [try #require(currents.first)])
         #expect(catalog.albums.map(\.missingFiles) == [0, 0, 1])
+    }
+
+    @Test("a movie gets no card and leaves the songs of its block alone")
+    func moviesHidden() throws {
+        let library = try library().mappingTracks { track in
+            guard track.album == "Aftermath" || track.title == "Eventually" else { return track }
+            var movie = track
+            movie.rawHeader.set(MhitLayout.mediaKind, UInt32(2))
+            return movie
+        }
+        let catalog = AlbumCatalog(library: library, artwork: nil, missingFiles: [])
+        #expect(catalog.albums.map(\.title) == ["The Bends", "Currents"])
+        #expect(catalog.coverFlow.map(\.title) == ["The Bends", "Currents"])
+        let currents = try #require(catalog.albums.last)
+        #expect(currents.trackCount == 1)
+        #expect(currents.trackIndices.allSatisfy { library.tracks[$0].isMusic })
     }
 
     @Test("an empty catalog has no cards")

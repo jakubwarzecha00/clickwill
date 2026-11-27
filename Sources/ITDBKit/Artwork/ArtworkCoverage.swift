@@ -67,11 +67,11 @@ public enum ArtworkCoverage {
     /// ambiguous.
     public static func audit(library: ITLibrary, artworkDB: Data, paths: IPodPaths? = nil) throws -> [Album] {
         let records = try ArtworkDBEditor.trackCounts(in: artworkDB)
-        let byPersistentID = Dictionary(library.tracks.map { ($0.persistentID, $0) }, uniquingKeysWith: { first, _ in first })
+        let byPersistentID = Dictionary(library.musicTracks.map { ($0.persistentID, $0) }, uniquingKeysWith: { first, _ in first })
 
         var trackCounts: [String: Int] = [:]
         var artists: [String: String] = [:]
-        for track in library.tracks {
+        for track in library.musicTracks {
             let album = track.album ?? ""
             trackCounts[album, default: 0] += 1
             if artists[album] == nil { artists[album] = track.effectiveAlbumArtist }

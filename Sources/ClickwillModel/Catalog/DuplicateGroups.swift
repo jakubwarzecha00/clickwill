@@ -29,7 +29,7 @@ extension LibraryModel {
     public func duplicateGroups() -> [DuplicateGroup] {
         guard let library else { return [] }
         let unsupported = Set(formatVerdicts.filter { !$0.value.isSupported }.keys)
-        return Self.duplicateClusters(library.tracks, missing: missingFileIDs, unsupported: unsupported).map { cluster in
+        return Self.duplicateClusters(library.musicTracks, missing: missingFileIDs, unsupported: unsupported).map { cluster in
             let copies = cluster.map { track in
                 DuplicateGroup.Copy(id: track.uniqueID, format: formatLabels[track.uniqueID] ?? Self.formatGuess(track),
                                     playCount: track.playCount, fileMissing: missingFileIDs.contains(track.uniqueID))
@@ -44,7 +44,7 @@ extension LibraryModel {
     /// Formats and missing files only decide which copy stays, so the format scan does not change
     /// it: the answer lasts until the library changes (`catalogRevision`).
     public func duplicateCount() async -> Int {
-        guard let tracks = library?.tracks else { return 0 }
+        guard let tracks = library?.musicTracks else { return 0 }
         return await Task.detached(priority: .userInitiated) {
             Self.duplicateClusters(tracks, missing: [], unsupported: []).count
         }.value

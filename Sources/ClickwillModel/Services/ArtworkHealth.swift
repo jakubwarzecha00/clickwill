@@ -35,13 +35,13 @@ public struct ArtworkHealth: Sendable {
         var findings: [Check: [String: Int]] = [:]
         var tracksPerAlbum: [String: Int] = [:]
         var albumOfTrack: [UInt64: String] = [:]
-        for track in library.tracks {
+        for track in library.musicTracks {
             tracksPerAlbum[track.album ?? "", default: 0] += 1
             albumOfTrack[track.persistentID] = track.album ?? ""
         }
 
         var markers: [String: Int] = [:]
-        for track in library.tracks where !track.hasArtworkMarker { markers[track.album ?? "", default: 0] += 1 }
+        for track in library.musicTracks where !track.hasArtworkMarker { markers[track.album ?? "", default: 0] += 1 }
         findings[.marker] = markers
         findings[.secondaryID] = library.repairingSecondaryIdentifiers().repaired
         findings[.albumIdentity] = Dictionary(library.repairingAlbumIdentities().repaired.map { ($0, 1) },

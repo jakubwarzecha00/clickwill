@@ -93,6 +93,16 @@ public struct ITTrack: Sendable, Identifiable {
         set { rawHeader.set(MhitLayout.compilation, newValue ? 1 : 0) }
     }
 
+    /// The raw media kind (`MhitLayout.mediaKind`); 0 when the header is too short to carry it.
+    public var mediaKind: UInt32 { rawHeader[MhitLayout.mediaKind] ?? 0 }
+
+    /// Whether the record is music. Only music is shown, edited and repaired;
+    /// anything else (a movie added by Finder) is kept exactly as found.
+    ///
+    /// The audio bit decides, and zero counts as music, so a database whose
+    /// tracks leave the field empty never loses its songs from view.
+    public var isMusic: Bool { mediaKind == 0 || mediaKind & 1 != 0 }
+
     /// The key by which we group albums **in our interface**. Falls back
     /// to the artist, so that two different albums with the same name do not merge.
     public var albumKey: AlbumKey { AlbumKey(album: album ?? "", albumArtist: effectiveAlbumArtist) }
@@ -269,6 +279,9 @@ public struct ITLibrary: Sendable {
         }
         return []
     }
+
+    /// Tracks that are music (`ITTrack.isMusic`), in library order.
+    public var musicTracks: [ITTrack] { tracks.filter(\.isMusic) }
 
     public var albums: [ITAlbum] {
         for section in sections {

@@ -35,7 +35,7 @@ All numbers are little-endian. Offsets are counted from the start of the record.
 | 0x04 | 4 | header length (624) | measured | |
 | 0x08 | 4 | total length including the `mhod`s | measured | |
 | 0x0C | 4 | number of `mhod` children | measured | |
-| 0x10 | 4 | `uniqueID` - the browse tables hold it, **never change it** | measured | changing it scrambles the menu |
+| 0x10 | 4 | `uniqueID` - the browse tables hold it, **never change it** | measured | changing it scrambles the menu. Finder renumbers it on **every** track when it adds anything (one movie, 2026-11-27: all 1667 changed, with 0x120, 0x1E0, 0x1F4), so it is not stable across a sync with Apple |
 | 0x14 | 4 | visible (1) | from the format | |
 | 0x18 | 4 | file type, a four-character code (`MP3 `) | measured | `FLAC` on a Classic with firmware 2.0.4: listed in the menu, skipped on playback, the database stays as written |
 | 0x1C | 1 | type 1 | from the format | |
@@ -66,6 +66,7 @@ All numbers are little-endian. Offsets are counted from the start of the record.
 | 0xA0 | 4 | as above | unknown | as above |
 | **0xA4** | 1 | **1 = the track points to an image (0x160), 2 = it does not** | measured 2026-09-27 | Classic: of Apple's records, 1610 with 0x160 have 1, 8 without have 2; the only exceptions are albums we added and "Ok Computer" written by Music. nano 2G after Finder (no `ArtworkDB`): 2 in every one. We set it together with 0x160 |
 | **0xA8** | 8 | **second copy of the `persistentID`** (a copy of 0x70) | measured | repairing it changed nothing on the device - the field exists, but it is not about artwork |
+| **0xD0** | 4 | **media kind**: 1 = audio, 2 = movie | measured 2026-11-27 | Classic, firmware 2.0.4: 1 on all 1667 audio tracks; a movie added by Finder (macOS 27, TV app) got 2 and the iPod listed it under Videos > Movies and played it. 0x168, the other candidate, stayed 1. The movie record also differs from audio at 0x18 (`M4V `), 0x3C/0x88 = 0, 0x7E = 0, 0xA4, 0xA8 = 0, 0xB0, 0xCC = 0. Clickwill shows, edits and repairs only records with the audio bit (or 0); others are written back as found |
 | **0x120** | 4 | **album record index** (`mhia` 0x10) | measured | 1603/1603 tracks point to the `mhia` with the same title |
 | **0x124** | 8 | **identifier of the Music library the track came from** (hypothesis) | medium | in a database written by Apple: `8807…` (= `mhbd` 0x24) has 309 tracks added 2024-04…2026-05, `f4ac…` 1269 tracks added within 10 days (2025-07-30…08-08), zero for 25 tracks from 2025-08-25. It is not "the iPod database it was created in" (the dates interleave), but most likely two libraries on a computer. Filling it in changed nothing on screen. The app writes nothing here; new tracks inherit the template's value. Clickwill is not a Music library, so without a measurement there is nothing "correct" to write here |
 | 0x12C | 4 | zeroed on insertion | unknown | |

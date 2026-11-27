@@ -80,9 +80,9 @@ public struct BackupService {
         // The current state from disk, not from memory: unsaved changes in the app
         // are not part of what the restore will undo.
         let onDisk = (try? device.readLibrary()) ?? fallback
-        let nowIDs = Set(onDisk.tracks.map(\.persistentID))
-        let backupIDs = Set(backup.tracks.map(\.persistentID))
-        let withoutFile = backup.tracks.filter { track in
+        let nowIDs = Set(onDisk.musicTracks.map(\.persistentID))
+        let backupIDs = Set(backup.musicTracks.map(\.persistentID))
+        let withoutFile = backup.musicTracks.filter { track in
             guard let url = track.fileURL(on: paths) else { return false }
             return !files.fileExists(at: url)
         }.map(LibraryDiff.song)
@@ -100,8 +100,8 @@ public struct BackupService {
 
         return BackupPreview(
             snapshot: snapshot,
-            songCount: backup.tracks.count,
-            albumCount: Set(backup.tracks.map { $0.album ?? "" }).count,
+            songCount: backup.musicTracks.count,
+            albumCount: Set(backup.musicTracks.map { $0.album ?? "" }).count,
             songsAddedSince: nowIDs.subtracting(backupIDs).count,
             songsRemovedSince: backupIDs.subtracting(nowIDs).count,
             songsWithoutFile: withoutFile.count,

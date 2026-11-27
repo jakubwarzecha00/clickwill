@@ -81,6 +81,6 @@ extension LibraryModel {
     /// sheet opening - on every redraw it would cost a pass
     /// over the whole library for every row.
     public func songIndex() -> SongIndex {
-        SongIndex(tracks: library?.tracks ?? [], queued: changes.additions.map(\.draft))
+        SongIndex(tracks: library?.musicTracks ?? [], queued: changes.additions.map(\.draft))
     }
 }

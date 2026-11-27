@@ -156,10 +156,10 @@ public final class LibraryModel {
     }
     /// Anything waiting for the write - a log entry or a device task.
     public var hasPendingChanges: Bool { !changes.isEmpty }
-    public var trackCount: Int { library?.tracks.count ?? 0 }
+    public var trackCount: Int { library?.musicTracks.count ?? 0 }
     public var artistCount: Int {
         guard let library else { return 0 }
-        return Set(library.tracks.compactMap { $0.artist }).count
+        return Set(library.musicTracks.compactMap { $0.artist }).count
     }
 
     public var device: IPodDevice? { session?.device }
@@ -281,7 +281,7 @@ public final class LibraryModel {
         scanNumber += 1
         let number = scanNumber
         formats.isComplete = false
-        scanQueue = FormatScanQueue(session.library.tracks)
+        scanQueue = FormatScanQueue(session.library.musicTracks)
         scanQueue.prioritize(scanPriority)
         let scanner = FormatScanner(paths: session.paths, capabilities: session.capabilities, files: session.files)
         let isCurrent = { self.generation == started && self.scanNumber == number }
