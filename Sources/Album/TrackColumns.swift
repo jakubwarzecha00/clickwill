@@ -26,7 +26,7 @@ extension View {
     /// a highlighted row there is no line - the highlight separates it by itself.
     func trackRowDivider(hidden: Bool = false) -> some View {
         overlay(alignment: .bottom) {
-            Theme.sep.frame(height: 0.5)
+            Rectangle().fill(Theme.sep).frame(height: 0.5)
                 .padding(.leading, TrackColumns.dividerLeading)
                 .opacity(hidden ? 0 : 1)
         }

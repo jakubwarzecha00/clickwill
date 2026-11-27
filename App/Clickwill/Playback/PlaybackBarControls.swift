@@ -92,7 +92,7 @@ struct PlaybackBarControls: View {
                 }
             }
         }
-        .tint(Theme.fg.opacity(0.75))
+        .themeTint(Theme.fg.opacity(0.75))
         .frame(maxWidth: .infinity, alignment: .leading)
         .task(id: playback.currentAlbum?.artworkTrackID) {
             await model.ensureArtwork(for: playback.currentAlbum?.artworkTrackID)
@@ -108,7 +108,7 @@ struct PlaybackBarControls: View {
 
     private var artwork: some View {
         ZStack {
-            Theme.card
+            Rectangle().fill(Theme.card)
             if let image = model.artwork(for: playback.currentAlbum?.artworkTrackID) {
                 Image(decorative: image, scale: 1).resizable().aspectRatio(contentMode: .fill)
             } else {

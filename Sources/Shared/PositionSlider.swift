@@ -18,7 +18,7 @@ public struct PositionSlider: View {
         Slider(value: Binding(get: { Double(index) },
                               set: { index = min(count - 1, max(0, Int($0.rounded()))) }),
                in: 0...Double(max(1, count - 1)))
-            .tint(Theme.positionSliderTint)
+            .themeTint(Theme.positionSliderTint)
             .disabled(count < 2)
             .accessibilityLabel(label)
             .accessibilityValue("\(index + 1) of \(count)")
@@ -42,7 +42,7 @@ public struct PositionCounter: View {
             Text("\(count) of \(count)").hidden()
             Text("\(index + 1) of \(count)")
         }
-        .font(.theme(.footnote)).foregroundStyle(.white.opacity(0.45)).monospacedDigit()
+        .font(.theme(.footnote)).foregroundStyle(Theme.sceneText.opacity(0.45)).monospacedDigit()
         .accessibilityHidden(true)
     }
 }
@@ -74,7 +74,7 @@ public struct VerticalPositionSlider: View {
             let travel = max(1, geo.size.height - Self.knob.height)
             let offset = count > 1 ? travel * CGFloat(index) / CGFloat(count - 1) : 0
             ZStack(alignment: .top) {
-                Capsule().fill(.white.opacity(0.16)).frame(width: Self.track)
+                Capsule().fill(Theme.sceneText.opacity(0.16)).frame(width: Self.track)
                 Capsule().fill(Theme.positionSliderTint)
                     .frame(width: Self.track, height: offset + Self.knob.height / 2)
                 knob
@@ -111,7 +111,7 @@ public struct VerticalPositionSlider: View {
         if dragging {
             Capsule().fill(.clear).clearGlassKnob()
         } else {
-            Capsule().fill(.white.opacity(0.94))
+            Capsule().fill(Theme.sliderKnob)
                 .shadow(color: .black.opacity(0.45), radius: 1.5, y: 1)
         }
     }
@@ -125,7 +125,7 @@ private extension View {
         if #available(macOS 26, *) {
             glassEffect(.clear, in: .capsule)
         } else {
-            Capsule().fill(.white.opacity(0.94)).shadow(color: .black.opacity(0.45), radius: 1.5, y: 1)
+            Capsule().fill(Theme.sliderKnob).shadow(color: .black.opacity(0.45), radius: 1.5, y: 1)
         }
     }
 }

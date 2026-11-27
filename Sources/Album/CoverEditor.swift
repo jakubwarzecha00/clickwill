@@ -22,7 +22,7 @@ struct CoverEditor: View {
             if let image {
                 Image(decorative: image, scale: 1).resizable().aspectRatio(contentMode: .fill)
             } else {
-                ZStack { Theme.card; Image(systemName: "music.note").font(.system(size: size / 6, weight: .light)).foregroundStyle(Theme.f3) }
+                ZStack { Rectangle().fill(Theme.card); Image(systemName: "music.note").font(.system(size: size / 6, weight: .light)).foregroundStyle(Theme.f3) }
             }
             if locked == nil, hovering || targeted || demoHover == "cover" {
                 Color.black.opacity(0.35)

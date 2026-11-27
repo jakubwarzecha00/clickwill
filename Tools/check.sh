@@ -38,6 +38,21 @@ if [[ ! -d $PROJECT || App/project.yml -nt $PROJECT/project.pbxproj ]] \
     SUMMARY="" step xcodegen zsh -c "cd App && xcodegen generate"
 fi
 
+# The themes module is a plug that can be cut off: only the app's module list and the
+# module's own tests name it, and in Package.swift only its test target depends on it.
+theme_isolation() {
+    local bad
+    bad=$(grep -rlE '^[[:space:]]*(@testable[[:space:]]+)?import[[:space:]]+ClickwillThemes' Sources App Tests --include='*.swift' \
+        | grep -vE '^(App/Clickwill/Shell/Modules\.swift|Tests/ClickwillThemesTests/)')
+    [[ -z $bad ]] || { print -r -- "error: ClickwillThemes imported outside Modules.swift: ${bad//$'\n'/ }"; return 1 }
+    bad=$(grep -nE 'dependencies:.*"ClickwillThemes"' Package.swift | grep -v 'testTarget(name: "ClickwillThemesTests"')
+    [[ -z $bad ]] || { print -r -- "error: a target depends on ClickwillThemes: $bad"; return 1 }
+    # In App/project.yml the product is a dependency of the app target only.
+    [[ $(grep -c 'product: ClickwillThemes' App/project.yml) -le 1 ]] \
+        || { print -r -- "error: ClickwillThemes is a dependency of more than one target in App/project.yml"; return 1 }
+}
+SUMMARY="" step theme-isolation theme_isolation
+
 SUMMARY=""
 step core-tests swift test
 [[ -f $LOGS/core-tests.log ]] && SUMMARY_LINES=$(grep -E "Test run with" $LOGS/core-tests.log | sed -E 's/.*Test run with ([0-9]+) tests.*(passed|failed).*/\1 \2/' | paste -sd, -)

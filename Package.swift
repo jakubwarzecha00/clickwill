@@ -21,6 +21,7 @@ let package = Package(
         .library(name: "ClickwillAlbums", targets: ["ClickwillAlbums"]),
         .library(name: "ClickwillImport", targets: ["ClickwillImport"]),
         .library(name: "ClickwillChanges", targets: ["ClickwillChanges"]),
+        .library(name: "ClickwillThemes", targets: ["ClickwillThemes"]),
         .executable(name: "ipodctl", targets: ["ipodctl"]),
     ],
     targets: [
@@ -51,6 +52,10 @@ let package = Package(
                 path: "Sources/Import"),
         .target(name: "ClickwillChanges", dependencies: ["ClickwillModel", "ClickwillShared"],
                 path: "Sources/Changes"),
+        // The themes plug: choosing the window's theme. Views use only the socket in
+        // ClickwillShared (`AppTheme`, `Theme.fg`), so no screen module depends on this one,
+        // and the app names it only in Modules.swift. Removed, every window is `AppTheme.standard`.
+        .target(name: "ClickwillThemes", dependencies: ["ClickwillShared"], path: "Sources/Themes"),
         .executableTarget(name: "ipodctl", dependencies: ["ITDBKit", "ClickwillModel"]),
         .testTarget(name: "ITDBKitTests", dependencies: ["ITDBKit"]),
         // The `ipodctl` command tests use the fake iPod from the write tests.
@@ -65,5 +70,6 @@ let package = Package(
         .testTarget(name: "ClickwillAlbumsTests", dependencies: ["ClickwillAlbums"]),
         .testTarget(name: "ClickwillImportTests", dependencies: ["ClickwillImport"]),
         .testTarget(name: "ClickwillChangesTests", dependencies: ["ClickwillChanges", "ClickwillModel"]),
+        .testTarget(name: "ClickwillThemesTests", dependencies: ["ClickwillThemes", "ClickwillShared"]),
     ]
 )

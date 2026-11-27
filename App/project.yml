@@ -52,6 +52,8 @@ targets:
         product: ClickwillImport
       - package: ITDBKit
         product: ClickwillChanges
+      - package: ITDBKit
+        product: ClickwillThemes
       - package: Sparkle
     info:
       path: Clickwill/Info.plist
